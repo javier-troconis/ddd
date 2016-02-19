@@ -9,9 +9,4 @@ namespace es
 	{
 		Guid Id { get; }
 	}
-
-	public interface IIdentity<TIdentity> : IIdentity where TIdentity : IIdentity<TIdentity>
-	{
-		
-    }
 }

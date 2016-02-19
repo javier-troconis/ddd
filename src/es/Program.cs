@@ -19,16 +19,24 @@ namespace es
 			var applicationId = Guid.NewGuid();
 
 			StartApplication(applicationId);
+
 			SubmitApplication(applicationId);
+
 			SubmitApplication(applicationId);
+
 			SubmitApplication(applicationId);
+
 			PrintApplicationSubmittalCount(applicationId);
 
 			// financial institution
 			var financialInstitutionId = Guid.NewGuid();
+
 			RegisterFinancialInstitution(financialInstitutionId);
+
 			CreditFinancialInstitutionBankAccount(financialInstitutionId);
+
 			DeactivateFinancialInstitution(financialInstitutionId);
+
 			CreditFinancialInstitutionBankAccount(financialInstitutionId);
 		}
 

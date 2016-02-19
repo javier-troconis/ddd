@@ -10,7 +10,7 @@ namespace es
 
 	}
 
-	public interface IEventConsumer<in TEvent> : IEventConsumer where TEvent : IEvent
+	public interface IEventConsumer<in TEvent> : IEventConsumer where TEvent : Event
 	{
 		void Apply(TEvent @event);
 	}

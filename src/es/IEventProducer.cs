@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace es
 {
-	public interface IEventProducer : IIdentity, IEventConsumer<IEvent>
+	public interface IEventProducer : IIdentity, IEventConsumer<Event>
 	{
 		int Version { get; }
-		IReadOnlyCollection<IEvent> Changes { get; }
+		IReadOnlyCollection<Event> Events { get; }
 	}
 }

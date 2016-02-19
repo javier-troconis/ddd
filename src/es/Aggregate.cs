@@ -7,7 +7,7 @@ namespace es
 {
 	public abstract class Aggregate : IEventProducer, IEquatable<IIdentity>
 	{
-		private readonly List<IEvent> _changes = new List<IEvent>();
+		private readonly List<Event> _events = new List<Event>();
 
 		protected Aggregate(Guid id)
 		{
@@ -20,13 +20,13 @@ namespace es
 
 		protected void RecordThat<TEvent>(TEvent @event) where TEvent : Event<TEvent>
 		{
-			_changes.Add(@event);
+			_events.Add(@event);
 			Apply(@event);
 		}
 
-		public IReadOnlyCollection<IEvent> Changes => _changes;
+		public IReadOnlyCollection<Event> Events => _events;
 
-		public virtual void Apply(IEvent @event)
+		public virtual void Apply(Event @event)
 		{
 			Version++;
 		}
@@ -56,7 +56,7 @@ namespace es
 
 		}
 
-		public sealed override void Apply(IEvent @event)
+		public sealed override void Apply(Event @event)
 		{
 			@event.ApplyTo(State);
 			base.Apply(@event);

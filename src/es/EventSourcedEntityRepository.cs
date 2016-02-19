@@ -18,7 +18,7 @@ namespace es
 
 	    public void Save(IEventProducer entity)
 	    {
-			var changes = entity.Changes;
+			var changes = entity.Events;
 			var currentVersion = entity.Version;
 			var expectedVersion = changes.Count > currentVersion ? -1 : currentVersion - changes.Count; 
 			EventStore.SaveEvents(entity.Id, expectedVersion, changes);

@@ -9,6 +9,5 @@ namespace es
     {
 		Guid EventId { get; }
 		DateTime OcurredOn { get; }
-		void ApplyTo(IEventConsumer entity);
 	}
 }

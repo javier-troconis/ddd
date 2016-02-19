@@ -7,18 +7,18 @@ namespace es
 {
     public static class EventStore
     {
-		static readonly Dictionary<Guid, List<IEvent>> Events = new Dictionary<Guid, List<IEvent>>(); 
+		static readonly Dictionary<Guid, List<Event>> Events = new Dictionary<Guid, List<Event>>(); 
 
-		public static IEnumerable<IEvent> GetEvents(Guid streamId)
+		public static IEnumerable<Event> GetEvents(Guid streamId)
 		{
 			return Events[streamId];
 		}
 
-		public static void SaveEvents(Guid streamId, int expectedVersion, IEnumerable<IEvent> events)
+		public static void SaveEvents(Guid streamId, int expectedVersion, IEnumerable<Event> events)
 		{
 			if(!Events.ContainsKey(streamId))
 			{
-				Events[streamId] = new List<IEvent>();
+				Events[streamId] = new List<Event>();
 			}
 			Events[streamId].AddRange(events);
 		}
