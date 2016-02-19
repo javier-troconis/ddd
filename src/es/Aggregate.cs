@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace es
 {
-	public abstract class Aggregate : IEventProducer, IEquatable<IIdentity>
+	public abstract class Aggregate : IEventProducer, IEventConsumer<Event>, IEquatable<IIdentity>
 	{
 		private readonly List<Event> _events = new List<Event>();
 
