@@ -52,7 +52,15 @@ namespace es
 		{
 			var entity = new FinancialInstitutionBankAccount(entityId);
 			EventSourcedEntityRepository.Load(entityId, entity);
-			entity.Credit(10);
+			try
+			{
+				entity.Credit(10);
+			}
+			catch(Exception ex)
+			{
+				Console.WriteLine(ex.Message);
+				return;
+			}
 			EventSourcedEntityRepository.Save(entity);
 		}
 
@@ -67,7 +75,7 @@ namespace es
 		{
 			var entity = new ApplicationSubmittalCounter();
 			EventSourcedEntityRepository.Load(entityId, entity);
-			Console.WriteLine(entity.Submittals);
+			Console.WriteLine($"application {entityId} has been submitted {entity.SubmittalCount} times");
 		}
 
 

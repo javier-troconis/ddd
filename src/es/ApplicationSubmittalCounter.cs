@@ -7,11 +7,11 @@ namespace es
 {
     public class ApplicationSubmittalCounter : IEventConsumer<ApplicationSubmitted>
     {
-		public int Submittals { get; private set; }
+		public int SubmittalCount { get; private set; }
 
 	    public void Apply(ApplicationSubmitted @event)
 	    {
-			Submittals++; 
+			SubmittalCount++; 
 	    }
     }
 }
