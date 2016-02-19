@@ -5,12 +5,12 @@ using System.Threading.Tasks;
 
 namespace es
 {
-	public interface IEventSourcedEntity
+	public interface IEventConsumer
 	{
 
 	}
 
-	public interface IEventSourcedEntity<in TEvent> : IEventSourcedEntity where TEvent : IEvent
+	public interface IEventConsumer<in TEvent> : IEventConsumer where TEvent : IEvent
 	{
 		void Apply(TEvent @event);
 	}

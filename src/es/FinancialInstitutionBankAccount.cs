@@ -5,14 +5,19 @@ using System.Threading.Tasks;
 
 namespace es
 {
-	public class FinancialInstitutionBankAccountState : IEventSourcedEntity<FinancialInstitutionDeactivated>
+	public class FinancialInstitutionBankAccountState : IEventConsumer<FinancialInstitutionRegistered>, IEventConsumer<FinancialInstitutionDeactivated>
 	{
 		public void Apply(FinancialInstitutionDeactivated @event)
 		{
 			IsActive = false;
 		}
 
-		public bool IsActive { get; private set; } = true;
+		public void Apply(FinancialInstitutionRegistered @event)
+		{
+			IsActive = true;
+		}
+
+		public bool IsActive { get; private set; }
 	}
 
 	public class FinancialInstitutionBankAccountCredited : Event<FinancialInstitutionBankAccountCredited>

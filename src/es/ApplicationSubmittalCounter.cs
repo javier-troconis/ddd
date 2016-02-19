@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace es
 {
-    public class ApplicationSubmittalCounter : IEventSourcedEntity<ApplicationSubmitted>
+    public class ApplicationSubmittalCounter : IEventConsumer<ApplicationSubmitted>
     {
 		public int Submittals { get; private set; }
 

@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace es
 {
-    public class EventStreamRepository : IEventStreamRepository
+    public class EventSourcedEntityRepository : IEventSourcedEntityRepository
     {
-	    public void Load(Guid entityId, IEventSourcedEntity entity)
+	    public void Load(Guid entityId, IEventConsumer entity)
 	    {
 			var events = EventStore.GetEvents(entityId);
 			foreach (var @event in events)
@@ -16,7 +16,7 @@ namespace es
 			}
 		}
 
-	    public void Save(IEventStream entity)
+	    public void Save(IEventProducer entity)
 	    {
 			var changes = entity.Changes;
 			var currentVersion = entity.Version;

@@ -11,9 +11,9 @@ namespace es
 
 		public DateTime OcurredOn { get; } = DateTime.UtcNow;
 
-		public void ApplyTo(IEventSourcedEntity entity)
+		public void ApplyTo(IEventConsumer entity)
 		{
-			(entity as IEventSourcedEntity<TEvent>)?.Apply((TEvent)this);
+			(entity as IEventConsumer<TEvent>)?.Apply((TEvent)this);
 		}
 	}
 }

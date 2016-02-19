@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace es
 {
-	public abstract class Aggregate : IEventStream, IEquatable<IIdentity>
+	public abstract class Aggregate : IEventProducer, IEquatable<IIdentity>
 	{
 		private readonly List<IEvent> _changes = new List<IEvent>();
 
@@ -47,7 +47,7 @@ namespace es
 		}
 	}
 
-	public abstract class Aggregate<TState> : Aggregate where TState : IEventSourcedEntity, new()
+	public abstract class Aggregate<TState> : Aggregate where TState : IEventConsumer, new()
 	{
 		protected readonly TState State = new TState();
 

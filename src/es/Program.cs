@@ -11,7 +11,7 @@ namespace es
 	
 	public class Program
 	{
-		static readonly IEventStreamRepository EventStreamRepository = new EventStreamRepository();
+		static readonly IEventSourcedEntityRepository EventSourcedEntityRepository = new EventSourcedEntityRepository();
 	
 		public static void Main(string[] args)
 		{
@@ -35,30 +35,30 @@ namespace es
 		private static void DeactivateFinancialInstitution(Guid entityId)
 		{
 			var entity = new FinancialInstitution(entityId);
-			EventStreamRepository.Load(entityId, entity);
+			EventSourcedEntityRepository.Load(entityId, entity);
 			entity.Deactivate();
-			EventStreamRepository.Save(entity);
+			EventSourcedEntityRepository.Save(entity);
 		}
 
 		private static void CreditFinancialInstitutionBankAccount(Guid entityId)
 		{
 			var entity = new FinancialInstitutionBankAccount(entityId);
-			EventStreamRepository.Load(entityId, entity);
+			EventSourcedEntityRepository.Load(entityId, entity);
 			entity.Credit(10);
-			EventStreamRepository.Save(entity);
+			EventSourcedEntityRepository.Save(entity);
 		}
 
 		private static void RegisterFinancialInstitution(Guid entityId)
 		{
 			var entity = new FinancialInstitution(entityId);
 			entity.Register();
-			EventStreamRepository.Save(entity);
+			EventSourcedEntityRepository.Save(entity);
 		}
 
 		private static void PrintApplicationSubmittalCount(Guid entityId)
 		{
 			var entity = new ApplicationSubmittalCounter();
-			EventStreamRepository.Load(entityId, entity);
+			EventSourcedEntityRepository.Load(entityId, entity);
 			Console.WriteLine(entity.Submittals);
 		}
 
@@ -66,16 +66,16 @@ namespace es
 		static void SubmitApplication(Guid entityId)
 		{
 			var entity = new Application(entityId);
-			EventStreamRepository.Load(entityId, entity);
+			EventSourcedEntityRepository.Load(entityId, entity);
 			entity.Submit();
-			EventStreamRepository.Save(entity);
+			EventSourcedEntityRepository.Save(entity);
 		}
 
 		static void StartApplication(Guid entityId)
 		{
 			var entity = new Application(entityId);
 			entity.Start();
-			EventStreamRepository.Save(entity);
+			EventSourcedEntityRepository.Save(entity);
 		}
 	}
 }
