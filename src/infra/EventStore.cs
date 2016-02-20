@@ -35,11 +35,11 @@ namespace infra
 
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
-					throw new Exception();
+					throw new Exception($"stream {streamName} not found");
 				}
 				if (slice.Status == SliceReadStatus.StreamDeleted)
 				{
-					throw new Exception();
+					throw new Exception($"stream {streamName} has been deleted");
 				}
 
 				result.AddRange(slice.Events.Select(resolvedEvent => DeserializeEvent(resolvedEvent.Event)));
@@ -76,7 +76,7 @@ namespace infra
 			};
 			configureEventHeader?.Invoke(eventHeader);
 			var metadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventHeader, SerializerSettings));
-			return new EventData(@event.EventId, eventType.FullName.ToLower(), true, eventData, metadata);
+			return new EventData(@event.EventId, eventType.Name.ToLower(), true, eventData, metadata);
 		}
 
 		private static Event DeserializeEvent(RecordedEvent recordedEvent)
