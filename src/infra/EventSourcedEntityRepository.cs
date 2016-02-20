@@ -1,9 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using ConsoleApp3;
+using shared;
 
-namespace es
+namespace infra
 {
     public class EventSourcedEntityRepository : IEventSourcedEntityRepository
     {

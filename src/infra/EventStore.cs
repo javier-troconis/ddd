@@ -1,4 +1,8 @@
-﻿namespace ConsoleApp3
+﻿using System;
+using System.Collections.Generic;
+using shared;
+
+namespace ConsoleApp3
 {
     public static class EventStore
     {

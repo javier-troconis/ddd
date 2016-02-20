@@ -1,0 +1,35 @@
+﻿{
+  "version": "1.0.0-*",
+  "description": "host Console Application",
+  "authors": [ "jtroconis" ],
+  "tags": [ "" ],
+  "projectUrl": "",
+  "licenseUrl": "",
+
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
+
+		"dependencies": {
+				"shared": {
+						"version": "1.0.0-*",
+						"target": "project"
+				},
+				"core": {
+						"version": "1.0.0-*",
+						"target": "project"
+				},
+				"infra": {
+						"version": "1.0.0-*",
+						"target": "project"
+				}
+		},
+
+  "commands": {
+    "host": "host"
+  },
+
+  "frameworks": {
+    "dnx451": { }
+  }
+}

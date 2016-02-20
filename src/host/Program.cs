@@ -1,10 +1,17 @@
-﻿namespace ConsoleApp3
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+using core;
+using infra;
+using shared;
+
+namespace host
 {
-	
 	public class Program
 	{
 		static readonly IEventSourcedEntityRepository EventSourcedEntityRepository = new EventSourcedEntityRepository();
-	
+
 		public static void Main(string[] args)
 		{
 			// application
@@ -48,7 +55,7 @@
 			{
 				entity.Credit(10);
 			}
-			catch(Exception ex)
+			catch (Exception ex)
 			{
 				Console.WriteLine(ex.Message);
 				return;

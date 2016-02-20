@@ -1,0 +1,20 @@
+﻿{
+		"version": "1.0.0-*",
+		"description": "shared Class Library",
+		"authors": [ "jtroconis" ],
+		"tags": [ "" ],
+		"projectUrl": "",
+		"licenseUrl": "",
+
+		"dependencies": {
+
+		},
+
+		"commands": {
+				"es": "es"
+		},
+
+		"frameworks": {
+				"dnx451": { }
+		}
+}
