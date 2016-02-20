@@ -1,26 +1,33 @@
 ﻿using System;
-using ConsoleApp3;
+using System.Threading.Tasks;
 using shared;
 
 namespace infra
 {
     public class EventSourcedEntityRepository : IEventSourcedEntityRepository
     {
-	    public void Load(Guid entityId, IEventConsumer entity)
+		private readonly IEventStore _store;
+
+		public EventSourcedEntityRepository(IEventStore store)
+		{
+			_store = store;
+		}
+
+		public async Task Load(Guid entityId, IEventConsumer entity)
 	    {
-			var events = EventStore.GetEvents(entityId);
+			var events = await _store.GetEventsAsync(entityId.ToString(), int.MaxValue);
 			foreach (var @event in events)
 			{
 				@event.ApplyTo(entity);
 			}
 		}
 
-	    public void Save(IEventProducer entity)
+	    public async Task Save(IEventProducer entity)
 	    {
 			var changes = entity.Events;
 			var currentVersion = entity.Version;
-			var expectedVersion = changes.Count > currentVersion ? -1 : currentVersion - changes.Count; 
-			EventStore.SaveEvents(entity.Id, expectedVersion, changes);
+			var expectedVersion = changes.Count > currentVersion ? -1 : currentVersion - changes.Count;
+			await _store.SaveEventsAsync(entity.Id.ToString(), expectedVersion, changes);
 	    }
     }
 }

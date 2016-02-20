@@ -1,10 +1,11 @@
 ﻿using System;
+using System.Threading.Tasks;
 
 namespace shared
 {
     public interface IEventSourcedEntityRepository
     {
-		void Load(Guid entityId, IEventConsumer entity);
-		void Save(IEventProducer entity);
+		Task Load(Guid entityId, IEventConsumer entity);
+		Task Save(IEventProducer entity);
 	}
 }

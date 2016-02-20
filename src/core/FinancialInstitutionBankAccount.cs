@@ -35,7 +35,7 @@ namespace core
 		{
 			if (!State.IsActive)
 			{
-				throw new Exception($"account {Id} cannot be credited because is inactive");
+				throw new Exception($"financial institution {Id} cannot be credited because is inactive");
 			}
 			RecordThat(new FinancialInstitutionBankAccountCredited());
 		}
