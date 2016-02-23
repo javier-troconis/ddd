@@ -65,7 +65,7 @@ namespace host
 		{
 			return async () =>
 			{
-				var entity = new FinancialInstitution(entityId);
+				var entity = new FinancialInstitutionRegistration(entityId);
 				entity.Register();
 				await EventSourcedEntityRepository.Save(entity);
 			};

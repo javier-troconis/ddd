@@ -3,11 +3,11 @@ using System.Collections.Generic;
 
 namespace shared
 {
-	public abstract class Aggregate : IEventProducer, IEventConsumer<Event>, IEquatable<IIdentity>
+	public abstract class AggregateRoot : IEventProducer, IEventConsumer<Event>, IEquatable<IIdentity>
 	{
 		private readonly List<Event> _events = new List<Event>();
 
-		protected Aggregate(Guid id)
+		protected AggregateRoot(Guid id)
 		{
 			Id = id;
 		}
@@ -45,11 +45,11 @@ namespace shared
 		}
 	}
 
-	public abstract class Aggregate<TState> : Aggregate where TState : IEventConsumer, new()
+	public abstract class AggregateRoot<TState> : AggregateRoot where TState : IEventConsumer, new()
 	{
 		protected readonly TState State = new TState();
 
-		protected Aggregate(Guid id) : base(id)
+		protected AggregateRoot(Guid id) : base(id)
 		{
 
 		}

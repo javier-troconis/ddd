@@ -24,7 +24,7 @@ namespace core
 		public decimal CurrentBalance { get; private set; }
 	}
 
-	public class FinancialInstitutionLedger : Aggregate<FinancialInstitutionLedgerState>
+	public class FinancialInstitutionLedger : AggregateRoot<FinancialInstitutionLedgerState>
     {
 		private const decimal MaximumAllowedBalance = 30;
 

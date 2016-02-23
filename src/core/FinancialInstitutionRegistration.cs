@@ -8,9 +8,9 @@ namespace core
 
 	}
 
-	public class FinancialInstitution : Aggregate
+	public class FinancialInstitutionRegistration : AggregateRoot
     {
-	    public FinancialInstitution(Guid id) : base(id)
+	    public FinancialInstitutionRegistration(Guid id) : base(id)
 	    {
 			
 	    }

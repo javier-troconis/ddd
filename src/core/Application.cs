@@ -13,7 +13,7 @@ namespace core
 
 	}
 
-	public class Application : Aggregate
+	public class Application : AggregateRoot
 	{
 		public Application(Guid id) : base(id)
 		{
