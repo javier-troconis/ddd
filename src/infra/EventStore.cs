@@ -58,14 +58,14 @@ namespace infra
 			return DefaultSliceSize;
 		}
 
-		public async Task SaveEventsAsync(string streamName, int expectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)
+		public async Task SaveEventsAsync(string streamName, int expectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> eventHeaderConfiguration = null)
 		{
 			await _eventStoreConnection
-				.AppendToStreamAsync(streamName, expectedVersion, events.Select((@event, eventIndex) => ToEventData(@event, expectedVersion + eventIndex + 1, configureEventHeader)))
+				.AppendToStreamAsync(streamName, expectedVersion, events.Select((@event, eventIndex) => ToEventData(@event, expectedVersion + eventIndex + 1, eventHeaderConfiguration)))
 				.ConfigureAwait(false);
 		}
 
-		private static EventData ToEventData(Event @event, int eventVersion, Action<IDictionary<string, object>> configureEventHeader)
+		private static EventData ToEventData(Event @event, int eventVersion, Action<IDictionary<string, object>> eventHeaderConfiguration)
 		{
 			var eventType = @event.GetType();
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, SerializerSettings));
@@ -74,7 +74,7 @@ namespace infra
 				{EventClrTypeHeader, eventType.AssemblyQualifiedName},
 				{EventVersionHeader, eventVersion }
 			};
-			configureEventHeader?.Invoke(eventHeader);
+			eventHeaderConfiguration?.Invoke(eventHeader);
 			var metadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventHeader, SerializerSettings));
 			return new EventData(@event.EventId, eventType.Name.ToLower(), true, eventData, metadata);
 		}

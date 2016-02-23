@@ -6,16 +6,20 @@ namespace infra
 {
     public class EventSourcedEntityRepository : IEventSourcedEntityRepository
     {
-		private readonly IEventStore _store;
+		private readonly Func<string, Guid, string> _toStreamName = (streamCategory, entityId) => $"{streamCategory}-{entityId.ToString("N").ToLower()}";
+		private readonly IEventStore _eventStore;
+	    private readonly string _streamCategory;
 
-		public EventSourcedEntityRepository(IEventStore store)
+	    public EventSourcedEntityRepository(IEventStore eventStore, string streamCategory)
 		{
-			_store = store;
+			_eventStore = eventStore;
+			_streamCategory = streamCategory;
 		}
 
 		public async Task Load(Guid entityId, IEventConsumer entity)
 	    {
-			var events = await _store.GetEventsAsync(entityId.ToString(), int.MaxValue);
+			var streamName = _toStreamName(_streamCategory, entityId);
+			var events = await _eventStore.GetEventsAsync(streamName, int.MaxValue);
 			foreach (var @event in events)
 			{
 				@event.ApplyTo(entity);
@@ -24,10 +28,11 @@ namespace infra
 
 	    public async Task Save(IEventProducer entity)
 	    {
+			var streamName = _toStreamName(_streamCategory, entity.Id);
 			var changes = entity.Events;
 			var currentVersion = entity.Version;
 			var expectedVersion = changes.Count > currentVersion ? -1 : currentVersion - changes.Count;
-			await _store.SaveEventsAsync(entity.Id.ToString(), expectedVersion, changes);
+			await _eventStore.SaveEventsAsync(streamName, expectedVersion, changes);
 	    }
     }
 }
