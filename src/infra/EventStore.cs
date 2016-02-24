@@ -16,22 +16,19 @@ namespace infra
 		private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
 		private readonly IEventStoreConnection _eventStoreConnection;
 		private const string EventClrTypeHeader = "EventClrType";
-		private const string EventVersionHeader = "EventVersion";
 
 		public EventStore(IEventStoreConnection eventStoreConnection)
 		{
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyList<Event>> GetEventsAsync(string streamName, int streamVersion)
+		public async Task<IReadOnlyList<Event>> GetEventsAsync(string streamName)
 		{
 			var result = new List<Event>();
 			StreamEventsSlice slice;
 			do
 			{
-				var sliceSize = DetermineSliceSize(result.Count, streamVersion);
-
-				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, result.Count, sliceSize, false).ConfigureAwait(false);
+				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, result.Count, DefaultSliceSize, false).ConfigureAwait(false);
 
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
@@ -42,37 +39,27 @@ namespace infra
 					throw new Exception($"stream {streamName} has been deleted");
 				}
 
-				result.AddRange(slice.Events.Select(resolvedEvent => DeserializeEvent(resolvedEvent.Event)));
+				result.AddRange(slice.Events.Select(resolvedEvent => resolvedEvent.Event).Select(DeserializeEvent));
 
-			} while (!slice.IsEndOfStream && streamVersion > result.Count);
+			} while (!slice.IsEndOfStream);
 
 			return result;
-		}
-
-		private static int DetermineSliceSize(int currentVersion, int desiredVersion)
-		{
-			if (currentVersion + DefaultSliceSize > desiredVersion)
-			{
-				return desiredVersion - currentVersion;
-			}
-			return DefaultSliceSize;
 		}
 
 		public async Task SaveEventsAsync(string streamName, int expectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> eventHeaderConfiguration = null)
 		{
 			await _eventStoreConnection
-				.AppendToStreamAsync(streamName, expectedVersion, events.Select((@event, eventIndex) => ToEventData(@event, expectedVersion + eventIndex + 1, eventHeaderConfiguration)))
+				.AppendToStreamAsync(streamName, expectedVersion, events.Select((@event, eventIndex) => ToEventData(@event, eventHeaderConfiguration)))
 				.ConfigureAwait(false);
 		}
 
-		private static EventData ToEventData(Event @event, int eventVersion, Action<IDictionary<string, object>> eventHeaderConfiguration)
+		private static EventData ToEventData(Event @event, Action<IDictionary<string, object>> eventHeaderConfiguration)
 		{
 			var eventType = @event.GetType();
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, SerializerSettings));
 			var eventHeader = new Dictionary<string, object>
 			{
-				{EventClrTypeHeader, eventType.AssemblyQualifiedName},
-				{EventVersionHeader, eventVersion }
+				{EventClrTypeHeader, eventType.AssemblyQualifiedName}
 			};
 			eventHeaderConfiguration?.Invoke(eventHeader);
 			var metadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventHeader, SerializerSettings));

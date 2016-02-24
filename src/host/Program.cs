@@ -31,7 +31,6 @@ namespace host
 
 			RunSequence
 			(
-
 				StartApplication(applicationId),
 				SubmitApplication(applicationId),
 				SubmitApplication(applicationId),
@@ -44,7 +43,6 @@ namespace host
 				CreditFinancialInstitution(financialInstitutionId),
 				CreditFinancialInstitution(financialInstitutionId),
 				CreditFinancialInstitution(Guid.NewGuid())
-
 			).Wait();
 		}
 
@@ -64,7 +62,7 @@ namespace host
 			return async () =>
 			{
 				var entity = new FinancialInstitutionLedger(entityId);
-				var repository = EventSourcedEntityRepositoryFactory.CreateForStreamCategory("");
+				var repository = EventSourcedEntityRepositoryFactory.CreateForStreamCategory("financial_institution");
 				await repository.Load(entityId, entity);
 				entity.Credit(15);
 				await repository.Save(entity);

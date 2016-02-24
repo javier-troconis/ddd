@@ -19,7 +19,7 @@ namespace infra
 		public async Task Load(Guid entityId, IEventConsumer entity)
 	    {
 			var streamName = _toStreamName(_streamCategory, entityId);
-			var events = await _eventStore.GetEventsAsync(streamName, int.MaxValue);
+			var events = await _eventStore.GetEventsAsync(streamName);
 			foreach (var @event in events)
 			{
 				@event.ApplyTo(entity);
