@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Reflection;
 using System.Threading.Tasks;
 using core;
 using EventStore.ClientAPI;
@@ -19,7 +20,7 @@ namespace host
 		static Program()
 		{
 			var eventStoreConnection = EventStoreConnection.Create(ConnectionSettings
-				.Create().SetDefaultUserCredentials(new UserCredentials("admin", "admin")), new Uri("tcp://127.0.0.1:1113"));
+				.Create().SetDefaultUserCredentials(new UserCredentials("admin", "changeit")), new Uri("tcp://127.0.0.1:1113"));
 			eventStoreConnection.ConnectAsync().Wait();
 			EventSourcedEntityRepositoryFactory = new EventSourcedEntityRepositoryFactory(new infra.EventStore(eventStoreConnection));
 		}
@@ -46,7 +47,7 @@ namespace host
 			).Wait();
 		}
 
-		static Func<Task> RegisterFinancialInstitution(Guid entityId)
+		private static Func<Task> RegisterFinancialInstitution(Guid entityId)
 		{
 			return async () =>
 			{
@@ -57,7 +58,7 @@ namespace host
 			};
 		}
 
-		static Func<Task> CreditFinancialInstitution(Guid entityId)
+		private static Func<Task> CreditFinancialInstitution(Guid entityId)
 		{
 			return async () =>
 			{
@@ -69,7 +70,7 @@ namespace host
 			};
 		}
 
-		static Func<Task> StartApplication(Guid entityId)
+		private static Func<Task> StartApplication(Guid entityId)
 		{
 			return async () =>
 			{
@@ -80,7 +81,7 @@ namespace host
 			};
 		}
 
-		static Func<Task> SubmitApplication(Guid entityId)
+		private static Func<Task> SubmitApplication(Guid entityId)
 		{
 			return async () =>
 			{
@@ -92,7 +93,7 @@ namespace host
 			};
 		}
 
-		static Func<Task> PrintApplicationSubmittalCount(Guid entityId)
+		private static Func<Task> PrintApplicationSubmittalCount(Guid entityId)
 		{
 			return async () =>
 			{
@@ -103,7 +104,7 @@ namespace host
 			};
 		}
 
-		static async Task RunSequence(params Func<Task>[] actions)
+		private static async Task RunSequence(params Func<Task>[] actions)
 		{
 			foreach (var action in actions)
 			{
