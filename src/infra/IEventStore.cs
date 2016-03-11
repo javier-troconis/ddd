@@ -9,6 +9,6 @@ namespace infra
     public interface IEventStore
     {
 		Task<IReadOnlyList<Event>> GetEventsAsync(string streamName);
-		Task SaveEventsAsync(string streamName, int expectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> eventHeaderConfiguration = null);
+		Task SaveEventsAsync(string streamName, int expectedVersion, IEnumerable<Event> events);
 	}
 }

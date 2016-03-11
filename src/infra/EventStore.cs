@@ -24,11 +24,12 @@ namespace infra
 
 		public async Task<IReadOnlyList<Event>> GetEventsAsync(string streamName)
 		{
-			var result = new List<Event>();
+			var resolvedEvents = new List<ResolvedEvent>();
+
 			StreamEventsSlice slice;
 			do
 			{
-				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, result.Count, DefaultSliceSize, false).ConfigureAwait(false);
+				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, resolvedEvents.Count, DefaultSliceSize, false).ConfigureAwait(false);
 
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
@@ -39,21 +40,21 @@ namespace infra
 					throw new Exception($"stream {streamName} has been deleted");
 				}
 
-				result.AddRange(slice.Events.Select(resolvedEvent => resolvedEvent.Event).Select(DeserializeEvent));
+				resolvedEvents.AddRange(slice.Events);
 
 			} while (!slice.IsEndOfStream);
 
-			return result;
+			return resolvedEvents.Select(DeserializeEvent).ToArray();
 		}
 
-		public async Task SaveEventsAsync(string streamName, int expectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> eventHeaderConfiguration = null)
+		public async Task SaveEventsAsync(string streamName, int expectedVersion, IEnumerable<Event> events)
 		{
 			await _eventStoreConnection
-				.AppendToStreamAsync(streamName, expectedVersion, events.Select((@event, eventIndex) => ToEventData(@event, eventHeaderConfiguration)))
+				.AppendToStreamAsync(streamName, expectedVersion, events.Select(ToEventData))
 				.ConfigureAwait(false);
 		}
 
-		private static EventData ToEventData(Event @event, Action<IDictionary<string, object>> eventHeaderConfiguration)
+		private static EventData ToEventData(Event @event)
 		{
 			var eventType = @event.GetType();
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, SerializerSettings));
@@ -61,13 +62,13 @@ namespace infra
 			{
 				{EventClrTypeHeader, eventType.AssemblyQualifiedName}
 			};
-			eventHeaderConfiguration?.Invoke(eventHeader);
 			var metadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventHeader, SerializerSettings));
 			return new EventData(@event.EventId, eventType.Name.ToLower(), true, eventData, metadata);
 		}
 
-		private static Event DeserializeEvent(RecordedEvent recordedEvent)
+		private static Event DeserializeEvent(ResolvedEvent resolvedEvent)
 		{
+			var recordedEvent = resolvedEvent.Event;
 			try
 			{
 				var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
