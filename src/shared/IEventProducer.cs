@@ -5,6 +5,6 @@ namespace shared
 	public interface IEventProducer : IIdentity
 	{
 		int Version { get; }
-		IReadOnlyCollection<Event> Events { get; }
+		IReadOnlyList<Event> Events { get; }
 	}
 }

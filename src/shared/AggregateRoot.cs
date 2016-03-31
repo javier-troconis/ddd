@@ -22,7 +22,7 @@ namespace shared
 			Apply(@event);
 		}
 
-		public IReadOnlyCollection<Event> Events => _events;
+		public IReadOnlyList<Event> Events => _events;
 
 		public virtual void Apply(Event @event)
 		{

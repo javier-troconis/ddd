@@ -16,18 +16,24 @@ namespace host
 {
 	public class Program
 	{
-		static readonly IEventSourcedEntityRepository EventSourcedEntityRepository;
+		private static readonly IEventSourcedEntityRepository EventSourcedEntityRepository;
 
 		static Program()
 		{
-			var eventStoreConnection = EventStoreConnection.Create(ConnectionSettings
-				.Create().SetDefaultUserCredentials(new UserCredentials("admin", "changeit")), new Uri("tcp://127.0.0.1:1113"));
+			var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
 			eventStoreConnection.ConnectAsync().Wait();
 			EventSourcedEntityRepository = new EventSourcedEntityRepository(new infra.EventStore(eventStoreConnection));
 		}
 
 		public static void Main(string[] args)
 		{
+			while (true)
+			{
+				var applicationId = Guid.NewGuid();
+				StartApplication(applicationId)().Wait();
+				SubmitApplication(applicationId)().Wait();
+			}
+
 			//var applicationId = Guid.NewGuid();
 			//var financialInstitutionId = Guid.NewGuid();
 
@@ -90,7 +96,8 @@ namespace host
 			{
 				var entity = new Application(entityId);
 				entity.Start();
-				await EventSourcedEntityRepository.Save(entity);
+				Console.WriteLine($"{entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
+                await EventSourcedEntityRepository.Save(entity);
 			};
 		}
 
@@ -101,6 +108,7 @@ namespace host
 				var entity = new Application(entityId);
 				await EventSourcedEntityRepository.Load(entityId, entity);
 				entity.Submit();
+				Console.WriteLine($"{entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
 				await EventSourcedEntityRepository.Save(entity);
 			};
 		}
