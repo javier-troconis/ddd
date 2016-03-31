@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
+using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using core;
 using EventStore.ClientAPI;
@@ -19,31 +21,31 @@ namespace host
 		static Program()
 		{
 			var eventStoreConnection = EventStoreConnection.Create(ConnectionSettings
-				.Create().SetDefaultUserCredentials(new UserCredentials("admin", "admin")), new Uri("tcp://127.0.0.1:1113"));
+				.Create().SetDefaultUserCredentials(new UserCredentials("admin", "changeit")), new Uri("tcp://127.0.0.1:1113"));
 			eventStoreConnection.ConnectAsync().Wait();
 			EventSourcedEntityRepository = new EventSourcedEntityRepository(new infra.EventStore(eventStoreConnection));
 		}
 
 		public static void Main(string[] args)
 		{
-			var applicationId = Guid.NewGuid();
-			var financialInstitutionId = Guid.NewGuid();
+			//var applicationId = Guid.NewGuid();
+			//var financialInstitutionId = Guid.NewGuid();
 
-			RunSequence
-			(
-				StartApplication(applicationId),
-				SubmitApplication(applicationId),
-				SubmitApplication(applicationId),
-				SubmitApplication(applicationId),
-				PrintApplicationSubmittalCount(applicationId),
+			//RunSequence
+			//(
+			//	StartApplication(applicationId),
+			//	SubmitApplication(applicationId),
+			//	SubmitApplication(applicationId),
+			//	SubmitApplication(applicationId),
+			//	PrintApplicationSubmittalCount(applicationId),
 
-				RegisterFinancialInstitution(financialInstitutionId),
-				RegisterFinancialInstitution(financialInstitutionId),
-				CreditFinancialInstitution(financialInstitutionId),
-				CreditFinancialInstitution(financialInstitutionId),
-				CreditFinancialInstitution(financialInstitutionId),
-				CreditFinancialInstitution(Guid.NewGuid())
-			).Wait();
+			//	RegisterFinancialInstitution(financialInstitutionId),
+			//	RegisterFinancialInstitution(financialInstitutionId),
+			//	CreditFinancialInstitution(financialInstitutionId),
+			//	CreditFinancialInstitution(financialInstitutionId),
+			//	CreditFinancialInstitution(financialInstitutionId),
+			//	CreditFinancialInstitution(Guid.NewGuid())
+			//).Wait();
 		}
 
 		static async Task RunSequence(params Func<Task>[] actions)
