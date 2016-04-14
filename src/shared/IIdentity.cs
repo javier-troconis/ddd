@@ -2,8 +2,8 @@
 
 namespace shared
 {
-	public interface IIdentity
-	{
-		Guid Id { get; }
-	}
+	//public interface IIdentity
+	//{
+	//	Guid Id { get; }
+	//}
 }

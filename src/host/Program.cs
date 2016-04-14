@@ -16,40 +16,36 @@ namespace host
 {
 	public class Program
 	{
-		private static readonly IEventSourcedEntityRepository EventSourcedEntityRepository;
+		private static readonly IEventStore EventStore;
 
 		static Program()
 		{
 			var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
 			eventStoreConnection.ConnectAsync().Wait();
-			EventSourcedEntityRepository = new EventSourcedEntityRepository(new infra.EventStore(eventStoreConnection));
+			EventStore = new infra.EventStore(eventStoreConnection);
 		}
 
 		public static void Main(string[] args)
 		{
-			var applicationId = Guid.NewGuid();
-			StartApplication(applicationId)().Wait();
-			SubmitApplication(applicationId)().Wait();
-			
 
-			//var applicationId = Guid.NewGuid();
+			var applicationId = StreamNamingConvention.FromIdentity(Guid.NewGuid());
 			//var financialInstitutionId = Guid.NewGuid();
 
-			//RunSequence
-			//(
-			//	StartApplication(applicationId),
-			//	SubmitApplication(applicationId),
-			//	SubmitApplication(applicationId),
-			//	SubmitApplication(applicationId),
-			//	PrintApplicationSubmittalCount(applicationId),
+			RunSequence
+			(
+				StartApplication(applicationId),
+				SubmitApplication(applicationId, 0)
+			//SubmitApplication(applicationId),
+			//SubmitApplication(applicationId),
+			//PrintApplicationSubmittalCount(applicationId),
 
-			//	RegisterFinancialInstitution(financialInstitutionId),
-			//	RegisterFinancialInstitution(financialInstitutionId),
-			//	CreditFinancialInstitution(financialInstitutionId),
-			//	CreditFinancialInstitution(financialInstitutionId),
-			//	CreditFinancialInstitution(financialInstitutionId),
-			//	CreditFinancialInstitution(Guid.NewGuid())
-			//).Wait();
+			//RegisterFinancialInstitution(financialInstitutionId),
+			//RegisterFinancialInstitution(financialInstitutionId),
+			//CreditFinancialInstitution(financialInstitutionId),
+			//CreditFinancialInstitution(financialInstitutionId),
+			//CreditFinancialInstitution(financialInstitutionId),
+			//CreditFinancialInstitution(Guid.NewGuid())
+			).Wait();
 		}
 
 		static async Task RunSequence(params Func<Task>[] actions)
@@ -67,60 +63,44 @@ namespace host
 			}
 		}
 
-		static Func<Task> RegisterFinancialInstitution(Guid entityId)
+		//static Func<Task> RegisterFinancialInstitution(Guid entityId)
+		//{
+		//	return async () =>
+		//	{
+		//		var entity = new FinancialInstitutionRegistration(entityId);
+		//		entity.Register();
+		//		await EventSourcedEntityRepository.Save(entity);
+		//	};
+		//}
+
+		//static Func<Task> CreditFinancialInstitution(Guid entityId)
+		//{
+		//	return async () =>
+		//	{
+		//		var entity = new FinancialInstitutionLedger(entityId);
+		//		await EventSourcedEntityRepository.Load(entityId, entity);
+		//		entity.Credit(15);
+		//		await EventSourcedEntityRepository.Save(entity);
+		//	};
+		//}
+
+		static Func<Task> StartApplication(string applicationId)
 		{
 			return async () =>
 			{
-				var entity = new FinancialInstitutionRegistration(entityId);
-				entity.Register();
-				await EventSourcedEntityRepository.Save(entity);
+				var @event = new ApplicationStarted();
+				await EventStore.SaveEventAsync(applicationId, @event);
 			};
 		}
 
-		static Func<Task> CreditFinancialInstitution(Guid entityId)
+		static Func<Task> SubmitApplication(string applicationId, int version)
 		{
 			return async () =>
 			{
-				var entity = new FinancialInstitutionLedger(entityId);
-				await EventSourcedEntityRepository.Load(entityId, entity);
-				entity.Credit(15);
-				await EventSourcedEntityRepository.Save(entity);
+				var state = await StreamStateLoader.Load<ApplicationSubmitState>(EventStore, applicationId);
+				var events = Application.Submit(state);
+				await EventStore.SaveEventsAsync(applicationId, events, version);
 			};
 		}
-
-		static Func<Task> StartApplication(Guid entityId)
-		{
-			return async () =>
-			{
-				var entity = new Application(entityId);
-				entity.Start();
-				Console.WriteLine($"stream: {entityId.ToString("N").ToLower()} | event: {entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
-                await EventSourcedEntityRepository.Save(entity);
-			};
-		}
-
-		static Func<Task> SubmitApplication(Guid entityId)
-		{
-			return async () =>
-			{
-				var entity = new Application(entityId);
-				await EventSourcedEntityRepository.Load(entityId, entity);
-				entity.Submit();
-				entity.Submit();
-				Console.WriteLine($"stream: {entityId.ToString("N").ToLower()} | event: {entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
-				await EventSourcedEntityRepository.Save(entity);
-			};
-		}
-
-		static Func<Task> PrintApplicationSubmittalCount(Guid entityId)
-		{
-			return async () =>
-			{
-				var entity = new ApplicationSubmittalCount();
-				await EventSourcedEntityRepository.Load(entityId, entity);
-				Console.WriteLine($"application {entityId} has been submitted {entity.SubmittalCount} times");
-			};
-		}
-
 	}
 }

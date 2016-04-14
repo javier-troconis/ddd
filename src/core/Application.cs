@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using shared;
 
 namespace core
@@ -13,21 +14,15 @@ namespace core
 
 	}
 
-	public class Application : AggregateRoot
+	public static class Application
 	{
-		public Application(Guid id) : base(id)
+		public static IEnumerable<Event> Submit(ApplicationSubmitState state)
 		{
-
-		}
-
-		public void Submit()
-		{
-			RecordThat(new ApplicationSubmitted());
-		}
-
-		public void Start()
-		{
-			RecordThat(new ApplicationStarted());
+			if (state.HasBeenSubmitted)
+			{
+				throw new Exception("application has already been submitted");
+			}
+			yield return new ApplicationSubmitted();
 		}
 	}
 }
