@@ -27,12 +27,10 @@ namespace host
 
 		public static void Main(string[] args)
 		{
-			while (true)
-			{
-				var applicationId = Guid.NewGuid();
-				StartApplication(applicationId)().Wait();
-				SubmitApplication(applicationId)().Wait();
-			}
+			var applicationId = Guid.NewGuid();
+			StartApplication(applicationId)().Wait();
+			SubmitApplication(applicationId)().Wait();
+			
 
 			//var applicationId = Guid.NewGuid();
 			//var financialInstitutionId = Guid.NewGuid();
@@ -96,7 +94,7 @@ namespace host
 			{
 				var entity = new Application(entityId);
 				entity.Start();
-				Console.WriteLine($"{entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
+				Console.WriteLine($"stream: {entityId.ToString("N").ToLower()} | event: {entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
                 await EventSourcedEntityRepository.Save(entity);
 			};
 		}
@@ -108,7 +106,8 @@ namespace host
 				var entity = new Application(entityId);
 				await EventSourcedEntityRepository.Load(entityId, entity);
 				entity.Submit();
-				Console.WriteLine($"{entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
+				entity.Submit();
+				Console.WriteLine($"stream: {entityId.ToString("N").ToLower()} | event: {entity.Events[0].GetType().Name.ToLower()} - {entity.Events[0].EventId}");
 				await EventSourcedEntityRepository.Save(entity);
 			};
 		}

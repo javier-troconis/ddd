@@ -31,7 +31,9 @@ namespace infra
 		public async Task<IReadOnlyList<Event>> GetEventsAsync(string streamName)
 		{
 			var resolvedEvents = await GetResolvedEvents(streamName).ConfigureAwait(false);
-			return resolvedEvents.Select(DeserializeEvent).ToArray();
+			return resolvedEvents
+				.Select(DeserializeEvent)
+				.ToArray();
 		}
 
 		public async Task SaveEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)

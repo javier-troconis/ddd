@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
@@ -16,11 +17,11 @@ namespace subscriber
 	{
 		private static readonly IEventStoreConnection Connection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
 		private static readonly ProjectionsManager ProjectionsManager = new ProjectionsManager(new ConsoleLogger(), Settings.HttpEndPoint, TimeSpan.FromMilliseconds(5000));
-		private const string SubscriptionGroupName = "application";
-		private static readonly string[] AvailableEventTypes = {"applicationstarted", "applicationsubmitted"};
+		private const string SubscriptionGroupName = "application1";
+		private static readonly string[] AvailableEventTypes = {"applicationsubmitted","applicationstarted"};
 		private static readonly Random Random = new Random();
 
-		public static void Main(string[] args)
+		static Program()
 		{
 			Connection.Disconnected += (s, a) =>
 			{
@@ -43,24 +44,30 @@ namespace subscriber
 			};
 
 			Connection.ConnectAsync().Wait();
+		}
+
+		public static void Main(string[] args)
+		{
+			CreateSubscriberGroup();
 
 			Subscribe();
 
 			while (true)
 			{
-				Console.ReadLine();
-				//Task.Delay(1000)
-				//	.ContinueWith(delegate 
+				//Console.ReadLine();
+				//Task.Delay(2000)
+				//	.ContinueWith(delegate
 				//	{
-						CreateSubscriberGroup();
+				//		CreateSubscriberGroup();
 				//	}).Wait();
 			}
 		}
 
 		public static void CreateSubscriberGroup()
 		{
-			var eventTypes = AvailableEventTypes.Take(Random.Next(1, AvailableEventTypes.Length + 1)).ToArray();
-			
+			//var eventTypes = AvailableEventTypes.Take(Random.Next(1, AvailableEventTypes.Length + 1)).ToArray();
+			var eventTypes = AvailableEventTypes;
+
 			Console.WriteLine("listening to: " + string.Join(", ", eventTypes));
 
 			const string onEventReceivedStatementTemplate = "'{0}': onEventReceived";
@@ -70,18 +77,36 @@ namespace subscriber
 				"}};" +
 				"fromAll().when({{ {1} }});";
 
-			var projectionDefinition = string.Format(projectionDefinitionTemplate, SubscriptionGroupName, 
-				string.Join(",", eventTypes.Select(eventType => string.Format(onEventReceivedStatementTemplate, eventType))));
+			var onEventReceivedStatements = string.Join(",", eventTypes.Select(eventType => string.Format(onEventReceivedStatementTemplate, eventType)));
 
+			//var projectionDestinationStream = $"{SubscriptionGroupName}-{Guid.NewGuid().ToString("N").ToLower()}";
+
+			//Connection.AppendToStreamAsync("projectionsink", ExpectedVersion.Any, new EventData(Guid.NewGuid(), SubscriptionGroupName, false, 
+			//	Encoding.UTF8.GetBytes($"{{'destinationStream' : '{projectionDestinationStream}'}}"), new byte[0]));
+
+			//var projectionDefinition = string.Format(projectionDefinitionTemplate, projectionDestinationStream, onEventReceivedStatements);
+
+			var projectionDefinition = string.Format(projectionDefinitionTemplate, SubscriptionGroupName, onEventReceivedStatements);
 
 			CreateOrUpdateProjection(SubscriptionGroupName, projectionDefinition);
 
 			var subcriptionGroupSettingsBuilder = PersistentSubscriptionSettings.Create()
 					.ResolveLinkTos()
+					.MinimumCheckPointCountOf(2)
 					.StartFromCurrent();
 			var subcriptionGroupSettings = subcriptionGroupSettingsBuilder.Build();
 
-			Connection.CreatePersistentSubscriptionAsync(SubscriptionGroupName, SubscriptionGroupName, subcriptionGroupSettings, Settings.Credentials);
+			try
+			{
+				Connection.CreatePersistentSubscriptionAsync(SubscriptionGroupName, SubscriptionGroupName, subcriptionGroupSettings, Settings.Credentials).Wait();
+			}
+			catch (AggregateException ex)
+			{
+				if (ex.InnerExceptions.Count > 1 || !(ex.InnerException is InvalidOperationException))
+				{
+					throw;
+				}
+			}
 		}
 
 		public static void Subscribe()
@@ -89,7 +114,7 @@ namespace subscriber
 			Connection.ConnectToPersistentSubscription(SubscriptionGroupName, SubscriptionGroupName, 
 				(s, e) =>
 					{
-						Console.WriteLine($"{e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
+						Console.WriteLine($"stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
 						s.Acknowledge(e);
 					},
 				(s,r,e) => 
@@ -101,28 +126,46 @@ namespace subscriber
 
 		private static void CreateOrUpdateProjection(string projectionName, string projectionDefinition)
 		{
-			if (TryCreateProjection(projectionName, projectionDefinition))
+			if (IsProjectionNew(projectionName))
 			{
-				return;
+				CreateProjection(projectionName, projectionDefinition);
 			}
-			UpdateProjection(projectionName, projectionDefinition);
+			else if(HasProjectionChanged(projectionName, projectionDefinition))
+			{
+				UpdateProjection(projectionName, projectionDefinition);
+			}
 		}
 
-		private static bool TryCreateProjection(string projectionName, string projectionDefinition)
+		private static bool IsProjectionNew(string projectionName)
 		{
 			try
 			{
-				ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, Settings.Credentials).Wait();
-				return true;
+				ProjectionsManager.GetQueryAsync(projectionName, Settings.Credentials).Wait();
+				return false;
 			}
 			catch (AggregateException ex)
 			{
-				if (ex.InnerExceptions.Count > 1 || !(ex.InnerException is ProjectionCommandConflictException))
+				ProjectionCommandFailedException innerEx;
+				if (ex.InnerExceptions.Count > 1 || 
+					(innerEx = ex.InnerException as ProjectionCommandFailedException) == null || 
+					innerEx.HttpStatusCode != (int)HttpStatusCode.NotFound)
 				{
 					throw;
 				}
 			}
-			return false;
+			return true;
+		}
+
+		private static void CreateProjection(string projectionName, string projectionDefinition)
+		{
+			ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, Settings.Credentials).Wait();	
+		}
+
+		private static bool HasProjectionChanged(string projectionName, string projectionDefinition)
+		{
+			var response = ProjectionsManager.GetQueryAsync(projectionName, Settings.Credentials);
+			response.Wait();
+			return response.Result != projectionDefinition;
 		}
 
 		private static void UpdateProjection(string projectionName, string projectionDefinition)

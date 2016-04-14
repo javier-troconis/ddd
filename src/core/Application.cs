@@ -5,7 +5,7 @@ namespace core
 {
 	public class ApplicationStarted : Event<ApplicationStarted>
 	{
-
+		
 	}
 
 	public class ApplicationSubmitted : Event<ApplicationSubmitted>
