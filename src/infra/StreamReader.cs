@@ -5,9 +5,10 @@ using shared;
 
 namespace infra
 {
-    public static class StreamStateReader
+    public static class StreamReader
 	{
-		public static async Task Read(Func<string, Task<IReadOnlyCollection<Event>>> streamReader, string fromStreamName, IEventConsumer toStreamState)
+		public static async Task ReadAsync(Func<string, Task<IReadOnlyCollection<Event>>> streamReader, 
+			string fromStreamName, IEventConsumer toStreamState)
 		{
 			var events = await streamReader(fromStreamName);
 			foreach (var @event in events)

@@ -66,7 +66,8 @@ namespace host
 			return async () =>
 			{
 				var state = new Application.SubmitState();
-				await StreamStateReader.Read(EventStore.ReadEventsAsync, applicationId, state);
+				await StreamReader.ReadAsync(EventStore.ReadEventsAsync, applicationId, state);
+
 				var events = Application.Submit(state);
 				await EventStore.WriteEventsAsync(applicationId, version, events);
 			};
