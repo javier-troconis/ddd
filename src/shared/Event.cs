@@ -4,16 +4,11 @@ namespace shared
 {
 	public interface IEvent
 	{
-		Guid EventId { get; }
-		DateTime OcurredOn { get; }
+
 	}
 
-	public abstract class Event : IEvent
+	public abstract class Event : ValueObject<Event>, IEvent
 	{
-		public Guid EventId { get; } = Guid.NewGuid();
-
-		public DateTime OcurredOn { get; } = DateTime.UtcNow;
-
 		public abstract void ApplyTo(IEventConsumer entity);
 	}
 

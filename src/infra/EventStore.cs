@@ -12,8 +12,8 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyList<Event>> ReadEventsAsync(string streamName);
-		Task WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null);
+		Task<IReadOnlyCollection<Event>> ReadEventsAsync(string streamName);
+		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null);
 	}
 
 	public class EventStore : IEventStore
@@ -28,30 +28,30 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyList<Event>> ReadEventsAsync(string streamName)
+		public async Task<IReadOnlyCollection<Event>> ReadEventsAsync(string streamName)
 		{
-			var resolvedEvents = await GetResolvedEvents(streamName).ConfigureAwait(false);
+			var resolvedEvents = await ReadResolvedEventsAsync(streamName).ConfigureAwait(false);
 			return resolvedEvents
 				.Select(DeserializeEvent)
 				.ToArray();
 		}
 
-		public async Task WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)
+		public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)
 		{
 			var eventsData = events
 				.Select(@event => CreateEventHeader(@event, configureEventHeader))
 				.Select(ConvertToEventData);
-			await _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData).ConfigureAwait(false);
+			return await _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData).ConfigureAwait(false);
 		}
 
-		private async Task<IReadOnlyList<ResolvedEvent>> GetResolvedEvents(string streamName)
+		private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName)
 		{
-			var resolvedEvents = new List<ResolvedEvent>();
+			var result = new List<ResolvedEvent>();
 
 			StreamEventsSlice slice;
 			do
 			{
-				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, resolvedEvents.Count, DefaultSliceSize, false).ConfigureAwait(false);
+				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, result.Count, DefaultSliceSize, false).ConfigureAwait(false);
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
 					throw new Exception($"stream {streamName} not found");
@@ -60,9 +60,10 @@ namespace infra
 				{
 					throw new Exception($"stream {streamName} has been deleted");
 				}
-				resolvedEvents.AddRange(slice.Events);
+				result.AddRange(slice.Events);
 			} while (!slice.IsEndOfStream);
-			return resolvedEvents;
+
+			return result;
 		}
 
 		private static Tuple<IDictionary<string, object>, Event> CreateEventHeader(Event @event, Action<IDictionary<string, object>> configureEventHeader)
@@ -78,10 +79,11 @@ namespace infra
 
 		private static EventData ConvertToEventData(Tuple<IDictionary<string, object>, Event> arg)
 		{
+			var eventId = Guid.NewGuid();
 			var eventType = arg.Item2.GetType();
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(arg.Item2, SerializerSettings));
 			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(arg.Item1, SerializerSettings));
-			return new EventData(arg.Item2.EventId, eventType.Name.ToLower(), true, eventData, eventMetadata);
+			return new EventData(eventId, eventType.Name.ToLower(), true, eventData, eventMetadata);
 		}
 
 		private static Event DeserializeEvent(ResolvedEvent resolvedEvent)
