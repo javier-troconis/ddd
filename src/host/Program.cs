@@ -56,7 +56,8 @@ namespace host
 		{
 			return async () =>
 			{
-				await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, new[] { new ApplicationStarted() });
+				var events = Application.Start();
+				await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, events);
 			};
 		}
 
@@ -64,8 +65,8 @@ namespace host
 		{
 			return async () =>
 			{
-				var state = new ApplicationSubmitState();
-				await StreamStateReader.Read(EventStore, applicationId, state);
+				var state = new Application.SubmitState();
+				await StreamStateReader.Read(EventStore.ReadEventsAsync, applicationId, state);
 				var events = Application.Submit(state);
 				await EventStore.WriteEventsAsync(applicationId, version, events);
 			};

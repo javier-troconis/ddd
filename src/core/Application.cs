@@ -16,12 +16,32 @@ namespace core
 
 	public static class Application
 	{
-		public static IEnumerable<Event> Submit(ApplicationSubmitState state)
+		public static IEnumerable<Event> Start()
+		{
+			yield return new ApplicationStarted();
+		}
+
+		public class SubmitState : IEventConsumer<ApplicationStarted>, IEventConsumer<ApplicationSubmitted>
+		{
+			public bool CanBeSubmitted { get; private set; }
+
+			public void Apply(ApplicationSubmitted @event)
+			{
+				CanBeSubmitted = false;
+			}
+
+			public void Apply(ApplicationStarted @event)
+			{
+				CanBeSubmitted = true;
+			}
+		}
+
+		public static IEnumerable<Event> Submit(SubmitState state)
 		{
 			Ensure.NotNull(state, "application submit state");
-			if (state.HasBeenSubmitted)
+			if (!state.CanBeSubmitted)
 			{
-				throw new Exception("application has already been submitted");
+				throw new Exception("application cannot be submitted");
 			}
 			yield return new ApplicationSubmitted();
 		}
