@@ -12,8 +12,8 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyList<Event>> GetEventsAsync(string streamName);
-		Task SaveEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null);
+		Task<IReadOnlyList<Event>> ReadEventsAsync(string streamName);
+		Task WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null);
 	}
 
 	public class EventStore : IEventStore
@@ -28,7 +28,7 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyList<Event>> GetEventsAsync(string streamName)
+		public async Task<IReadOnlyList<Event>> ReadEventsAsync(string streamName)
 		{
 			var resolvedEvents = await GetResolvedEvents(streamName).ConfigureAwait(false);
 			return resolvedEvents
@@ -36,7 +36,7 @@ namespace infra
 				.ToArray();
 		}
 
-		public async Task SaveEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)
+		public async Task WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)
 		{
 			var eventsData = events
 				.Select(@event => CreateEventHeader(@event, configureEventHeader))
