@@ -18,6 +18,7 @@ namespace core
 	{
 		public static IEnumerable<Event> Submit(ApplicationSubmitState state)
 		{
+			Ensure.NotNull(state, "application submit state");
 			if (state.HasBeenSubmitted)
 			{
 				throw new Exception("application has already been submitted");

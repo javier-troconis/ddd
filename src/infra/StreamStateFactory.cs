@@ -4,9 +4,9 @@ using shared;
 
 namespace infra
 {
-    public static class StreamStateLoader
+    public static class StreamStateFactory
 	{
-		public static async Task<TState> Load<TState>(IEventStore eventStore, string streamName) where TState : IEventConsumer, new()
+		public static async Task<TState> Create<TState>(IEventStore eventStore, string streamName) where TState : IEventConsumer, new()
 		{
 			var state = new TState();
 			var events = await eventStore.GetEventsAsync(streamName);

@@ -29,22 +29,11 @@ namespace host
 		{
 
 			var applicationId = StreamNamingConvention.FromIdentity(Guid.NewGuid());
-			//var financialInstitutionId = Guid.NewGuid();
 
 			RunSequence
 			(
 				StartApplication(applicationId),
 				SubmitApplication(applicationId, 0)
-			//SubmitApplication(applicationId),
-			//SubmitApplication(applicationId),
-			//PrintApplicationSubmittalCount(applicationId),
-
-			//RegisterFinancialInstitution(financialInstitutionId),
-			//RegisterFinancialInstitution(financialInstitutionId),
-			//CreditFinancialInstitution(financialInstitutionId),
-			//CreditFinancialInstitution(financialInstitutionId),
-			//CreditFinancialInstitution(financialInstitutionId),
-			//CreditFinancialInstitution(Guid.NewGuid())
 			).Wait();
 		}
 
@@ -63,33 +52,11 @@ namespace host
 			}
 		}
 
-		//static Func<Task> RegisterFinancialInstitution(Guid entityId)
-		//{
-		//	return async () =>
-		//	{
-		//		var entity = new FinancialInstitutionRegistration(entityId);
-		//		entity.Register();
-		//		await EventSourcedEntityRepository.Save(entity);
-		//	};
-		//}
-
-		//static Func<Task> CreditFinancialInstitution(Guid entityId)
-		//{
-		//	return async () =>
-		//	{
-		//		var entity = new FinancialInstitutionLedger(entityId);
-		//		await EventSourcedEntityRepository.Load(entityId, entity);
-		//		entity.Credit(15);
-		//		await EventSourcedEntityRepository.Save(entity);
-		//	};
-		//}
-
 		static Func<Task> StartApplication(string applicationId)
 		{
 			return async () =>
 			{
-				var @event = new ApplicationStarted();
-				await EventStore.SaveEventAsync(applicationId, @event);
+				await EventStore.SaveEventsAsync(applicationId, ExpectedVersion.NoStream, new[] { new ApplicationStarted() });
 			};
 		}
 
@@ -97,9 +64,9 @@ namespace host
 		{
 			return async () =>
 			{
-				var state = await StreamStateLoader.Load<ApplicationSubmitState>(EventStore, applicationId);
+				var state = await StreamStateFactory.Create<ApplicationSubmitState>(EventStore, applicationId);
 				var events = Application.Submit(state);
-				await EventStore.SaveEventsAsync(applicationId, events, version);
+				await EventStore.SaveEventsAsync(applicationId, version, events);
 			};
 		}
 	}

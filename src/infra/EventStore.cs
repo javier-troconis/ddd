@@ -13,8 +13,7 @@ namespace infra
 	public interface IEventStore
 	{
 		Task<IReadOnlyList<Event>> GetEventsAsync(string streamName);
-		Task SaveEventsAsync(string streamName, IEnumerable<Event> events, int streamExpectedVersion = ExpectedVersion.NoStream, Action<IDictionary<string, object>> configureEventHeader = null);
-		Task SaveEventAsync(string streamName, Event @event, int streamExpectedVersion = ExpectedVersion.NoStream, Action<IDictionary<string, object>> configureEventHeader = null);
+		Task SaveEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null);
 	}
 
 	public class EventStore : IEventStore
@@ -37,17 +36,12 @@ namespace infra
 				.ToArray();
 		}
 
-		public async Task SaveEventsAsync(string streamName, IEnumerable<Event> events, int streamExpectedVersion = ExpectedVersion.NoStream, Action<IDictionary<string, object>> configureEventHeader = null)
+		public async Task SaveEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)
 		{
 			var eventsData = events
 				.Select(@event => CreateEventHeader(@event, configureEventHeader))
 				.Select(ConvertToEventData);
 			await _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData).ConfigureAwait(false);
-		}
-
-		public async Task SaveEventAsync(string streamName, Event @event, int streamExpectedVersion = ExpectedVersion.NoStream, Action<IDictionary<string, object>> configureEventHeader = null)
-		{
-			await SaveEventsAsync(streamName, new[] { @event }, streamExpectedVersion, configureEventHeader);
 		}
 
 		private async Task<IReadOnlyList<ResolvedEvent>> GetResolvedEvents(string streamName)
@@ -96,7 +90,6 @@ namespace infra
 			var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
 			var eventClrTypeName = (string)eventMetadata.Property(EventClrTypeHeader).Value;
 			return (Event)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
-		
 		}
 
 	}
