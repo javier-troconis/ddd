@@ -27,9 +27,7 @@ namespace host
 
 		public static void Main(string[] args)
 		{
-
-			var applicationId = StreamNamingConvention.FromIdentity(Guid.NewGuid());
-
+			var applicationId = "application-" + StreamNamingConvention.FromIdentity(Guid.NewGuid());
 			RunSequence
 			(
 				StartApplication(applicationId),
@@ -39,7 +37,7 @@ namespace host
 
 		static async Task RunSequence(params Func<Task>[] actions)
 		{
-			foreach(var action in actions)
+			foreach (var action in actions)
 			{
 				try
 				{
@@ -65,9 +63,7 @@ namespace host
 		{
 			return async () =>
 			{
-				var state = new Application.SubmitState();
-				await StreamReader.ReadAsync(EventStore.ReadEventsAsync, applicationId, state);
-
+				var state = await StreamReader<Application.WhenSubmittingState>.ReadAsync(EventStore.ReadEventsAsync, applicationId);
 				var events = Application.Submit(state);
 				await EventStore.WriteEventsAsync(applicationId, version, events);
 			};

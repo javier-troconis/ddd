@@ -4,42 +4,42 @@ using shared;
 
 namespace core
 {
-	public class ApplicationStarted : Event<ApplicationStarted>
+	public class ApplicationStarted : IEvent
 	{
 		
 	}
 
-	public class ApplicationSubmitted : Event<ApplicationSubmitted>
+	public class ApplicationSubmitted : IEvent
 	{
 
 	}
 
 	public static class Application
 	{
-		public static IEnumerable<Event> Start()
+		public static IEnumerable<IEvent> Start()
 		{
 			yield return new ApplicationStarted();
 		}
 
-		public class SubmitState : IEventConsumer<ApplicationStarted>, IEventConsumer<ApplicationSubmitted>
+		public class WhenSubmittingState : IEventConsumer<ApplicationStarted>, IEventConsumer<ApplicationSubmitted>
 		{
-			public bool CanBeSubmitted { get; private set; }
+			public bool HasBeenSubmitted { get; private set; }
 
 			public void Apply(ApplicationSubmitted @event)
 			{
-				CanBeSubmitted = false;
+				HasBeenSubmitted = true;
 			}
 
 			public void Apply(ApplicationStarted @event)
 			{
-				CanBeSubmitted = true;
+				
 			}
 		}
 
-		public static IEnumerable<Event> Submit(SubmitState state)
+		public static IEnumerable<IEvent> Submit(WhenSubmittingState state)
 		{
-			Ensure.NotNull(state, "application submit state");
-			if (!state.CanBeSubmitted)
+			Ensure.NotNull(state, "WhenSubmittingState state");
+			if (state.HasBeenSubmitted)
 			{
 				throw new Exception("application cannot be submitted");
 			}

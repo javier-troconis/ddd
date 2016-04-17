@@ -12,8 +12,8 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyCollection<Event>> ReadEventsAsync(string streamName);
-		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null);
+		Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName);
+		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IDictionary<string, object>> configureEventHeader = null);
 	}
 
 	public class EventStore : IEventStore
@@ -28,7 +28,7 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyCollection<Event>> ReadEventsAsync(string streamName)
+		public async Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName)
 		{
 			var resolvedEvents = await ReadResolvedEventsAsync(streamName).ConfigureAwait(false);
 			return resolvedEvents
@@ -36,8 +36,8 @@ namespace infra
 				.ToArray();
 		}
 
-		public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<Event> events, Action<IDictionary<string, object>> configureEventHeader = null)
-		{
+		public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IDictionary<string, object>> configureEventHeader = null)
+		{	
 			var eventsData = events
 				.Select(@event => CreateEventHeader(@event, configureEventHeader))
 				.Select(ConvertToEventData);
@@ -66,7 +66,7 @@ namespace infra
 			return result;
 		}
 
-		private static Tuple<IDictionary<string, object>, Event> CreateEventHeader(Event @event, Action<IDictionary<string, object>> configureEventHeader)
+		private static Tuple<IDictionary<string, object>, IEvent> CreateEventHeader(IEvent @event, Action<IDictionary<string, object>> configureEventHeader)
 		{
 			var eventType = @event.GetType();
 			var eventHeader = new Dictionary<string, object>
@@ -74,10 +74,10 @@ namespace infra
 				{EventClrTypeHeader, eventType.AssemblyQualifiedName}
 			};
 			configureEventHeader?.Invoke(eventHeader);
-			return new Tuple<IDictionary<string, object>, Event>(eventHeader, @event);
+			return new Tuple<IDictionary<string, object>, IEvent>(eventHeader, @event);
 		}
 
-		private static EventData ConvertToEventData(Tuple<IDictionary<string, object>, Event> arg)
+		private static EventData ConvertToEventData(Tuple<IDictionary<string, object>, IEvent> arg)
 		{
 			var eventId = Guid.NewGuid();
 			var eventType = arg.Item2.GetType();
@@ -86,12 +86,12 @@ namespace infra
 			return new EventData(eventId, eventType.Name.ToLower(), true, eventData, eventMetadata);
 		}
 
-		private static Event DeserializeEvent(ResolvedEvent resolvedEvent)
+		private static IEvent DeserializeEvent(ResolvedEvent resolvedEvent)
 		{
 			var recordedEvent = resolvedEvent.Event;
 			var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
 			var eventClrTypeName = (string)eventMetadata.Property(EventClrTypeHeader).Value;
-			return (Event)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
+			return (IEvent)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
 		}
 
 	}
