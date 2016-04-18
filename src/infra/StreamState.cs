@@ -6,9 +6,9 @@ using shared;
 
 namespace infra
 {
-    public static class StreamStateReader<TState> where TState : IEventConsumer, new()
+    public static class StreamState<TState> where TState : IEventConsumer, new()
 	{
-		public static async Task<TState> ReadStateAsync(Func<string, Task<IReadOnlyCollection<IEvent>>> streamReader, string fromStreamName)
+		public static async Task<TState> GetAsync(Func<string, Task<IReadOnlyCollection<IEvent>>> streamReader, string fromStreamName)
 		{
 			var events = await streamReader(fromStreamName);
 			return events.Aggregate(new TState(), (state, @event) => ApplyEvent(state, (dynamic)@event));
