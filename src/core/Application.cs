@@ -21,8 +21,11 @@ namespace core
 			yield return new ApplicationStarted();
 		}
 
-		public class WhenSubmittingState : ValueType<WhenSubmittingState>, IEventConsumer<ApplicationSubmitted, WhenSubmittingState>
+		public class WhenSubmittingState : ValueType<WhenSubmittingState>, 
+			IEventConsumer<ApplicationStarted, WhenSubmittingState>, 
+			IEventConsumer<ApplicationSubmitted, WhenSubmittingState>
 		{
+			public bool HasBeenStarted { get; }
 			public bool HasBeenSubmitted { get; }
 
 			public WhenSubmittingState()
@@ -30,20 +33,30 @@ namespace core
 
 			}
 
-			private WhenSubmittingState(bool hasBeenSubmitted)
+			private WhenSubmittingState(bool hasBeenStarted, bool hasBeenSubmitted)
 			{
+				HasBeenStarted = hasBeenStarted;
 				HasBeenSubmitted = hasBeenSubmitted;
 			}
 
 			public WhenSubmittingState When(ApplicationSubmitted @event)
 			{
-				return new WhenSubmittingState(true);
+				return new WhenSubmittingState(HasBeenStarted, true);
+			}
+
+			public WhenSubmittingState When(ApplicationStarted @event)
+			{
+				return new WhenSubmittingState(true, HasBeenSubmitted);
 			}
 		}
 
 		public static IEnumerable<IEvent> Submit(WhenSubmittingState state)
 		{
-			Ensure.NotNull(state, "WhenSubmittingState");
+			Ensure.NotNull(state, nameof(WhenSubmittingState));
+			if (!state.HasBeenStarted)
+			{
+				throw new Exception("application has not been started");
+			}
 			if (state.HasBeenSubmitted)
 			{
 				throw new Exception("application has already been submitted");
