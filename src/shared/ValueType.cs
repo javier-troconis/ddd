@@ -5,7 +5,12 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-	public abstract class ValueType<T> : IEquatable<T> where T : ValueType<T>
+	public interface IValueType
+	{
+		IEnumerable<object> GetEqualityComponents();
+	}
+
+	public abstract class ValueType<T> : IValueType, IEquatable<T> where T : class, IValueType
 	{
 		public static bool operator ==(ValueType<T> x, ValueType<T> y)
 		{
@@ -36,7 +41,7 @@ namespace shared
 			return GetEqualityComponents().Aggregate(default(int), (x, y) => Tuple.Create(x, y).GetHashCode());
 		}
 
-		protected virtual IEnumerable<object> GetEqualityComponents()
+		public virtual IEnumerable<object> GetEqualityComponents()
 		{
 			return GetType()
 				.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public)
