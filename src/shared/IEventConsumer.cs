@@ -5,8 +5,8 @@
 
 	}
 
-	public interface IEventConsumer<in TEvent> : IEventConsumer where TEvent : IEvent
+	public interface IEventConsumer<in TEvent, out TEventConsumer> : IEventConsumer where TEvent : IEvent where TEventConsumer: IEventConsumer
 	{
-		void Apply(TEvent @event);
+		TEventConsumer When(TEvent @event);
 	}
 }

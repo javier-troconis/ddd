@@ -27,7 +27,7 @@ namespace host
 
 		public static void Main(string[] args)
 		{
-			var applicationId = "application-" + StreamNamingConvention.FromIdentity(Guid.NewGuid());
+			var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
 			RunSequence
 			(
 				StartApplication(applicationId),
@@ -39,14 +39,7 @@ namespace host
 		{
 			foreach (var action in actions)
 			{
-				try
-				{
-					await action();
-				}
-				catch (Exception ex)
-				{
-					Console.WriteLine(ex.Message);
-				}
+				await action();
 			}
 		}
 
@@ -63,7 +56,7 @@ namespace host
 		{
 			return async () =>
 			{
-				var state = await StreamReader<Application.WhenSubmittingState>.ReadAsync(EventStore.ReadEventsAsync, applicationId);
+				var state = await StreamStateReader<Application.WhenSubmittingState>.ReadStateAsync(EventStore.ReadEventsAsync, applicationId);
 				var events = Application.Submit(state);
 				await EventStore.WriteEventsAsync(applicationId, version, events);
 			};

@@ -7,6 +7,6 @@ namespace infra
 {
     public static class StreamNamingConvention
     {
-		public static readonly Func<Guid, string> FromIdentity = entityId => entityId.ToString("N").ToLower();
+		public static readonly Func<Guid, string> From = entityId => entityId.ToString("N").ToLower();
 	}
 }

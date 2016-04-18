@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-	public abstract class ValueObject<T> : IEquatable<T> where T : ValueObject<T>
+	public abstract class ValueType<T> : IEquatable<T> where T : ValueType<T>
 	{
-		public static bool operator ==(ValueObject<T> x, ValueObject<T> y)
+		public static bool operator ==(ValueType<T> x, ValueType<T> y)
 		{
 			if (ReferenceEquals(x, y))
 			{
@@ -16,7 +16,7 @@ namespace shared
 			return !ReferenceEquals(x, null) && x.Equals(y);
 		}
 
-		public static bool operator !=(ValueObject<T> x, ValueObject<T> y)
+		public static bool operator !=(ValueType<T> x, ValueType<T> y)
 		{
 			return !(x == y);
 		}
