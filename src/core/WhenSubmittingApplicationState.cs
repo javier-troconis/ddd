@@ -18,18 +18,18 @@ namespace core
 
 		}
 
-		private WhenSubmittingApplicationState(bool hasBeenStarted, bool hasBeenSubmitted)
+		public WhenSubmittingApplicationState(bool hasBeenStarted, bool hasBeenSubmitted)
 		{
 			HasBeenStarted = hasBeenStarted;
 			HasBeenSubmitted = hasBeenSubmitted;
 		}
 
-		public WhenSubmittingApplicationState When(ApplicationSubmitted @event)
+		public WhenSubmittingApplicationState Apply(ApplicationSubmitted @event)
 		{
 			return new WhenSubmittingApplicationState(HasBeenStarted, true);
 		}
 
-		public WhenSubmittingApplicationState When(ApplicationStarted @event)
+		public WhenSubmittingApplicationState Apply(ApplicationStarted @event)
 		{
 			return new WhenSubmittingApplicationState(true, HasBeenSubmitted);
 		}

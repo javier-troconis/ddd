@@ -9,6 +9,6 @@
 		where TEvent : IEvent 
 		where TEventConsumer: IEventConsumer
 	{
-		TEventConsumer When(TEvent @event);
+		TEventConsumer Apply(TEvent @event);
 	}
 }
