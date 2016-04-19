@@ -6,7 +6,7 @@ using shared;
 
 namespace core
 {
-	public class WhenSubmittingApplicationState : ValueType<WhenSubmittingApplicationState>, 
+	public class WhenSubmittingApplicationState : 
 		IEventConsumer<ApplicationStarted, WhenSubmittingApplicationState>,
 		IEventConsumer<ApplicationSubmitted, WhenSubmittingApplicationState>
 	{
