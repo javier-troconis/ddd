@@ -16,8 +16,8 @@ namespace infra
 
 		private static TState ApplyEvent<TEvent>(TState state, TEvent @event) where TEvent : IEvent
 		{
-			var handler = state as IEventConsumer<TEvent, TState>;
-			return handler == null ? state : handler.When(@event);
+			var eventConsumer = state as IEventConsumer<TEvent, TState>;
+			return eventConsumer == null ? state : eventConsumer.When(@event);
 		}
 	}
 }
