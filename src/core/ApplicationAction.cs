@@ -13,7 +13,7 @@ namespace core
 
 		public static IEnumerable<IEvent> Submit(WhenSubmittingApplicationState state)
 		{
-			Ensure.NotNull(state, nameof(WhenSubmittingApplicationState));
+			Ensure.NotNull(state, nameof(state));
 			if (!state.HasBeenStarted)
 			{
 				throw new Exception("application has not been started");
