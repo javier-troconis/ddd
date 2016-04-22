@@ -42,7 +42,7 @@ namespace host
 				await action();
 			}
 		}
-
+		
 		static Func<Task> StartApplication(string applicationId)
 		{
 			return async () =>
