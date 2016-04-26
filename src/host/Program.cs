@@ -52,12 +52,12 @@ namespace host
 			};
 		}
 
-		static Func<Task> SubmitApplication(string applicationId, int version, string submittedBy)
+		static Func<Task> SubmitApplication(string applicationId, int version, string submitter)
 		{
 			return async () =>
 			{
 				var state = await StreamReader<WhenSubmittingApplicationState>.GetStateAsync(EventStore.ReadEventsAsync, applicationId);
-				var events = ApplicationAction.Submit(state, submittedBy);
+				var events = ApplicationAction.Submit(state, submitter);
 				await EventStore.WriteEventsAsync(applicationId, version, events);
 			};
 		}
