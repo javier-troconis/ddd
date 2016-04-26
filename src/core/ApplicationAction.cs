@@ -8,10 +8,15 @@ namespace core
 	{
 		public static IEnumerable<IEvent> Start()
 		{
+			return DoStart();
+		}
+
+		private static IEnumerable<IEvent> DoStart()
+		{
 			yield return new ApplicationStarted();
 		}
 
-		public static IEnumerable<IEvent> Submit(WhenSubmittingApplicationState state, string submittedBy)
+		public static IEnumerable<IEvent> Submit(WhenSubmittingApplicationState state, string submitter)
 		{
 			Ensure.NotNull(state, nameof(state));
 			if (!state.HasBeenStarted)
@@ -22,7 +27,12 @@ namespace core
 			{
 				throw new Exception("application has already been submitted");
 			}
-			yield return new ApplicationSubmitted(submittedBy);
+			return DoSubmit(state, submitter);
+		}
+
+		private static IEnumerable<IEvent> DoSubmit(WhenSubmittingApplicationState state, string submitter)
+		{
+			yield return new ApplicationSubmitted(submitter);
 		}
 	}
 }

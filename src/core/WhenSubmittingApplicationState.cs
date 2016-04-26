@@ -34,4 +34,6 @@ namespace core
 			return new WhenSubmittingApplicationState(true, HasBeenSubmitted);
 		}
 	}
+
+	
 }
