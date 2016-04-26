@@ -31,7 +31,7 @@ namespace host
 			RunSequence
 			(
 				StartApplication(applicationId),
-				SubmitApplication(applicationId, 0)
+				SubmitApplication(applicationId, 0, "rich hickey")
 			).Wait();
 		}
 
@@ -52,12 +52,12 @@ namespace host
 			};
 		}
 
-		static Func<Task> SubmitApplication(string applicationId, int version)
+		static Func<Task> SubmitApplication(string applicationId, int version, string submittedBy)
 		{
 			return async () =>
 			{
 				var state = await StreamReader<WhenSubmittingApplicationState>.GetStateAsync(EventStore.ReadEventsAsync, applicationId);
-				var events = ApplicationAction.Submit(state);
+				var events = ApplicationAction.Submit(state, submittedBy);
 				await EventStore.WriteEventsAsync(applicationId, version, events);
 			};
 		}

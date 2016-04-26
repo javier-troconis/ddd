@@ -1,16 +1,21 @@
 ﻿{
 		"version": "1.0.0-rc1-*",
-		"description": "shared Class Library",
+		"description": "tests Class Application",
 		"authors": [ "jtroconis" ],
 		"tags": [ "" ],
 		"projectUrl": "",
 		"licenseUrl": "",
 
 		"dependencies": {
-
+				"xunit": "2.1.0",
+				"xunit.runner.dnx": "2.1.0-rc1-*"
 		},
 
 		"frameworks": {
 				"dnx46": { }
+		},
+
+		"commands": {
+				"test": "xunit.runner.dnx"
 		}
 }

@@ -1,14 +1,14 @@
 ﻿{
-  "version": "1.0.0-*",
-  "description": "host Console Application",
-  "authors": [ "jtroconis" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
+		"version": "1.0.0-rc1-*",
+		"description": "host Console Application",
+		"authors": [ "jtroconis" ],
+		"tags": [ "" ],
+		"projectUrl": "",
+		"licenseUrl": "",
 
-  "compilationOptions": {
-    "emitEntryPoint": true
-  },
+		"compilationOptions": {
+				"emitEntryPoint": true
+		},
 
 		"dependencies": {
 				"shared": {
@@ -25,11 +25,11 @@
 				}
 		},
 
-  "commands": {
-    "host": "host"
-  },
+		"commands": {
+				"host": "host"
+		},
 
-  "frameworks": {
-    "dnx451": { }
-  }
+		"frameworks": {
+				"dnx46": { }
+		}
 }

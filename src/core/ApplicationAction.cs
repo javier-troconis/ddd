@@ -11,7 +11,7 @@ namespace core
 			yield return new ApplicationStarted();
 		}
 
-		public static IEnumerable<IEvent> Submit(WhenSubmittingApplicationState state)
+		public static IEnumerable<IEvent> Submit(WhenSubmittingApplicationState state, string submittedBy)
 		{
 			Ensure.NotNull(state, nameof(state));
 			if (!state.HasBeenStarted)
@@ -22,7 +22,7 @@ namespace core
 			{
 				throw new Exception("application has already been submitted");
 			}
-			yield return new ApplicationSubmitted();
+			yield return new ApplicationSubmitted(submittedBy);
 		}
 	}
 }
