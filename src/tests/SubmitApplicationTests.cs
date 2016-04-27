@@ -10,19 +10,21 @@ namespace tests
 {
     public class SubmitApplicationTests
     {
-		private readonly WhenSubmittingApplicationState _state = new WhenSubmittingApplicationState();
+		private WhenSubmittingApplicationState _state = new WhenSubmittingApplicationState();
 
 		[Fact]
         public void when_application_has_not_been_started()
         {
-			Assert.Throws<Exception>(() => ApplicationAction.Submit(_state, "rich hickey"));
+			var state = _state;
+
+			Assert.Throws<Exception>(() => ApplicationAction.Submit(state, "rich hickey"));
 		}
 
 		[Fact]
 		public void when_application_is_submitted()
 		{
 			var state = _state
-				.Apply(new ApplicationStarted());
+				.Handle(new ApplicationStarted());
 
 			var events = ApplicationAction.Submit(state, "rich hickey");
 
@@ -33,8 +35,8 @@ namespace tests
 		public void when_application_has_already_been_submitted()
 		{
 			var state = _state
-				.Apply(new ApplicationStarted())
-				.Apply(new ApplicationSubmitted("rich hickey"));
+				.Handle(new ApplicationStarted())
+				.Handle(new ApplicationSubmitted("rich hickey"));
 
 			Assert.Throws<Exception>(() => ApplicationAction.Submit(state, "rich hickey"));
 		}

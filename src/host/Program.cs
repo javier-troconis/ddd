@@ -11,6 +11,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using infra;
 using shared;
+using EventHandlerDispatcher = shared.EventHandlerDispatcher;
 
 namespace host
 {
@@ -47,8 +48,8 @@ namespace host
 		{
 			return async () =>
 			{
-				var events = ApplicationAction.Start();
-				await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, events);
+				var newChanges = ApplicationAction.Start();
+				await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
 			};
 		}
 
@@ -56,9 +57,10 @@ namespace host
 		{
 			return async () =>
 			{
-				var state = await StreamReader<WhenSubmittingApplicationState>.GetStateAsync(EventStore.ReadEventsAsync, applicationId);
-				var events = ApplicationAction.Submit(state, submitter);
-				await EventStore.WriteEventsAsync(applicationId, version, events);
+				var currentChanges = await EventStore.ReadEventsAsync(applicationId);
+				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventHandlerDispatcher.Dispatch);
+				var newChanges = ApplicationAction.Submit(currentState, submitter);
+				await EventStore.WriteEventsAsync(applicationId, version, newChanges);
 			};
 		}
 	}

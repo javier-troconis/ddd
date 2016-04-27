@@ -7,9 +7,8 @@ using shared;
 
 namespace core
 {
-	public struct WhenSubmittingApplicationState : 
-		IEventConsumer<ApplicationStarted, WhenSubmittingApplicationState>,
-		IEventConsumer<ApplicationSubmitted, WhenSubmittingApplicationState>
+	public struct WhenSubmittingApplicationState : IEventHandler<ApplicationStarted, WhenSubmittingApplicationState>,
+		IEventHandler<ApplicationSubmitted, WhenSubmittingApplicationState>
 	{
 		public readonly bool HasBeenStarted;
 		public readonly bool HasBeenSubmitted;
@@ -20,12 +19,12 @@ namespace core
 			HasBeenSubmitted = hasBeenSubmitted;
 		}
 
-		public WhenSubmittingApplicationState Apply(ApplicationSubmitted @event)
+		public WhenSubmittingApplicationState Handle(ApplicationSubmitted @event)
 		{
 			return new WhenSubmittingApplicationState(HasBeenStarted, true);
 		}
 
-		public WhenSubmittingApplicationState Apply(ApplicationStarted @event)
+		public WhenSubmittingApplicationState Handle(ApplicationStarted @event)
 		{
 			return new WhenSubmittingApplicationState(true, HasBeenSubmitted);
 		}
