@@ -6,12 +6,7 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-	public interface IGetEqualityComponents
-	{
-		IEnumerable<object> GetEqualityComponents();
-	}
-
-	public abstract class Value<T> : IGetEqualityComponents, IEquatable<T> where T : Value<T>
+	public abstract class Value<T> : IEquatable<T> where T : Value<T>
 	{
 		public static bool operator ==(Value<T> x, Value<T> y)
 		{
