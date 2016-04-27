@@ -1,22 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.Contracts;
 using System.Linq;
 using System.Threading.Tasks;
 using shared;
 
 namespace core
 {
-	public class WhenSubmittingApplicationState : 
+	public struct WhenSubmittingApplicationState : 
 		IEventConsumer<ApplicationStarted, WhenSubmittingApplicationState>,
 		IEventConsumer<ApplicationSubmitted, WhenSubmittingApplicationState>
 	{
 		public readonly bool HasBeenStarted;
 		public readonly bool HasBeenSubmitted;
-
-		public WhenSubmittingApplicationState()
-		{
-
-		}
 
 		public WhenSubmittingApplicationState(bool hasBeenStarted, bool hasBeenSubmitted)
 		{

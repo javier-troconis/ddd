@@ -6,12 +6,12 @@ using shared;
 
 namespace core
 {
-	public class ApplicationStarted : Value<ApplicationStarted>, IEvent
+	public struct ApplicationStarted : IEvent
 	{
 
 	}
 
-	public class ApplicationSubmitted : Value<ApplicationSubmitted>, IEvent
+	public struct ApplicationSubmitted : IEvent
 	{
 		public readonly string SubmittedBy;
 

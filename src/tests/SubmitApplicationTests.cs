@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using core;
+using shared;
 using Xunit;
 
 namespace tests
@@ -25,7 +26,7 @@ namespace tests
 
 			var events = ApplicationAction.Submit(state, "rich hickey");
 
-			Assert.Equal(events, new[] { new ApplicationSubmitted("rich hickey") });
+			Assert.Equal(events, new IEvent[] { new ApplicationSubmitted("rich hickey") });
 		}
 
 		[Fact]
