@@ -5,7 +5,7 @@
 
 	}
 
-	public interface IEventHandler<in TEvent, out TEventHandler> : IEventHandler where TEvent : IEvent where TEventHandler: IEventHandler
+	public interface IEventHandler<in TEvent, out TEventHandler> : IEventHandler where TEvent : IEvent
 	{
 		TEventHandler Handle(TEvent @event);
 	}
