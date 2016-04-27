@@ -1,18 +1,19 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Threading.Tasks;
 
 namespace shared
 {
-	public interface IValueType
+	public interface IGetEqualityComponents
 	{
 		IEnumerable<object> GetEqualityComponents();
 	}
 
-	public abstract class ValueType<T> : IValueType, IEquatable<T> where T : class, IValueType
+	public abstract class Value<T> : IGetEqualityComponents, IEquatable<T> where T : Value<T>
 	{
-		public static bool operator ==(ValueType<T> x, ValueType<T> y)
+		public static bool operator ==(Value<T> x, Value<T> y)
 		{
 			if (ReferenceEquals(x, y))
 			{
@@ -21,7 +22,7 @@ namespace shared
 			return !ReferenceEquals(x, null) && x.Equals(y);
 		}
 
-		public static bool operator !=(ValueType<T> x, ValueType<T> y)
+		public static bool operator !=(Value<T> x, Value<T> y)
 		{
 			return !(x == y);
 		}
@@ -31,20 +32,20 @@ namespace shared
 			return !ReferenceEquals(other, null) && GetEqualityComponents().SequenceEqual(other.GetEqualityComponents());
 		}
 
-		public override bool Equals(object obj)
+		public override bool Equals(object other)
 		{
-			return Equals(obj as T);
+			return Equals(other as T);
 		}
 
 		public override int GetHashCode()
 		{
-			return GetEqualityComponents().Aggregate(default(int), (x, y) => Tuple.Create(x, y).GetHashCode());
+			return GetEqualityComponents().Aggregate(0, (x, y) => Tuple.Create(x, y).GetHashCode());
 		}
 
 		public virtual IEnumerable<object> GetEqualityComponents()
 		{
 			return GetType()
-				.GetProperties(System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.Public)
+				.GetFields(BindingFlags.Instance | BindingFlags.Public)
 				.Select(x => x.GetValue(this));
 		}
 	}

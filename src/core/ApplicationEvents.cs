@@ -6,14 +6,14 @@ using shared;
 
 namespace core
 {
-	public class ApplicationStarted : ValueType<ApplicationStarted>, IEvent
+	public class ApplicationStarted : Value<ApplicationStarted>, IEvent
 	{
 
 	}
 
-	public class ApplicationSubmitted : ValueType<ApplicationSubmitted>, IEvent
+	public class ApplicationSubmitted : Value<ApplicationSubmitted>, IEvent
 	{
-		public string SubmittedBy { get; }
+		public readonly string SubmittedBy;
 
 		public ApplicationSubmitted(string submittedBy)
 		{

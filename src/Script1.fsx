@@ -128,5 +128,9 @@ let rec remove_where1 filter list =
         if filter h then new_t
         else h :: new_t
 
+["Pipe"; "Forward"] |> List.iter (fun s -> printfn "%s" s)
+
+
+
 
 

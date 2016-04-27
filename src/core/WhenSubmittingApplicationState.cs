@@ -10,8 +10,8 @@ namespace core
 		IEventConsumer<ApplicationStarted, WhenSubmittingApplicationState>,
 		IEventConsumer<ApplicationSubmitted, WhenSubmittingApplicationState>
 	{
-		public bool HasBeenStarted { get; }
-		public bool HasBeenSubmitted { get; }
+		public readonly bool HasBeenStarted;
+		public readonly bool HasBeenSubmitted;
 
 		public WhenSubmittingApplicationState()
 		{
