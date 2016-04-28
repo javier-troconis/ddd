@@ -7,7 +7,8 @@ using shared;
 
 namespace core
 {
-	public struct WhenSubmittingApplicationState : IEventHandler<ApplicationStarted, WhenSubmittingApplicationState>,
+	public struct WhenSubmittingApplicationState : 
+        IEventHandler<ApplicationStarted, WhenSubmittingApplicationState>,
 		IEventHandler<ApplicationSubmitted, WhenSubmittingApplicationState>
 	{
 		public readonly bool HasBeenStarted;
