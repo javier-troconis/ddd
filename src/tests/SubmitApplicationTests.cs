@@ -24,19 +24,20 @@ namespace tests
 		public void when_application_is_submitted()
 		{
 			var state = _emptyState
-				.Apply(new ApplicationStarted());
+				.Handle(new ApplicationStarted());
 
-			var events = ApplicationAction.Submit(state, "rich hickey");
+			var actual = ApplicationAction.Submit(state, "rich hickey");
 
-			Assert.Equal(events, new IEvent[] { new ApplicationSubmitted("rich hickey") });
+			var expected = new IEvent[] { new ApplicationSubmitted("rich hickey") };
+			Assert.Equal(actual, expected);
 		}
 
 		[Fact]
 		public void when_application_has_already_been_submitted()
 		{
 			var state = _emptyState
-				.Apply(new ApplicationStarted())
-				.Apply(new ApplicationSubmitted("rich hickey"));
+				.Handle(new ApplicationStarted())
+				.Handle(new ApplicationSubmitted("rich hickey"));
 
 			Assert.Throws<Exception>(() => ApplicationAction.Submit(state, "rich hickey"));
 		}

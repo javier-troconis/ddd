@@ -11,7 +11,6 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using infra;
 using shared;
-using EventFolder = shared.EventFolder;
 
 namespace host
 {
@@ -58,7 +57,7 @@ namespace host
 			return async () =>
 			{
 				var currentChanges = await EventStore.ReadEventsAsync(applicationId);
-				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventFolder.Fold);
+				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventDispatcher.Dispatch);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
 				await EventStore.WriteEventsAsync(applicationId, version, newChanges);
 			};
