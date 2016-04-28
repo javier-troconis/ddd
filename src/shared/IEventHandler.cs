@@ -5,8 +5,9 @@
 
 	}
 
-	public interface IEventHandler<in TEvent, out TResult> : IEventHandler where TEvent : IEvent
-	{
+	public interface IEventHandler<in TEvent, out TResult> : IEventHandler 
+        where TEvent : IEvent where TResult : IEventHandler<TEvent, TResult>
+    {
         TResult Handle(TEvent @event);
 	}
 }
