@@ -14,7 +14,7 @@ using shared;
 
 namespace host
 {
-	public class Program
+    public class Program
 	{
 		private static readonly IEventStore EventStore;
 

@@ -13,7 +13,7 @@ namespace infra
 	public interface IEventStore
 	{
 		Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName);
-		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IDictionary<string, object>> configureEventHeader = null);
+		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null);
 	}
 
 	public class EventStore : IEventStore
@@ -36,12 +36,14 @@ namespace infra
 				.ToArray();
 		}
 
-		public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IDictionary<string, object>> configureEventHeader = null)
-		{	
-			var eventsData = events
-				.Select(@event => CreateEventHeader(@event, configureEventHeader))
+		public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
+		{
+            eventHeader = eventHeader ?? new Dictionary<string, object>();
+			var eventData = events
+                .Select(@event => new Tuple<IDictionary<string, object>, IEvent>(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event))
+				.Select(ConfigureEventHeader)
 				.Select(ConvertToEventData);
-			return await _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData).ConfigureAwait(false);
+			return await _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData).ConfigureAwait(false);
 		}
 
 		private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName)
@@ -66,15 +68,11 @@ namespace infra
 			return result;
 		}
 
-		private static Tuple<IDictionary<string, object>, IEvent> CreateEventHeader(IEvent @event, Action<IDictionary<string, object>> configureEventHeader)
+		private static Tuple<IDictionary<string, object>, IEvent> ConfigureEventHeader(Tuple<IDictionary<string, object>, IEvent> arg)
 		{
-			var eventType = @event.GetType();
-			var eventHeader = new Dictionary<string, object>
-			{
-				{EventClrTypeHeader, eventType.AssemblyQualifiedName}
-			};
-			configureEventHeader?.Invoke(eventHeader);
-			return new Tuple<IDictionary<string, object>, IEvent>(eventHeader, @event);
+			var eventType = arg.Item2.GetType();
+            arg.Item1[EventClrTypeHeader] = eventType.AssemblyQualifiedName;
+			return arg;
 		}
 
 		private static EventData ConvertToEventData(Tuple<IDictionary<string, object>, IEvent> arg)
