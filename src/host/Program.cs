@@ -57,7 +57,7 @@ namespace host
 			return async () =>
 			{
 				var currentChanges = await EventStore.ReadEventsAsync(applicationId);
-				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventDispatcher.Dispatch);
+				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventHandlerFolder.Fold);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
                 await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.AlwaysCommit, EventStore, applicationId, version, newChanges);
 			};
