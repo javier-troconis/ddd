@@ -16,7 +16,7 @@ namespace subscriber
 	public class Program
 	{
 		private static readonly IEventStoreConnection Connection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
-		private static readonly ProjectionsManager ProjectionsManager = new ProjectionsManager(new ConsoleLogger(), Settings.HttpEndPoint, TimeSpan.FromMilliseconds(5000));
+		private static readonly ProjectionsManager ProjectionsManager = new ProjectionsManager(new ConsoleLogger(), EventStoreSettings.HttpEndPoint, TimeSpan.FromMilliseconds(5000));
 		private const string SubscriptionGroupName = "application1";
 		private static readonly string[] AvailableEventTypes = {"applicationsubmitted","applicationstarted"};
 		private static readonly Random Random = new Random();
@@ -98,7 +98,7 @@ namespace subscriber
 
 			try
 			{
-				Connection.CreatePersistentSubscriptionAsync(SubscriptionGroupName, SubscriptionGroupName, subcriptionGroupSettings, Settings.Credentials).Wait();
+				Connection.CreatePersistentSubscriptionAsync(SubscriptionGroupName, SubscriptionGroupName, subcriptionGroupSettings, EventStoreSettings.Credentials).Wait();
 			}
 			catch (AggregateException ex)
 			{
@@ -140,7 +140,7 @@ namespace subscriber
 		{
 			try
 			{
-				ProjectionsManager.GetQueryAsync(projectionName, Settings.Credentials).Wait();
+				ProjectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials).Wait();
 				return false;
 			}
 			catch (AggregateException ex)
@@ -158,19 +158,19 @@ namespace subscriber
 
 		private static void CreateProjection(string projectionName, string projectionDefinition)
 		{
-			ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, Settings.Credentials).Wait();	
+			ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials).Wait();	
 		}
 
 		private static bool HasProjectionChanged(string projectionName, string projectionDefinition)
 		{
-			var response = ProjectionsManager.GetQueryAsync(projectionName, Settings.Credentials);
+			var response = ProjectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials);
 			response.Wait();
 			return response.Result != projectionDefinition;
 		}
 
 		private static void UpdateProjection(string projectionName, string projectionDefinition)
 		{
-			ProjectionsManager.UpdateQueryAsync(projectionName, projectionDefinition, Settings.Credentials).Wait();
+			ProjectionsManager.UpdateQueryAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials).Wait();
 		}
 	}
 }

@@ -13,10 +13,10 @@ namespace infra
 		{
 			var connectionSettingsBuilder = ConnectionSettings
 					.Create()
-					.SetDefaultUserCredentials(Settings.Credentials);
+					.SetDefaultUserCredentials(EventStoreSettings.Credentials);
 			configureConnectionSettings?.Invoke(connectionSettingsBuilder);
 			var connectionSettings = connectionSettingsBuilder.Build();
-			return EventStoreConnection.Create(connectionSettings, Settings.TcpEndPoint);
+			return EventStoreConnection.Create(connectionSettings, EventStoreSettings.TcpEndPoint);
 		}
     }
 }

@@ -8,13 +8,13 @@ using shared;
 
 namespace infra
 {
-    public delegate bool CanCommitWhenNewerStreamIsFound(IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
+    public delegate bool CanCommitWhenNewerStreamVersionIsFound(IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
 
     public static class OptimisticEventWriter
     {
-        public static readonly CanCommitWhenNewerStreamIsFound AlwaysCommit = delegate { return true; };
+        public static readonly CanCommitWhenNewerStreamVersionIsFound AlwaysCommit = delegate { return true; };
 
-        public static async Task<WriteResult> WriteEventsAsync(CanCommitWhenNewerStreamIsFound canCommitWhenNewerStreamIsFound, IEventStore eventStore, string streamName, int streamExpectedVersion, 
+        public static async Task<WriteResult> WriteEventsAsync(CanCommitWhenNewerStreamVersionIsFound canCommitWhenNewerStreamVersionIsFound, IEventStore eventStore, string streamName, int streamExpectedVersion, 
             IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
         {
             while (true)
@@ -33,7 +33,7 @@ namespace infra
                 {
                     throw new Exception("Invalid stream version");
                 }
-                if (!canCommitWhenNewerStreamIsFound(events, eventsSinceLastWrite))
+                if (!canCommitWhenNewerStreamVersionIsFound(events, eventsSinceLastWrite))
                 {
                     throw new Exception("Commit conflict could not be resolved");
                 }

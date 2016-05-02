@@ -20,19 +20,42 @@ namespace host
 
 		static Program()
 		{
-			var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
-			eventStoreConnection.ConnectAsync().Wait();
-			EventStore = new infra.EventStore(eventStoreConnection);
-		}
+            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
+            eventStoreConnection.ConnectAsync().Wait();
+            EventStore = new infra.EventStore(eventStoreConnection);
+        }
 
-		public static void Main(string[] args)
+        class Handler1 : IMessageHandler<int, string>
+        {
+            public string Handle(int message)
+            {
+                return message.ToString();
+            }
+        }
+
+        class Handler2 : IMessageHandler<string, int>
+        {
+            public int Handle(string message)
+            {
+                return int.Parse(message);
+            }
+        }
+
+
+
+
+
+        public static void Main(string[] args)
 		{
-			var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
-			RunSequence
-			(
-				StartApplication(applicationId),
-				SubmitApplication(applicationId, 0, "rich hickey")
-			).Wait();
+            Console.WriteLine(HandlerComposer.Create(new Handler1(), new Handler2()).Compose(new Handler1()).Handle(1));
+
+
+			//var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
+			//RunSequence
+			//(
+			//	StartApplication(applicationId),
+			//	SubmitApplication(applicationId, 0, "rich hickey")
+			//).Wait();
 		}
 
 		static async Task RunSequence(params Func<Task>[] actions)
@@ -57,7 +80,7 @@ namespace host
 			return async () =>
 			{
 				var currentChanges = await EventStore.ReadEventsAsync(applicationId);
-				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventHandlerFolder.Fold);
+				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventFolder.Fold);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
                 await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.AlwaysCommit, EventStore, applicationId, version, newChanges);
 			};

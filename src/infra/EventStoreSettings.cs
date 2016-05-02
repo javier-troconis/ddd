@@ -7,7 +7,7 @@ using EventStore.ClientAPI.SystemData;
 
 namespace infra
 {
-    public static class Settings
+    public static class EventStoreSettings
     {
 		public static readonly UserCredentials Credentials = new UserCredentials("admin", "changeit");
 		public static readonly IPEndPoint HttpEndPoint = new IPEndPoint(IPAddress.Parse("127.0.0.1"), 2113);
