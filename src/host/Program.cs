@@ -41,22 +41,18 @@ namespace host
             }
         }
 
-
-
-
-
         public static void Main(string[] args)
 		{
-            Console.WriteLine(HandlerComposer.Create(new Handler1(), new Handler2()).Compose(new Handler1()).Handle(1));
+            Console.WriteLine(new Handler1().ComposeForward(new Handler2()).ComposeForward(new Handler1()).Handle(1));
+            Console.WriteLine(new Handler1().ComposeBackwards(new Handler2()).ComposeBackwards(new Handler1()).Handle(1));
 
-
-			//var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
-			//RunSequence
-			//(
-			//	StartApplication(applicationId),
-			//	SubmitApplication(applicationId, 0, "rich hickey")
-			//).Wait();
-		}
+            var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
+            RunSequence
+            (
+                StartApplication(applicationId),
+                SubmitApplication(applicationId, 0, "rich hickey")
+            ).Wait();
+        }
 
 		static async Task RunSequence(params Func<Task>[] actions)
 		{
@@ -82,7 +78,8 @@ namespace host
 				var currentChanges = await EventStore.ReadEventsAsync(applicationId);
 				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventFolder.Fold);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
-                await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.AlwaysCommit, EventStore, applicationId, version, newChanges);
+                //await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.AlwaysCommit, EventStore, applicationId, version, newChanges);
+                await EventStore.WriteEventsAsync(applicationId, version, newChanges);
 			};
 		}
 	}
