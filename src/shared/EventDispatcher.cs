@@ -7,17 +7,15 @@ namespace shared
 {
     public static class EventDispatcher
     {
-		public static TEventHandler Dispatch<TEventHandler>(TEventHandler eventHandler, IEvent @event) 
-            where TEventHandler : IEventHandler
+		public static TEventHandlerCandidate Dispatch<TEventHandlerCandidate>(TEventHandlerCandidate eventHandlerCandidate, IEvent @event)
 		{
-			return Dispatch(eventHandler, (dynamic)@event);
+            return Dispatch(eventHandlerCandidate, (dynamic)@event);
 		}
 
-		public static TEventHandler Dispatch<TEventHandler, TEvent>(TEventHandler eventHandler, TEvent @event) 
-            where TEventHandler : IEventHandler<TEvent, TEventHandler> where TEvent : IEvent
-		{
-			var specificEventHandler = eventHandler as IEventHandler<TEvent, TEventHandler>;
-			return specificEventHandler == null ? eventHandler : specificEventHandler.Handle(@event);
-		}
-	}
+        private static TEventHandlerCandidate Dispatch<TEventHandlerCandidate, TEvent>(TEventHandlerCandidate eventHandlerCandidate, TEvent @event) where TEvent : IEvent
+        {
+            var eventHandler = eventHandlerCandidate as IEventHandler<TEvent, TEventHandlerCandidate>;
+            return eventHandler == null ? eventHandlerCandidate : eventHandler.Handle(@event);
+        }
+    }
 }

@@ -1,12 +1,8 @@
 ﻿namespace shared
 {
-	public interface IEventHandler
-	{
+	
 
-	}
-
-	public interface IEventHandler<in TEvent, out TResult> : IEventHandler 
-        where TEvent : IEvent where TResult : IEventHandler<TEvent, TResult>
+	public interface IEventHandler<in TEvent, out TResult> where TEvent : IEvent
     {
         TResult Handle(TEvent @event);
 	}

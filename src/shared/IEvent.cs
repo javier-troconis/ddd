@@ -2,7 +2,7 @@
 
 namespace shared
 {
-	public interface IEvent
+	public interface IEvent : IMessage
 	{
 
 	}
