@@ -12,7 +12,7 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName);
+		Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber = 0);
 		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null);
 	}
 
@@ -28,9 +28,9 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName)
+		public async Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber)
 		{
-			var resolvedEvents = await ReadResolvedEventsAsync(streamName).ConfigureAwait(false);
+			var resolvedEvents = await ReadResolvedEventsAsync(streamName, fromEventNumber).ConfigureAwait(false);
 			return resolvedEvents
 				.Select(DeserializeEvent)
 				.ToArray();
@@ -46,14 +46,14 @@ namespace infra
 			return await _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData).ConfigureAwait(false);
 		}
 
-		private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName)
+		private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName, int fromEventNumber)
 		{
-			var result = new List<ResolvedEvent>();
+			var resolvedEvents = new List<ResolvedEvent>();
 
 			StreamEventsSlice slice;
 			do
 			{
-				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, result.Count, DefaultSliceSize, false).ConfigureAwait(false);
+				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, fromEventNumber, DefaultSliceSize, false).ConfigureAwait(false);
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
 					throw new Exception($"stream {streamName} not found");
@@ -62,13 +62,14 @@ namespace infra
 				{
 					throw new Exception($"stream {streamName} has been deleted");
 				}
-				result.AddRange(slice.Events);
-			} while (!slice.IsEndOfStream);
+				resolvedEvents.AddRange(slice.Events);
+                fromEventNumber += DefaultSliceSize;
+            } while (!slice.IsEndOfStream);
 
-			return result;
+			return resolvedEvents;
 		}
 
-		private static Tuple<IDictionary<string, object>, IEvent> ConfigureEventHeader(Tuple<IDictionary<string, object>, IEvent> arg)
+        private static Tuple<IDictionary<string, object>, IEvent> ConfigureEventHeader(Tuple<IDictionary<string, object>, IEvent> arg)
 		{
 			var eventType = arg.Item2.GetType();
             arg.Item1[EventClrTypeHeader] = eventType.AssemblyQualifiedName;
