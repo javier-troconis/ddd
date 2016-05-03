@@ -27,26 +27,40 @@ namespace host
             EventStore = new infra.EventStore(eventStoreConnection);
         }
 
-        class Handler1 : IMessageHandler<int, string>
+        class HandlerA : IMessageHandler<Guid, string>
         {
-            public string Handle(int message)
+            public string Handle(Guid message)
             {
-                return message.ToString();
+                Console.WriteLine($"HandlerA called : {message}");
+                return "application-" + StreamNamingConvention.From(message);
             }
         }
 
-        class Handler2 : IMessageHandler<string, int>
+        class HandlerB : IMessageHandler<string, Guid>
         {
-            public int Handle(string message)
+            public Guid Handle(string message)
             {
-                return int.Parse(message);
+                Console.WriteLine($"HandlerB called : {message}");
+                return Guid.Parse(message.Split('-')[1]);
+            }
+        }
+
+        class HandlerC : IMessageHandler<Guid, Guid>
+        {
+            public Guid Handle(Guid message)
+            {
+                Console.WriteLine($"HandlerC called : {message}");
+                return message;
             }
         }
 
         public static void Main(string[] args)
 		{
-            Console.WriteLine(new Handler1().ComposeForward(new Handler2()).ComposeForward(new Handler1()).Handle(1));
-            Console.WriteLine(new Handler1().ComposeBackwards(new Handler2()).ComposeBackwards(new Handler1()).Handle(1));
+
+            var handler = new HandlerA().ComposeForward(new HandlerB()).ComposeForward(new HandlerC()).ComposeBackwards(new HandlerC()).ComposeBackwards(new HandlerB()).ComposeBackwards(new HandlerA());
+
+            Enumerable.Range(0, 10).Select(x => handler.Handle(Guid.NewGuid())).ToArray();
+
 
             var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
             RunSequence
