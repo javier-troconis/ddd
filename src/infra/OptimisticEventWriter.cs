@@ -8,13 +8,13 @@ using shared;
 
 namespace infra
 {
-    public delegate bool CanCommitWhenOptimisticWriteFails(ref IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
+    public delegate bool StreamVersionConflictResolutionStrategy(ref IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
 
     public static class OptimisticEventWriter
     {
-        public static readonly CanCommitWhenOptimisticWriteFails AlwaysCommit = delegate { return true; };
+        public static readonly StreamVersionConflictResolutionStrategy IgnoreVersionConflict = delegate { return true; };
 
-        public static async Task<WriteResult> WriteEventsAsync(CanCommitWhenOptimisticWriteFails canCommitWhenOptimisticWriteFails, IEventStore eventStore, 
+        public static async Task<WriteResult> WriteEventsAsync(StreamVersionConflictResolutionStrategy streamVersionConflictResolutionStrategy, IEventStore eventStore, 
             string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
         {
             while (true)
@@ -33,7 +33,7 @@ namespace infra
                 {
                     throw new Exception($"Version {streamExpectedVersion} does not exist for stream {streamName}");
                 }
-                if (!canCommitWhenOptimisticWriteFails(ref events, eventsSinceLastWrite))
+                if (!streamVersionConflictResolutionStrategy(ref events, eventsSinceLastWrite))
                 {
                     throw new Exception($"Commit conflict on stream {streamName} with version {streamExpectedVersion} could not be resolved");
                 }

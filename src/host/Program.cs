@@ -81,10 +81,22 @@ namespace host
 
         public static void Main(string[] args)
 		{
-            var handler = MessageHandlerComposer.ComposeForward(new Handler1(), new Handler2()).ComposeForward(new Handler3());
-            var handler1 = MessageHandlerComposer.ComposeBackward(new Handler1(), new Handler2()).ComposeBackward(new Handler3());
+            //composing handlers
+            var handler = MessageHandlerComposer
+                .ComposeForward(new Handler1(), new Handler2())
+                .ComposeBackward(new Handler3())
+                .ComposeBackward(new Handler1());
             Console.WriteLine(handler.Handle(1));
 
+            //composing handlers
+            var handler1 = MessageHandlerComposer
+                .ComposeBackward(new HandlerA(), new HandlerB())
+                .ComposeBackward(new HandlerA())
+                .ComposeBackward(new HandlerC())
+                .ComposeForward(new HandlerB());
+            Console.WriteLine(handler1.Handle(Guid.NewGuid()));
+
+            //run application scenarios
             var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
             RunSequence
             (
@@ -117,7 +129,7 @@ namespace host
                 var currentChanges = await EventStore.ReadEventsAsync(applicationId);
 				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventDispatcher.Dispatch);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
-                await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.AlwaysCommit, EventStore, applicationId, version, newChanges);
+                await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.IgnoreVersionConflict, EventStore, applicationId, version, newChanges);
 			};
 		}
 	}
