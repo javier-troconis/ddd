@@ -10,36 +10,36 @@ namespace tests
 {
     public class SubmitApplicationTests
     {
-		private WhenSubmittingApplicationState _emptyState = new WhenSubmittingApplicationState();
+        private WhenSubmittingApplicationState _state = new WhenSubmittingApplicationState();
 
-		[Fact]
+        [Fact]
         public void when_application_has_not_been_started()
         {
-			var state = _emptyState;
+            var state = _state;
 
-			Assert.Throws<Exception>(() => ApplicationAction.Submit(state, "rich hickey"));
-		}
+            Assert.Throws<Exception>(() => ApplicationAction.Submit(state, "rich hickey"));
+        }
 
-		[Fact]
-		public void when_application_is_submitted()
-		{
-			var state = _emptyState
-				.Handle(new ApplicationStarted());
+        [Fact]
+        public void when_application_is_submitted()
+        {
+            var state = _state.Handle(new ApplicationStarted());
+           
+            var actual = ApplicationAction.Submit(state, "rich hickey");
 
-			var actual = ApplicationAction.Submit(state, "rich hickey");
+            var expected = new IEvent[] { new ApplicationSubmitted("rich hickey") };
 
-			var expected = new IEvent[] { new ApplicationSubmitted("rich hickey") };
-			Assert.Equal(actual, expected);
-		}
+            Assert.Equal(actual, expected);
+        }
 
-		[Fact]
-		public void when_application_has_already_been_submitted()
-		{
-			var state = _emptyState
-				.Handle(new ApplicationStarted())
-				.Handle(new ApplicationSubmitted("rich hickey"));
+        [Fact]
+        public void when_application_has_already_been_submitted()
+        {
+            var state = _state
+                .Handle(new ApplicationStarted())
+                .Handle(new ApplicationSubmitted("rich hickey"));
 
-			Assert.Throws<Exception>(() => ApplicationAction.Submit(state, "rich hickey"));
-		}
-	}
+            Assert.Throws<Exception>(() => ApplicationAction.Submit(state, "rich hickey"));
+        }
+    }
 }

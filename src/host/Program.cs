@@ -14,7 +14,33 @@ using shared;
 
 namespace host
 {
-    
+
+    class HandlerA : IMessageHandler<Guid, string>
+    {
+        public string Handle(Guid message)
+        {
+            Console.WriteLine($"HandlerA called : {message}");
+            return "application-" + StreamNamingConvention.From(message);
+        }
+    }
+
+    class HandlerB : IMessageHandler<string, Guid>
+    {
+        public Guid Handle(string message)
+        {
+            Console.WriteLine($"HandlerB called : {message}");
+            return Guid.Parse(message.Split('-')[1]);
+        }
+    }
+
+    class HandlerC : IMessageHandler<Guid, Guid>
+    {
+        public Guid Handle(Guid message)
+        {
+            Console.WriteLine($"HandlerC called : {message}");
+            return message;
+        }
+    }
 
     public class Program
 	{
@@ -27,40 +53,14 @@ namespace host
             EventStore = new infra.EventStore(eventStoreConnection);
         }
 
-        class HandlerA : IMessageHandler<Guid, string>
-        {
-            public string Handle(Guid message)
-            {
-                Console.WriteLine($"HandlerA called : {message}");
-                return "application-" + StreamNamingConvention.From(message);
-            }
-        }
-
-        class HandlerB : IMessageHandler<string, Guid>
-        {
-            public Guid Handle(string message)
-            {
-                Console.WriteLine($"HandlerB called : {message}");
-                return Guid.Parse(message.Split('-')[1]);
-            }
-        }
-
-        class HandlerC : IMessageHandler<Guid, Guid>
-        {
-            public Guid Handle(Guid message)
-            {
-                Console.WriteLine($"HandlerC called : {message}");
-                return message;
-            }
-        }
-
         public static void Main(string[] args)
 		{
-
-            var handler = new HandlerA().ComposeForward(new HandlerB()).ComposeForward(new HandlerC()).ComposeBackwards(new HandlerC()).ComposeBackwards(new HandlerB()).ComposeBackwards(new HandlerA());
-
-            Enumerable.Range(0, 10).Select(x => handler.Handle(Guid.NewGuid())).ToArray();
-
+            new HandlerA().ComposeForward(new HandlerB()).Handle(Guid.NewGuid());
+            //var handler = new HandlerA().ComposeForward(new HandlerB()).ComposeForward(new HandlerC());
+            //var handler1 = new HandlerC().ComposeBackward(new HandlerB()).ComposeBackward(new HandlerA());
+            //var handler2 = handler.ComposeForward(handler1);
+            //var result = handler2.Handle(Guid.NewGuid());
+            //Console.WriteLine(result);
 
             var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
             RunSequence
@@ -82,8 +82,8 @@ namespace host
 		{
 			return async () =>
 			{
-				var newChanges = ApplicationAction.Start();
-				await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
+                var newChanges = ApplicationAction.Start();
+                await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
 			};
 		}
 
@@ -91,11 +91,10 @@ namespace host
 		{
 			return async () =>
 			{
-				var currentChanges = await EventStore.ReadEventsAsync(applicationId);
-				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventFolder.Fold);
+                var currentChanges = await EventStore.ReadEventsAsync(applicationId);
+				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventDispatcher.Dispatch);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
-                //await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.AlwaysCommit, EventStore, applicationId, version, newChanges);
-                await EventStore.WriteEventsAsync(applicationId, version, newChanges);
+                await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.AlwaysCommit, EventStore, applicationId, version, newChanges);
 			};
 		}
 	}

@@ -8,14 +8,14 @@ using shared;
 
 namespace infra
 {
-    public delegate bool CanCommitWhenNewerStreamVersionIsFound(IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
+    public delegate bool CanCommitWhenOptimisticWriteFails(ref IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
 
     public static class OptimisticEventWriter
     {
-        public static readonly CanCommitWhenNewerStreamVersionIsFound AlwaysCommit = delegate { return true; };
+        public static readonly CanCommitWhenOptimisticWriteFails AlwaysCommit = delegate { return true; };
 
-        public static async Task<WriteResult> WriteEventsAsync(CanCommitWhenNewerStreamVersionIsFound canCommitWhenNewerStreamVersionIsFound, IEventStore eventStore, string streamName, int streamExpectedVersion, 
-            IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
+        public static async Task<WriteResult> WriteEventsAsync(CanCommitWhenOptimisticWriteFails canCommitWhenOptimisticWriteFails, IEventStore eventStore, 
+            string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
         {
             while (true)
             {
@@ -31,11 +31,11 @@ namespace infra
                 }
                 if (!eventsSinceLastWrite.Any())
                 {
-                    throw new Exception("Invalid stream version");
+                    throw new Exception($"Version {streamExpectedVersion} does not exist for stream {streamName}");
                 }
-                if (!canCommitWhenNewerStreamVersionIsFound(events, eventsSinceLastWrite))
+                if (!canCommitWhenOptimisticWriteFails(ref events, eventsSinceLastWrite))
                 {
-                    throw new Exception("Commit conflict could not be resolved");
+                    throw new Exception($"Commit conflict on stream {streamName} with version {streamExpectedVersion} could not be resolved");
                 }
             }
         }

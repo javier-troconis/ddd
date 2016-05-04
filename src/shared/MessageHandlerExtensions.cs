@@ -7,18 +7,18 @@ namespace shared
 {
     public static class MessageHandlerExtensions
     {
-        public static IMessageHandler<TMessage, TLastResult> ComposeForward<TMessage, TResult, TLastMessage, TLastResult>(
-            this IMessageHandler<TMessage, TResult> handler, IMessageHandler<TLastMessage, TLastResult> lastHandler)
-            where TResult : TLastMessage
+        public static IMessageHandler<TFromMessage, TToResult> ComposeForward<TFromMessage, TFromResult, TToMessage, TToResult>(
+          this IMessageHandler<TFromMessage, TFromResult> @from, IMessageHandler<TToMessage, TToResult> to)
+          where TFromResult : TToMessage
         {
-            return new CompositeMessageHandlerWrapper<TMessage, TLastResult>(message => lastHandler.Handle(handler.Handle(message)));
+            return new CompositeMessageHandlerWrapper<TFromMessage, TToResult>(message => to.Handle(@from.Handle(message)));
         }
 
-        public static IMessageHandler<TLastMessage, TResult> ComposeBackwards<TMessage, TResult, TLastMessage, TLastResult>(
-           this IMessageHandler<TMessage, TResult> handler, IMessageHandler<TLastMessage, TLastResult> lastHandler)
-           where TLastResult : TMessage
+        public static IMessageHandler<TFromMessage, TToResult> ComposeBackward<TToMessage, TToResult, TFromMessage, TFromResult>(
+           this IMessageHandler<TToMessage, TToResult> to, IMessageHandler<TFromMessage, TFromResult> @from)
+           where TFromResult : TToMessage
         {
-            return new CompositeMessageHandlerWrapper<TLastMessage, TResult>(message => handler.Handle(lastHandler.Handle(message)));
+            return new CompositeMessageHandlerWrapper<TFromMessage, TToResult>(message => to.Handle(@from.Handle(message)));
         }
 
         private class CompositeMessageHandlerWrapper<TMessage, TResult> : IMessageHandler<TMessage, TResult>
