@@ -42,6 +42,32 @@ namespace host
         }
     }
 
+    class Handler1 : IMessageHandler<int, int>
+    {
+        public int Handle(int message)
+        {
+            Console.WriteLine($"Handler1 called : {message}");
+            return message;
+        }
+    }
+
+    class Handler2 : IMessageHandler<int, int>
+    {
+        public int Handle(int message)
+        {
+            Console.WriteLine($"Handler2 called : {message}");
+            return message;
+        }
+    }
+    class Handler3 : IMessageHandler<int, int>
+    {
+        public int Handle(int message)
+        {
+            Console.WriteLine($"Handler3 called : {message}");
+            return message;
+        }
+    }
+
     public class Program
 	{
 		private static readonly IEventStore EventStore;
@@ -55,12 +81,9 @@ namespace host
 
         public static void Main(string[] args)
 		{
-            new HandlerA().ComposeForward(new HandlerB()).Handle(Guid.NewGuid());
-            //var handler = new HandlerA().ComposeForward(new HandlerB()).ComposeForward(new HandlerC());
-            //var handler1 = new HandlerC().ComposeBackward(new HandlerB()).ComposeBackward(new HandlerA());
-            //var handler2 = handler.ComposeForward(handler1);
-            //var result = handler2.Handle(Guid.NewGuid());
-            //Console.WriteLine(result);
+            var handler = MessageHandlerComposer.ComposeForward(new Handler1(), new Handler2()).ComposeForward(new Handler3());
+            var handler1 = MessageHandlerComposer.ComposeBackward(new Handler1(), new Handler2()).ComposeBackward(new Handler3());
+            Console.WriteLine(handler.Handle(1));
 
             var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
             RunSequence
