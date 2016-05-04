@@ -129,7 +129,7 @@ namespace host
                 var currentChanges = await EventStore.ReadEventsAsync(applicationId);
 				var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), EventDispatcher.Dispatch);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
-                await OptimisticEventWriter.WriteEventsAsync(OptimisticEventWriter.IgnoreVersionConflict, EventStore, applicationId, version, newChanges);
+                await OptimisticEventWriter.WriteEventsAsync(StreamVersionConflictResolution.AlwaysCommit, EventStore, applicationId, version, newChanges);
 			};
 		}
 	}
