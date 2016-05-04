@@ -16,37 +16,39 @@ namespace shared
         public static ICompositeMessageHandler<TFromMessage, TToResult> ComposeForward<TFromMessage, TFromResult, TToResult>(
             IMessageHandler<TFromMessage, TFromResult> @from, IMessageHandler<TFromResult, TToResult> to)
         {
-            return new CompositeMessageHandler<TFromMessage, TToResult>(message => to.Handle(@from.Handle(message)));
+            return new CompositeMessageHandler<TFromMessage, TFromResult, TToResult>(@from, to);
         }
 
         public static ICompositeMessageHandler<TFromMessage, TToResult> ComposeBackward<TFromMessage, TFromResult, TToResult>(
             IMessageHandler<TFromResult, TToResult> to, IMessageHandler<TFromMessage, TFromResult> @from)
         {
-            return ComposeForward(@from, to);
+            return new CompositeMessageHandler<TFromMessage, TFromResult, TToResult>(@from, to);
         }
 
-        private class CompositeMessageHandler<TMessage, TResult> : ICompositeMessageHandler<TMessage, TResult>
+        private class CompositeMessageHandler<TMessage, TMiddleResult, TResult> : ICompositeMessageHandler<TMessage, TResult>
         {
-            private readonly Func<TMessage, TResult> _handler;
+            private readonly IMessageHandler<TMessage, TMiddleResult> _from;
+            private readonly IMessageHandler<TMiddleResult, TResult> _to;
 
-            public CompositeMessageHandler(Func<TMessage, TResult> handler)
+            public CompositeMessageHandler(IMessageHandler<TMessage, TMiddleResult> @from, IMessageHandler<TMiddleResult, TResult> to)
             {
-                _handler = handler;
+                _to = to;
+                _from = @from;
             }
 
             public TResult Handle(TMessage message)
             {
-                return _handler(message);
+                return _to.Handle(_from.Handle(message));
             }
 
             public ICompositeMessageHandler<TMessage, TToResult> ComposeForward<TToResult>(IMessageHandler<TResult, TToResult> to)
             {
-                return MessageHandlerComposer.ComposeForward(this, to);
+                return new CompositeMessageHandler<TMessage, TResult, TToResult>(this, to);
             }
 
             public ICompositeMessageHandler<TFromMessage, TResult> ComposeBackward<TFromMessage>(IMessageHandler<TFromMessage, TMessage> @from)
             {
-                return MessageHandlerComposer.ComposeBackward(this, from);
+                return new CompositeMessageHandler<TFromMessage, TMessage, TResult>(@from, this);
             }
         }
 
