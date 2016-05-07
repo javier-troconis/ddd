@@ -5,8 +5,8 @@
 
     }
 
-    public interface IMessageHandler<in TMessage, out TResult> : IMessageHandler
+    public interface IMessageHandler<in TIn, out TOut> : IMessageHandler
     {
-        TResult Handle(TMessage message);
+        TOut Handle(TIn message);
 	}
 }

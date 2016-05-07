@@ -68,6 +68,41 @@ namespace host
         }
     }
 
+    class Message
+    {
+        public string Name { get; set; }
+    }
+
+    class DoSomethingMessage : Message
+    {
+
+    }
+
+    class Handler_Message<TMessage, TResult> : IMessageHandler<TMessage, TResult> where TMessage : Message, TResult
+    {
+        public TResult Handle(TMessage message)
+        {
+            message.Name = "message";
+            return message;
+        }
+    }
+
+    class Handler_MessageConverter<TMessage, TResult> : IMessageHandler<TMessage, TResult> where TResult : TMessage
+    {
+        public TResult Handle(TMessage message)
+        {
+            return (TResult)message;
+        }
+    }
+
+    class Handler_DoSomethingMessage: IMessageHandler<DoSomethingMessage, string>
+    {
+        public string Handle(DoSomethingMessage message)
+        {
+            return message.Name;
+        }
+    }
+
     public class Program
 	{
 		private static readonly IEventStore EventStore;
@@ -81,6 +116,9 @@ namespace host
 
         public static void Main(string[] args)
 		{
+
+            
+
             //composing handlers
             var handler = MessageHandlerComposer
                 .ComposeForward(new Handler1(), new Handler2())
@@ -95,6 +133,10 @@ namespace host
                 .ComposeBackward(new HandlerC())
                 .ComposeForward(new HandlerB());
             Console.WriteLine(handler1.Handle(Guid.NewGuid()));
+
+
+
+
 
             //run application scenarios
             var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
