@@ -1,11 +1,6 @@
 ﻿namespace shared
 {
-    public interface IMessageHandler
-    {
-
-    }
-
-    public interface IMessageHandler<in TIn, out TOut> : IMessageHandler
+    public interface IMessageHandler<in TIn, out TOut>
     {
         TOut Handle(TIn message);
 	}
