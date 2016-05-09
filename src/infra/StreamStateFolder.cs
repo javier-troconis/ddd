@@ -15,7 +15,7 @@ namespace infra
 
         private static TState Fold<TState, TEvent>(TState state, TEvent @event) where TState : IMessageHandler
         {
-            var handler = MessageHandlerDelegate.TryCreateFromCandidate(state, @event, state);
+            var handler = MessageHandlerDelegate.TryCreateFrom<TEvent, TState>(state);
             return Equals(handler, null) ? state : handler.Handle(@event);
         }
     }
