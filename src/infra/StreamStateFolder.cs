@@ -10,8 +10,13 @@ namespace infra
     {
         public static TState Fold<TState>(TState state, IEvent @event) where TState : IMessageHandler
         {
-            var proxy = MessageHandlerProxy.TryCreate(state, @event, state);
-            return Equals(proxy, null) ? state : proxy.Handle(@event);
+            return Fold(state, (dynamic)@event);
+        }
+
+        private static TState Fold<TState, TEvent>(TState state, TEvent @event) where TState : IMessageHandler
+        {
+            var handler = MessageHandlerDelegate.TryCreateFromCandidate(state, @event, state);
+            return Equals(handler, null) ? state : handler.Handle(@event);
         }
     }
 }
