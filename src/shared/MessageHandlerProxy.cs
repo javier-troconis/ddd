@@ -12,7 +12,8 @@ namespace shared
             return TryCreate(candidate, (dynamic)@in, @in, @out);
         }
 
-        private static IMessageHandler<TIn, TOut> TryCreate<TIn, TSpecificIn, TOut>(IMessageHandler candidate, TSpecificIn specificIn, TIn @in, TOut @out) where TSpecificIn : TIn
+        private static IMessageHandler<TIn, TOut> TryCreate<TIn, TSpecificIn, TOut>(IMessageHandler candidate, TSpecificIn specificIn, TIn @in, TOut @out) 
+            where TSpecificIn : TIn
         {
             var handler = candidate as IMessageHandler<TSpecificIn, TOut>;
             return Equals(handler, null) ? null : new MessageHandler<TSpecificIn, TIn, TOut>(handler);
