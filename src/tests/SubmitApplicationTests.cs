@@ -24,10 +24,10 @@ namespace tests
         public void when_application_is_submitted()
         {
             var state = _state.Handle(new ApplicationStarted());
-           
+
             var actual = ApplicationAction.Submit(state, "rich hickey");
 
-            var expected = new IEvent[] { new ApplicationSubmitted("rich hickey") };
+            var expected = new IEvent[] {new ApplicationSubmitted("rich hickey")};
 
             Assert.Equal(actual, expected);
         }

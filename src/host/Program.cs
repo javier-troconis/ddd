@@ -15,91 +15,47 @@ using shared;
 namespace host
 {
 
-    class HandlerA : IMessageHandler<Guid, string>
-    {
-        public string Handle(Guid message)
-        {
-            Console.WriteLine($"HandlerA called : {message}");
-            return "application-" + StreamNamingConvention.From(message);
-        }
-    }
 
-    class HandlerB : IMessageHandler<string, Guid>
+    class UpcastHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : TOut
     {
-        public Guid Handle(string message)
+        public TOut Handle(TIn message)
         {
-            Console.WriteLine($"HandlerB called : {message}");
-            return Guid.Parse(message.Split('-')[1]);
-        }
-    }
-
-    class HandlerC : IMessageHandler<Guid, Guid>
-    {
-        public Guid Handle(Guid message)
-        {
-            Console.WriteLine($"HandlerC called : {message}");
             return message;
         }
     }
 
-    class Handler1 : IMessageHandler<int, int>
+
+    class DowncastHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
     {
-        public int Handle(int message)
+        public TOut Handle(TIn message)
         {
-            Console.WriteLine($"Handler1 called : {message}");
+            return (TOut)message;
+        }
+    }
+
+
+    class FillHeaderHandler : IMessageHandler<IHeader, IHeader>
+    {
+        public IHeader Handle(IHeader message)
+        {
+            message.Header = new Header();
             return message;
         }
     }
 
-    class Handler2 : IMessageHandler<int, int>
+    class AuthenticateHandler : IMessageHandler<IHeader, IHeader>
     {
-        public int Handle(int message)
+        public IHeader Handle(IHeader message)
         {
-            Console.WriteLine($"Handler2 called : {message}");
-            return message;
-        }
-    }
-    class Handler3 : IMessageHandler<int, int>
-    {
-        public int Handle(int message)
-        {
-            Console.WriteLine($"Handler3 called : {message}");
             return message;
         }
     }
 
-    class Message
+    class StartApplicationCommandHandler : IMessageHandler<Message<StartApplicationCommand>, IEnumerable<IEvent>>
     {
-        public string Name { get; set; }
-    }
-
-    class DoSomethingMessage : Message
-    {
-
-    }
-
-    class Handler_Message<TMessage, TResult> : IMessageHandler<TMessage, TResult> where TMessage : Message, TResult
-    {
-        public TResult Handle(TMessage message)
+        public IEnumerable<IEvent> Handle(Message<StartApplicationCommand> message)
         {
-            message.Name = "message";
-            return message;
-        }
-    }
-
-    class Handler_MessageConverter<TMessage, TResult> : IMessageHandler<TMessage, TResult> where TResult : TMessage
-    {
-        public TResult Handle(TMessage message)
-        {
-            return (TResult)message;
-        }
-    }
-
-    class Handler_DoSomethingMessage: IMessageHandler<DoSomethingMessage, string>
-    {
-        public string Handle(DoSomethingMessage message)
-        {
-            return message.Name;
+            throw new NotImplementedException();
         }
     }
 
@@ -109,34 +65,46 @@ namespace host
 
 		static Program()
 		{
-            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
+            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.LimitReconnectionsTo(5));
+
+            eventStoreConnection.Disconnected += (s, a) =>
+            {
+                Console.WriteLine("disconnected");
+            };
+
+            eventStoreConnection.Closed += (s, a) =>
+            {
+                Console.WriteLine("closed");
+            };
+
+            eventStoreConnection.Connected += (s, a) =>
+            {
+                Console.WriteLine("connected");
+            };
+
+            eventStoreConnection.Reconnecting += (s, a) =>
+            {
+                Console.WriteLine("reconnecting");
+            };
             eventStoreConnection.ConnectAsync().Wait();
+
             EventStore = new infra.EventStore(eventStoreConnection);
         }
 
         public static void Main(string[] args)
 		{
 
-            
+            var requestMiddleware = new FillHeaderHandler()
+                .ComposeForward(new AuthenticateHandler());
 
             //composing handlers
-            var handler = MessageHandlerComposer
-                .ComposeForward(new Handler1(), new Handler2())
-                .ComposeBackward(new Handler3())
-                .ComposeBackward(new Handler1());
-            Console.WriteLine(handler.Handle(1));
 
-            //composing handlers
-            var handler1 = MessageHandlerComposer
-                .ComposeBackward(new HandlerA(), new HandlerB())
-                .ComposeBackward(new HandlerA())
-                .ComposeBackward(new HandlerC())
-                .ComposeForward(new HandlerB());
-            Console.WriteLine(handler1.Handle(Guid.NewGuid()));
+            var startApplication = new UpcastHandler<Message<StartApplicationCommand>, IHeader>()
+                .ComposeForward(requestMiddleware)
+                .ComposeForward(new DowncastHandler<IHeader, Message<StartApplicationCommand>>())
+                .ComposeForward(new StartApplicationCommandHandler());
 
-
-
-
+            startApplication.Handle(new Message<StartApplicationCommand>());
 
             //run application scenarios
             var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
@@ -145,6 +113,7 @@ namespace host
                 StartApplication(applicationId),
                 SubmitApplication(applicationId, 0, "rich hickey")
             ).Wait();
+            
         }
 
 		static async Task RunSequence(params Func<Task>[] actions)
@@ -159,6 +128,7 @@ namespace host
 		{
 			return async () =>
 			{
+                Console.WriteLine("starting application: " + applicationId);
                 var newChanges = ApplicationAction.Start();
                 await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
 			};
@@ -168,6 +138,7 @@ namespace host
 		{
 			return async () =>
 			{
+                Console.WriteLine("submitting application: " + applicationId);
                 var currentChanges = await EventStore.ReadEventsAsync(applicationId);
                 var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
 				var newChanges = ApplicationAction.Submit(currentState, submitter);
