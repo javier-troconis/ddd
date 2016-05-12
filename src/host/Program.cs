@@ -16,7 +16,7 @@ namespace host
 {
 
 
-    class UpcastHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : TOut
+    class UpcastMessageHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : TOut
     {
         public TOut Handle(TIn message)
         {
@@ -25,7 +25,7 @@ namespace host
     }
 
 
-    class DowncastHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
+    class DowncastMessageHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
     {
         public TOut Handle(TIn message)
         {
@@ -34,30 +34,41 @@ namespace host
     }
 
 
-    class FillHeaderHandler : IMessageHandler<IHeader, IHeader>
+    class SetCommandHeaderHandler : IMessageHandler<IHeader<CommandHeader>, IHeader<CommandHeader>>
     {
-        public IHeader Handle(IHeader message)
+        public IHeader<CommandHeader> Handle(IHeader<CommandHeader> message)
         {
-            message.Header = new Header();
+            message.Header = new CommandHeader();
             return message;
         }
     }
 
-    class AuthenticateHandler : IMessageHandler<IHeader, IHeader>
+    class AuthenticateHandler : IMessageHandler<IHeader<CommandHeader>, IHeader<CommandHeader>>
     {
-        public IHeader Handle(IHeader message)
+        public IHeader<CommandHeader> Handle(IHeader<CommandHeader> message)
         {
             return message;
         }
     }
 
-    class StartApplicationCommandHandler : IMessageHandler<Message<StartApplicationCommand>, IEnumerable<IEvent>>
+    class StartApplicationCommandHandler : IMessageHandler<Message<CommandHeader, StartApplicationCommand>, Task<Tuple<string, IEnumerable<IEvent>>>>
     {
-        public IEnumerable<IEvent> Handle(Message<StartApplicationCommand> message)
+        private readonly IEventStore _eventStore;
+
+        public StartApplicationCommandHandler(IEventStore eventStore)
         {
-            throw new NotImplementedException();
+            _eventStore = eventStore;
+        }
+
+        public async Task<Tuple<string, IEnumerable<IEvent>>> Handle(Message<CommandHeader, StartApplicationCommand> message)
+        {
+            var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
+            var newChanges = ApplicationAction.Start();
+            await _eventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
+            return new Tuple<string, IEnumerable<IEvent>>(applicationId, newChanges);
         }
     }
+
 
     public class Program
 	{
@@ -65,7 +76,7 @@ namespace host
 
 		static Program()
 		{
-            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.LimitReconnectionsTo(5));
+            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting().SetOperationTimeoutTo(TimeSpan.FromSeconds(1)));
 
             eventStoreConnection.Disconnected += (s, a) =>
             {
@@ -94,25 +105,28 @@ namespace host
         public static void Main(string[] args)
 		{
 
-            var requestMiddleware = new FillHeaderHandler()
+            var requestMiddleware = new SetCommandHeaderHandler()
                 .ComposeForward(new AuthenticateHandler());
 
             //composing handlers
 
-            var startApplication = new UpcastHandler<Message<StartApplicationCommand>, IHeader>()
+            var startApplication = new UpcastMessageHandler<Message<CommandHeader, StartApplicationCommand>, IHeader<CommandHeader>>()
                 .ComposeForward(requestMiddleware)
-                .ComposeForward(new DowncastHandler<IHeader, Message<StartApplicationCommand>>())
-                .ComposeForward(new StartApplicationCommandHandler());
+                .ComposeForward(new DowncastMessageHandler<IHeader<CommandHeader>, Message<CommandHeader, StartApplicationCommand>>())
+                .ComposeForward(new StartApplicationCommandHandler(EventStore));
 
-            startApplication.Handle(new Message<StartApplicationCommand>());
+            startApplication.Handle(new Message<CommandHeader, StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } });
 
-            //run application scenarios
-            var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
-            RunSequence
-            (
-                StartApplication(applicationId),
-                SubmitApplication(applicationId, 0, "rich hickey")
-            ).Wait();
+            //while (true)
+            //{
+            //    //run application scenarios
+            //    var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
+            //    RunSequence
+            //    (
+            //        StartApplication(applicationId),
+            //        SubmitApplication(applicationId, 0, "rich hickey")
+            //    ).Wait();
+            //}
             
         }
 
@@ -120,7 +134,14 @@ namespace host
 		{
 			foreach (var action in actions)
 			{
-				await action();
+                try
+                {
+                    await action();
+                }
+                catch(Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
 			}
 		}
 		

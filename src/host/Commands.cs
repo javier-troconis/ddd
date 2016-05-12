@@ -5,35 +5,41 @@ using System.Threading.Tasks;
 
 namespace host
 {
-    public interface IHeader
+    public interface IHeader<THeader>
     {
-        Header Header { get; set; }
+        THeader Header { get; set; }
     }
+
 
     public interface IBody<TBody>
     {
         TBody Body { get; set; }
     }
 
-    public class Message<TBody> : IHeader, IBody<TBody>
+    public class Message<THeader, TBody> : IHeader<THeader>, IBody<TBody> where THeader : new() where TBody : new()
     {
-        public Header Header { get; set; }
-        public TBody Body { get; set; }
+        public THeader Header { get; set; } = new THeader();
+        public TBody Body { get; set; } = new TBody();
+
+        public override string ToString()
+        {
+            return typeof(TBody).Name;
+        }
     }
 
-    public struct Header
+    public class CommandHeader
     {
         public Guid TenantId { get; set; }
     }
-   
 
-    public struct StartApplicationCommand 
+    public class StartApplicationCommand 
     {
         public Guid ApplicationId { get; set; }
     }
 
-    public struct SubmitApplicationCommand
+    public class SubmitApplicationCommand
     {
         public Guid ApplicationId { get; set; }
+        public string Submitter { get; set; }
     }
 }

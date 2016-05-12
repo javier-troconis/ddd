@@ -158,7 +158,7 @@ namespace subscriber
 
 		private static void CreateProjection(string projectionName, string projectionDefinition)
 		{
-			ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials).Wait();	
+            ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials).Wait();	
 		}
 
 		private static bool HasProjectionChanged(string projectionName, string projectionDefinition)
