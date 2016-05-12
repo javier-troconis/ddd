@@ -38,7 +38,7 @@ namespace host
     {
         public IHeader<CommandHeader> Handle(IHeader<CommandHeader> message)
         {
-            message.Header = new CommandHeader();
+            message.Header = new CommandHeader { TenantId = Guid.NewGuid() };
             return message;
         }
     }
@@ -104,18 +104,17 @@ namespace host
 
         public static void Main(string[] args)
 		{
-
-            var requestMiddleware = new SetCommandHeaderHandler()
-                .ComposeForward(new AuthenticateHandler());
-
             //composing handlers
 
-            var startApplication = new UpcastMessageHandler<Message<CommandHeader, StartApplicationCommand>, IHeader<CommandHeader>>()
-                .ComposeForward(requestMiddleware)
-                .ComposeForward(new DowncastMessageHandler<IHeader<CommandHeader>, Message<CommandHeader, StartApplicationCommand>>())
-                .ComposeForward(new StartApplicationCommandHandler(EventStore));
+            var middleware = new UpcastMessageHandler<Message<CommandHeader, StartApplicationCommand>, IHeader<CommandHeader>>()
+               .ComposeForward(new SetCommandHeaderHandler())
+               .ComposeForward(new AuthenticateHandler())
+               .ComposeForward(new DowncastMessageHandler<IHeader<CommandHeader>, Message<CommandHeader, StartApplicationCommand>>());
 
-            startApplication.Handle(new Message<CommandHeader, StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } });
+            var startApplication = new StartApplicationCommandHandler(EventStore);
+
+            startApplication.ComposeBackward(middleware)
+                .Handle(new Message<CommandHeader, StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
 
             //while (true)
             //{

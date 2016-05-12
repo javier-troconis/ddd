@@ -16,10 +16,10 @@ namespace host
         TBody Body { get; set; }
     }
 
-    public class Message<THeader, TBody> : IHeader<THeader>, IBody<TBody> where THeader : new() where TBody : new()
+    public class Message<THeader, TBody> : IHeader<THeader>, IBody<TBody>
     {
-        public THeader Header { get; set; } = new THeader();
-        public TBody Body { get; set; } = new TBody();
+        public THeader Header { get; set; } 
+        public TBody Body { get; set; }
 
         public override string ToString()
         {
