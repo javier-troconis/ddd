@@ -14,18 +14,7 @@ using shared;
 
 namespace host
 {
-
-
-    class UpcastMessageHandler<TIn> : IMessageHandler<TIn, TIn>
-    {
-        public TIn Handle(TIn message)
-        {
-            return message;
-        }
-    }
-
-
-    class DowncastMessageHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
+    class CastAsMessageHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
     {
         public TOut Handle(TIn message)
         {
@@ -159,10 +148,9 @@ namespace host
         {
             //composing handlers
 
-            //var middleware = new UpcastMessageHandler<MessageStartApplicationCommand>, IHeader>()
-            //   .ComposeForward(new SetCommandHeaderHandler())
+            //var middleware = new SetCommandHeaderHandler()
             //   .ComposeForward(new AuthenticateHandler())
-            //   .ComposeForward(new DowncastMessageHandler<IHeader, Message<StartApplicationCommand>>());
+            //   .ComposeForward(new CastAsMessageHandler<IHeader, Message<StartApplicationCommand>>());
 
             //var startApplication = new StartApplicationCommandHandler(EventStore);
 
@@ -170,6 +158,13 @@ namespace host
             //    .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
 
             var applicationNumber = 0;
+
+            var timedHandler = new _TimedHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
+
+            var startApplicationTimedHandler = new StartApplicationCommandHandler(EventStore);
+
+            var timedStartApplicationTimedHandler = startApplicationTimedHandler.ComposeForward(timedHandler);
+
             while (true)
             {
                 //run application scenarios
@@ -186,14 +181,15 @@ namespace host
                 //var startApplicationTimedHandler = TimedHandler.Create(startApplicationHandler, TimeSpan.FromSeconds(2));
                 //startApplicationTimedHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } });
 
-                var timedHandler = new _TimedHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
-
-                var startApplicationTimedHandler = new StartApplicationCommandHandler(EventStore);
-
-                startApplicationTimedHandler.ComposeForward(timedHandler).Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
-
-
-
+                try
+                {
+                    timedStartApplicationTimedHandler
+                        .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
+                }
+                catch(AggregateException ex)
+                {
+                    Console.WriteLine(ex.InnerException.Message);
+                }
 
                 Task.Delay(2000).Wait();
             }
