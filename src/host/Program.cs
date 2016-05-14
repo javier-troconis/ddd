@@ -60,43 +60,19 @@ namespace host
 
 
 
-    static class TimedHandler
+    
+    class TimedTaskHandler<TTaskIn, TIn> : IMessageHandler<TTaskIn, Task<TIn>> where TTaskIn : Task<TIn>
     {
-        public static IMessageHandler<TIn, Task<TOut>> Create<TIn, TOut>(IMessageHandler<TIn, Task<TOut>> handler, TimeSpan allowedTime)
+        private readonly TimeSpan _timeout;
+
+        public TimedTaskHandler(TimeSpan timeout)
         {
-            return new MessageHandler<TIn, TOut>(handler, allowedTime);
-        }
-
-        class MessageHandler<TIn, TOut> : IMessageHandler<TIn, Task<TOut>>
-        {
-            private readonly IMessageHandler<TIn, Task<TOut>> _handler;
-            private readonly TimeSpan _allowedTime;
-
-            public MessageHandler(IMessageHandler<TIn, Task<TOut>> handler, TimeSpan allowedTime)
-            {
-                _handler = handler;
-                _allowedTime = allowedTime;
-            }
-
-            public Task<TOut> Handle(TIn message)
-            {
-                return _handler.Handle(message).TimeoutAfter(_allowedTime);
-            }
-        }
-    }
-
-    class _TimedHandler<TTaskIn, TIn> : IMessageHandler<TTaskIn, Task<TIn>> where TTaskIn : Task<TIn>
-    {
-        private readonly TimeSpan _allowedTime;
-
-        public _TimedHandler(TimeSpan allowedTime)
-        {
-            _allowedTime = allowedTime;
+            _timeout = timeout;
         }
 
         public Task<TIn> Handle(TTaskIn message)
         {
-            return message.TimeoutAfter(_allowedTime);
+            return message.TimeoutAfter(_timeout);
         }
     }
 
@@ -159,12 +135,11 @@ namespace host
 
             var applicationNumber = 0;
 
-            var timedHandler = new _TimedHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
+            var timedTaskHandler = new TimedTaskHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
 
-            var startApplicationTimedHandler = new StartApplicationCommandHandler(EventStore);
+            var startApplicationHandler = new StartApplicationCommandHandler(EventStore).ComposeForward(timedTaskHandler);
 
-            var timedStartApplicationTimedHandler = startApplicationTimedHandler.ComposeForward(timedHandler);
-
+         
             while (true)
             {
                 //run application scenarios
@@ -177,13 +152,11 @@ namespace host
                 //    () => Task.Delay(2000)
                 //).Wait();
 
-                //var startApplicationHandler = new StartApplicationCommandHandler(EventStore);
-                //var startApplicationTimedHandler = TimedHandler.Create(startApplicationHandler, TimeSpan.FromSeconds(2));
-                //startApplicationTimedHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } });
+           
 
                 try
                 {
-                    timedStartApplicationTimedHandler
+                    startApplicationHandler
                         .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
                 }
                 catch(AggregateException ex)

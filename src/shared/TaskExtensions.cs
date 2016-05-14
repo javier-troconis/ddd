@@ -8,9 +8,9 @@ namespace shared
 {
     public static class TaskExtensions
     {
-        public static async Task<TOut> TimeoutAfter<TOut>(this Task<TOut> task, TimeSpan allowedTime)
+        public static async Task<TOut> TimeoutAfter<TOut>(this Task<TOut> task, TimeSpan timeout)
         {
-            //var tokenSource = new CancellationTokenSource(allowedTime);
+            //var tokenSource = new CancellationTokenSource(timeout);
             //return Task.Run(() =>
             //{
             //    do
@@ -21,7 +21,7 @@ namespace shared
             //}, tokenSource.Token);
 
             var tokenSource = new CancellationTokenSource();
-            var completedTask = await Task.WhenAny(task, Task.Delay(allowedTime, tokenSource.Token));
+            var completedTask = await Task.WhenAny(task, Task.Delay(timeout, tokenSource.Token));
             if (completedTask != task)
             {
                 throw new TimeoutException("The operation has timed out.");
