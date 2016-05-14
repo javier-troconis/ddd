@@ -16,9 +16,9 @@ namespace host
 {
 
 
-    class UpcastMessageHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : TOut
+    class UpcastMessageHandler<TIn> : IMessageHandler<TIn, TIn>
     {
-        public TOut Handle(TIn message)
+        public TIn Handle(TIn message)
         {
             return message;
         }
@@ -34,24 +34,24 @@ namespace host
     }
 
 
-    class SetCommandHeaderHandler : IMessageHandler<IHeader<CommandHeader>, IHeader<CommandHeader>>
+    class SetCommandHeaderHandler : IMessageHandler<IHeader, IHeader>
     {
-        public IHeader<CommandHeader> Handle(IHeader<CommandHeader> message)
+        public IHeader Handle(IHeader message)
         {
-            message.Header = new CommandHeader { TenantId = Guid.NewGuid() };
+            message.Header = new Dictionary<string, object>();
             return message;
         }
     }
 
-    class AuthenticateHandler : IMessageHandler<IHeader<CommandHeader>, IHeader<CommandHeader>>
+    class AuthenticateHandler : IMessageHandler<IHeader, IHeader>
     {
-        public IHeader<CommandHeader> Handle(IHeader<CommandHeader> message)
+        public IHeader Handle(IHeader message)
         {
             return message;
         }
     }
 
-    class StartApplicationCommandHandler : IMessageHandler<Message<CommandHeader, StartApplicationCommand>, Task<Tuple<string, IEnumerable<IEvent>>>>
+    class StartApplicationCommandHandler : IMessageHandler<Message<StartApplicationCommand>, Task<Message<StartApplicationCommand>>>
     {
         private readonly IEventStore _eventStore;
 
@@ -60,23 +60,64 @@ namespace host
             _eventStore = eventStore;
         }
 
-        public async Task<Tuple<string, IEnumerable<IEvent>>> Handle(Message<CommandHeader, StartApplicationCommand> message)
+        public async Task<Message<StartApplicationCommand>> Handle(Message<StartApplicationCommand> message)
         {
             var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
             var newChanges = ApplicationAction.Start();
             await _eventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
-            return new Tuple<string, IEnumerable<IEvent>>(applicationId, newChanges);
+            return message;
         }
     }
 
 
-    public class Program
-	{
-		private static readonly IEventStore EventStore;
 
-		static Program()
-		{
-            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting().SetOperationTimeoutTo(TimeSpan.FromSeconds(1)));
+    static class TimedHandler
+    {
+        public static IMessageHandler<TIn, Task<TOut>> Create<TIn, TOut>(IMessageHandler<TIn, Task<TOut>> handler, TimeSpan allowedTime)
+        {
+            return new MessageHandler<TIn, TOut>(handler, allowedTime);
+        }
+
+        class MessageHandler<TIn, TOut> : IMessageHandler<TIn, Task<TOut>>
+        {
+            private readonly IMessageHandler<TIn, Task<TOut>> _handler;
+            private readonly TimeSpan _allowedTime;
+
+            public MessageHandler(IMessageHandler<TIn, Task<TOut>> handler, TimeSpan allowedTime)
+            {
+                _handler = handler;
+                _allowedTime = allowedTime;
+            }
+
+            public Task<TOut> Handle(TIn message)
+            {
+                return _handler.Handle(message).TimeoutAfter(_allowedTime);
+            }
+        }
+    }
+
+    class _TimedHandler<TTaskIn, TIn> : IMessageHandler<TTaskIn, Task<TIn>> where TTaskIn : Task<TIn>
+    {
+        public Task<TIn> Handle(TTaskIn message)
+        {
+            return message.TimeoutAfter(TimeSpan.FromSeconds(2));
+        }
+    }
+
+    public class Program
+    {
+        private static readonly IEventStore EventStore;
+
+        static Program()
+        {
+            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x
+                .KeepReconnecting()
+
+                //.FailOnNoServerResponse()
+                //.LimitAttemptsForOperationTo(1)
+                //.LimitRetriesForOperationTo(1)
+
+                );
 
             eventStoreConnection.Disconnected += (s, a) =>
             {
@@ -86,6 +127,11 @@ namespace host
             eventStoreConnection.Closed += (s, a) =>
             {
                 Console.WriteLine("closed");
+            };
+
+            eventStoreConnection.ErrorOccurred += (s, a) =>
+            {
+                Console.WriteLine("errorocurred" + a.Exception);
             };
 
             eventStoreConnection.Connected += (s, a) =>
@@ -103,69 +149,101 @@ namespace host
         }
 
         public static void Main(string[] args)
-		{
+        {
             //composing handlers
 
-            var middleware = new UpcastMessageHandler<Message<CommandHeader, StartApplicationCommand>, IHeader<CommandHeader>>()
-               .ComposeForward(new SetCommandHeaderHandler())
-               .ComposeForward(new AuthenticateHandler())
-               .ComposeForward(new DowncastMessageHandler<IHeader<CommandHeader>, Message<CommandHeader, StartApplicationCommand>>());
+            //var middleware = new UpcastMessageHandler<MessageStartApplicationCommand>, IHeader>()
+            //   .ComposeForward(new SetCommandHeaderHandler())
+            //   .ComposeForward(new AuthenticateHandler())
+            //   .ComposeForward(new DowncastMessageHandler<IHeader, Message<StartApplicationCommand>>());
 
-            var startApplication = new StartApplicationCommandHandler(EventStore);
+            //var startApplication = new StartApplicationCommandHandler(EventStore);
 
-            startApplication.ComposeBackward(middleware)
-                .Handle(new Message<CommandHeader, StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
+            //startApplication.ComposeBackward(middleware)
+            //    .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
 
-            //while (true)
-            //{
-            //    //run application scenarios
-            //    var applicationId = "application-" + StreamNamingConvention.From(Guid.NewGuid());
-            //    RunSequence
-            //    (
-            //        StartApplication(applicationId),
-            //        SubmitApplication(applicationId, 0, "rich hickey")
-            //    ).Wait();
-            //}
-            
+            var applicationNumber = 0;
+            while (true)
+            {
+                //run application scenarios
+                //var applicationId = applicationNumber++ + "_" + StreamNamingConvention.From(Guid.NewGuid());
+                //RunSequence
+                //(
+                //    StartApplication(applicationId),
+                //    //() => Task.Delay(2000),
+                //    //SubmitApplication(applicationId, 0, "rich hickey"),
+                //    () => Task.Delay(2000)
+                //).Wait();
+
+                //var startApplicationHandler = new StartApplicationCommandHandler(EventStore);
+                //var startApplicationTimedHandler = TimedHandler.Create(startApplicationHandler, TimeSpan.FromSeconds(2));
+                //startApplicationTimedHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } });
+
+                var r = new _TimedHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>();
+
+                new StartApplicationCommandHandler(EventStore)
+
+                    .ComposeForward(r)
+
+                    .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
+
+
+
+
+                Task.Delay(2000).Wait();
+            }
+
         }
 
-		static async Task RunSequence(params Func<Task>[] actions)
-		{
-			foreach (var action in actions)
-			{
+        static async Task RunSequence(params Func<Task>[] actions)
+        {
+            foreach (var action in actions)
+            {
+                await action();
+            }
+        }
+
+
+
+
+
+        static Func<Task> StartApplication(string applicationId)
+        {
+            return async () =>
+            {
+                var newChanges = ApplicationAction.Start();
                 try
                 {
-                    await action();
+                    await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges).TimeoutAfter(TimeSpan.FromSeconds(2));
+
+                    Console.WriteLine("started application: " + applicationId);
                 }
-                catch(Exception ex)
+                catch (Exception ex)
                 {
-                    Console.WriteLine(ex);
+                    Console.WriteLine($"starting application: {applicationId} failed with: {ex.GetType().Name}");
                 }
-			}
-		}
-		
-		static Func<Task> StartApplication(string applicationId)
-		{
-			return async () =>
-			{
-                Console.WriteLine("starting application: " + applicationId);
-                var newChanges = ApplicationAction.Start();
-                await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
-			};
-		}
+            };
+        }
 
-		static Func<Task> SubmitApplication(string applicationId, int version, string submitter)
-		{
-			return async () =>
-			{
-                Console.WriteLine("submitting application: " + applicationId);
-                var currentChanges = await EventStore.ReadEventsAsync(applicationId);
-                var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
-				var newChanges = ApplicationAction.Submit(currentState, submitter);
-                await OptimisticEventWriter.WriteEventsAsync(StreamVersionConflictResolution.AlwaysCommit, EventStore, applicationId, version, newChanges);
-			};
-		}
+        static Func<Task> SubmitApplication(string applicationId, int version, string submitter)
+        {
+            return async () =>
+            {
+                try
+                {
+                    var currentChanges = await EventStore.ReadEventsAsync(applicationId).TimeoutAfter(TimeSpan.FromSeconds(2));
+                    var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
+                    var newChanges = ApplicationAction.Submit(currentState, submitter);
+                    await OptimisticEventWriter.WriteEventsAsync(StreamVersionConflictResolution.AlwaysCommit, EventStore, applicationId, version, newChanges).TimeoutAfter(TimeSpan.FromSeconds(2));
+                    Console.WriteLine("submitted application: " + applicationId);
+                }
+                catch (TimeoutException)
+                {
+                    Console.WriteLine("submmiting application timedout: " + applicationId);
+                }
+            };
+        }
 
-        
-	}
+
+    }
 }

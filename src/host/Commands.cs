@@ -5,31 +5,19 @@ using System.Threading.Tasks;
 
 namespace host
 {
-    public interface IHeader<THeader>
+    public interface IHeader
     {
-        THeader Header { get; set; }
+        IDictionary<string, object> Header { get; set; }
     }
-
-
     public interface IBody<TBody>
     {
         TBody Body { get; set; }
     }
 
-    public class Message<THeader, TBody> : IHeader<THeader>, IBody<TBody>
+    public class Message<TBody> : IHeader, IBody<TBody>
     {
-        public THeader Header { get; set; } 
+        public IDictionary<string, object> Header { get; set; } 
         public TBody Body { get; set; }
-
-        public override string ToString()
-        {
-            return typeof(TBody).Name;
-        }
-    }
-
-    public class CommandHeader
-    {
-        public Guid TenantId { get; set; }
     }
 
     public class StartApplicationCommand 

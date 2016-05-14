@@ -11,7 +11,7 @@
 						"version": "1.0.0-*",
 						"target": "project"
 				},
-				"EventStore.Client": "3.5.0",
+				"EventStore.Client": "3.6.0",
 				"Newtonsoft.Json": "8.0.2"
 		},
 

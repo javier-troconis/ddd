@@ -43,8 +43,18 @@ namespace infra
                 .Select(@event => new Tuple<IDictionary<string, object>, IEvent>(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event))
 				.Select(ConfigureEventHeader)
 				.Select(ConvertToEventData);
-			return await _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData).ConfigureAwait(false);
-		}
+
+            //using (var tx = await _eventStoreConnection.StartTransactionAsync(streamName, streamExpectedVersion))
+            //{
+            //    
+            //}
+
+			var appendToStreamTask =  _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
+            var appendToStreamResult = await appendToStreamTask;
+
+            return appendToStreamResult;
+
+        }
 
 		private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName, int fromEventNumber)
 		{
