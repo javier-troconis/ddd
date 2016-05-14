@@ -98,9 +98,16 @@ namespace host
 
     class _TimedHandler<TTaskIn, TIn> : IMessageHandler<TTaskIn, Task<TIn>> where TTaskIn : Task<TIn>
     {
+        private readonly TimeSpan _allowedTime;
+
+        public _TimedHandler(TimeSpan allowedTime)
+        {
+            _allowedTime = allowedTime;
+        }
+
         public Task<TIn> Handle(TTaskIn message)
         {
-            return message.TimeoutAfter(TimeSpan.FromSeconds(2));
+            return message.TimeoutAfter(_allowedTime);
         }
     }
 
@@ -179,13 +186,11 @@ namespace host
                 //var startApplicationTimedHandler = TimedHandler.Create(startApplicationHandler, TimeSpan.FromSeconds(2));
                 //startApplicationTimedHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } });
 
-                var r = new _TimedHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>();
+                var timedHandler = new _TimedHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
 
-                new StartApplicationCommandHandler(EventStore)
+                var startApplicationTimedHandler = new StartApplicationCommandHandler(EventStore);
 
-                    .ComposeForward(r)
-
-                    .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
+                startApplicationTimedHandler.ComposeForward(timedHandler).Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
 
 
 
