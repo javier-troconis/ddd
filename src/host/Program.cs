@@ -59,9 +59,7 @@ namespace host
     }
 
 
-
-    
-    class TimedTaskHandler<TTaskIn, TIn> : IMessageHandler<TTaskIn, Task<TIn>> where TTaskIn : Task<TIn>
+    class TimedTaskHandler<TIn> : IMessageHandler<Task<TIn>, Task<TIn>>
     {
         private readonly TimeSpan _timeout;
 
@@ -70,7 +68,7 @@ namespace host
             _timeout = timeout;
         }
 
-        public Task<TIn> Handle(TTaskIn message)
+        public Task<TIn> Handle(Task<TIn> message)
         {
             return message.TimeoutAfter(_timeout);
         }
@@ -135,7 +133,7 @@ namespace host
 
             var applicationNumber = 0;
 
-            var timedTaskHandler = new TimedTaskHandler<Task<Message<StartApplicationCommand>>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
+            var timedTaskHandler = new TimedTaskHandler<Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
 
             var startApplicationHandler = new StartApplicationCommandHandler(EventStore).ComposeForward(timedTaskHandler);
 
