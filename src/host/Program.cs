@@ -14,27 +14,18 @@ using shared;
 
 namespace host
 {
-    class CastToMessageTypeHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
+    class SetMessageHeaderHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : IHeader, TOut
     {
         public TOut Handle(TIn message)
-        {
-            return (TOut)message;
-        }
-    }
-
-
-    class SetCommandHeaderHandler : IMessageHandler<IHeader, IHeader>
-    {
-        public IHeader Handle(IHeader message)
         {
             message.Header = new Dictionary<string, object>();
             return message;
         }
     }
 
-    class AuthenticateHandler : IMessageHandler<IHeader, IHeader>
+    class AuthorizeHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : IHeader, TOut
     {
-        public IHeader Handle(IHeader message)
+        public TOut Handle(TIn message)
         {
             return message;
         }
@@ -153,10 +144,15 @@ namespace host
         public static void Main(string[] args)
         {
             var startApplicationHandler = new StartApplicationCommandHandler(EventStore)
-                .ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
-                .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
+                .ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2))
+                    .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started")))
+                
+                .ComposeBackward(new SetMessageHeaderHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()
+                    .ComposeForward(new AuthorizeHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()));
 
-            var submitApplicationHandler = new SubmitApplicationCommandHandler(EventStore)
+            var submitApplicationHandler = new SetMessageHeaderHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>()
+                .ComposeForward(new AuthorizeHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>())
+                .ComposeForward(new SubmitApplicationCommandHandler(EventStore))
                 .ComposeForward(new TimedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(4)))
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
