@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using appservices;
 using core;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
@@ -31,43 +32,7 @@ namespace host
         }
     }
 
-    class StartApplicationCommandHandler : IMessageHandler<Message<StartApplicationCommand>, Task<Message<StartApplicationCommand>>>
-    {
-        private readonly IEventStore _eventStore;
-
-        public StartApplicationCommandHandler(IEventStore eventStore)
-        {
-            _eventStore = eventStore;
-        }
-
-        public async Task<Message<StartApplicationCommand>> Handle(Message<StartApplicationCommand> message)
-        {
-            var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
-            var newChanges = ApplicationAction.Start();
-            await _eventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
-            return message;
-        }
-    }
-
-    class SubmitApplicationCommandHandler : IMessageHandler<Message<SubmitApplicationCommand>, Task<Message<SubmitApplicationCommand>>>
-    {
-        private readonly IEventStore _eventStore;
-
-        public SubmitApplicationCommandHandler(IEventStore eventStore)
-        {
-            _eventStore = eventStore;
-        }
-
-        public async Task<Message<SubmitApplicationCommand>> Handle(Message<SubmitApplicationCommand> message)
-        {
-            var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
-            var currentChanges = await _eventStore.ReadEventsAsync(applicationId);
-            var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
-            var newChanges = ApplicationAction.Submit(currentState, message.Body.Submitter);
-            await OptimisticEventWriter.WriteEventsAsync(StreamVersionConflictResolution.AlwaysCommit, _eventStore, applicationId, message.Body.Version, newChanges);
-            return message;
-        }
-    }
+    
 
 
     class TimedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
