@@ -58,6 +58,26 @@ namespace host
         }
     }
 
+    class SubmitApplicationCommandHandler : IMessageHandler<Message<SubmitApplicationCommand>, Task<Message<SubmitApplicationCommand>>>
+    {
+        private readonly IEventStore _eventStore;
+
+        public SubmitApplicationCommandHandler(IEventStore eventStore)
+        {
+            _eventStore = eventStore;
+        }
+
+        public async Task<Message<SubmitApplicationCommand>> Handle(Message<SubmitApplicationCommand> message)
+        {
+            var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
+            var currentChanges = await _eventStore.ReadEventsAsync(applicationId);
+            var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
+            var newChanges = ApplicationAction.Submit(currentState, message.Body.Submitter);
+            await OptimisticEventWriter.WriteEventsAsync(StreamVersionConflictResolution.AlwaysCommit, _eventStore, applicationId, message.Body.Version, newChanges);
+            return message;
+        }
+    }
+
 
     class TimedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
     {
@@ -74,20 +94,32 @@ namespace host
         }
     }
 
+    class TaskCompletedLoggerHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
+    {
+        private readonly Action<string> _logger;
+        private readonly Func<TOut, string> _whatToLog;
+
+        public TaskCompletedLoggerHandler(Action<string> logger, Func<TOut, string> whatToLog)
+        {
+            _logger = logger;
+            _whatToLog = whatToLog;
+        }
+
+        public async Task<TOut> Handle(Task<TIn> message)
+        {
+            var @out = await message;
+            _logger(_whatToLog(@out));
+            return @out;
+        }
+    }
+
     public class Program
     {
         private static readonly IEventStore EventStore;
 
         static Program()
         {
-            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x
-                .KeepReconnecting()
-
-                //.FailOnNoServerResponse()
-                //.LimitAttemptsForOperationTo(1)
-                //.LimitRetriesForOperationTo(1)
-
-                );
+            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
 
             eventStoreConnection.Disconnected += (s, a) =>
             {
@@ -120,102 +152,29 @@ namespace host
 
         public static void Main(string[] args)
         {
-            //composing handlers
+            var startApplicationHandler = new StartApplicationCommandHandler(EventStore)
+                .ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
+                .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
 
-            //var middleware = new SetCommandHeaderHandler()
-            //   .ComposeForward(new AuthenticateHandler())
-            //   .ComposeForward(new CastAsMessageHandler<IHeader, Message<StartApplicationCommand>>());
+            var submitApplicationHandler = new SubmitApplicationCommandHandler(EventStore)
+                .ComposeForward(new TimedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(4)))
+                .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
-            //var startApplication = new StartApplicationCommandHandler(EventStore);
-
-            //startApplication.ComposeBackward(middleware)
-            //    .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
-
-            var applicationNumber = 0;
-
-            var timedTaskHandler = new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
-
-            var startApplicationHandler = new StartApplicationCommandHandler(EventStore).ComposeForward(timedTaskHandler);
-
-         
             while (true)
             {
-                //run application scenarios
-                //var applicationId = applicationNumber++ + "_" + StreamNamingConvention.From(Guid.NewGuid());
-                //RunSequence
-                //(
-                //    StartApplication(applicationId),
-                //    //() => Task.Delay(2000),
-                //    //SubmitApplication(applicationId, 0, "rich hickey"),
-                //    () => Task.Delay(2000)
-                //).Wait();
-
-           
-
+                var applicationId = Guid.NewGuid();
                 try
                 {
-                    startApplicationHandler
-                        .Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = Guid.NewGuid() } }).Wait();
+                    startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
+                    submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Submitter = "rich hickey", Version = 0 } }).Wait();
                 }
                 catch(AggregateException ex)
                 {
                     Console.WriteLine(ex.InnerException.Message);
                 }
-
                 Task.Delay(2000).Wait();
             }
-
         }
-
-        static async Task RunSequence(params Func<Task>[] actions)
-        {
-            foreach (var action in actions)
-            {
-                await action();
-            }
-        }
-
-
-
-
-
-        static Func<Task> StartApplication(string applicationId)
-        {
-            return async () =>
-            {
-                var newChanges = ApplicationAction.Start();
-                try
-                {
-                    await EventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges).TimeoutAfter(TimeSpan.FromSeconds(2));
-
-                    Console.WriteLine("started application: " + applicationId);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"starting application: {applicationId} failed with: {ex.GetType().Name}");
-                }
-            };
-        }
-
-        static Func<Task> SubmitApplication(string applicationId, int version, string submitter)
-        {
-            return async () =>
-            {
-                try
-                {
-                    var currentChanges = await EventStore.ReadEventsAsync(applicationId).TimeoutAfter(TimeSpan.FromSeconds(2));
-                    var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
-                    var newChanges = ApplicationAction.Submit(currentState, submitter);
-                    await OptimisticEventWriter.WriteEventsAsync(StreamVersionConflictResolution.AlwaysCommit, EventStore, applicationId, version, newChanges).TimeoutAfter(TimeSpan.FromSeconds(2));
-                    Console.WriteLine("submitted application: " + applicationId);
-                }
-                catch (TimeoutException)
-                {
-                    Console.WriteLine("submmiting application timedout: " + applicationId);
-                }
-            };
-        }
-
 
     }
 }

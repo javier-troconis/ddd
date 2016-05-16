@@ -29,5 +29,8 @@ namespace host
     {
         public Guid ApplicationId { get; set; }
         public string Submitter { get; set; }
+        public int Version { get; set; }
     }
+
+
 }

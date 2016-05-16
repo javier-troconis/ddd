@@ -20,6 +20,5 @@ namespace shared
             return task.Result;
         }
 
-   
     }
 }
