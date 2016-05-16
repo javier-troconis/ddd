@@ -14,7 +14,7 @@ using shared;
 
 namespace host
 {
-    class CastAsMessageHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
+    class CastToMessageTypeHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TOut : TIn
     {
         public TOut Handle(TIn message)
         {
@@ -59,7 +59,7 @@ namespace host
     }
 
 
-    class TimedTaskHandler<TIn> : IMessageHandler<Task<TIn>, Task<TIn>>
+    class TimedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
     {
         private readonly TimeSpan _timeout;
 
@@ -68,9 +68,9 @@ namespace host
             _timeout = timeout;
         }
 
-        public Task<TIn> Handle(Task<TIn> message)
+        public async Task<TOut> Handle(Task<TIn> message)
         {
-            return message.TimeoutAfter(_timeout);
+            return await message.TimeoutAfter(_timeout);
         }
     }
 
@@ -133,7 +133,7 @@ namespace host
 
             var applicationNumber = 0;
 
-            var timedTaskHandler = new TimedTaskHandler<Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
+            var timedTaskHandler = new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2));
 
             var startApplicationHandler = new StartApplicationCommandHandler(EventStore).ComposeForward(timedTaskHandler);
 

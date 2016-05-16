@@ -10,16 +10,6 @@ namespace shared
     {
         public static async Task<TOut> TimeoutAfter<TOut>(this Task<TOut> task, TimeSpan timeout)
         {
-            //var tokenSource = new CancellationTokenSource(timeout);
-            //return Task.Run(() =>
-            //{
-            //    do
-            //    {
-            //        tokenSource.Token.ThrowIfCancellationRequested();
-            //    } while (!task.IsCompleted);
-            //    return task.Result;
-            //}, tokenSource.Token);
-
             var tokenSource = new CancellationTokenSource();
             var completedTask = await Task.WhenAny(task, Task.Delay(timeout, tokenSource.Token));
             if (completedTask != task)
