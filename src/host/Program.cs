@@ -143,15 +143,12 @@ namespace host
 
         public static void Main(string[] args)
         {
-            var startApplicationHandler = new StartApplicationCommandHandler(EventStore)
-                .ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2))
-                    .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started")))
-                
-                .ComposeBackward(new SetMessageHeaderHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()
-                    .ComposeForward(new AuthorizeHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()));
+            var startApplicationHandler = new AuthorizeHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()
+                .ComposeForward(new StartApplicationCommandHandler(EventStore))
+                .ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
+                .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
 
-            var submitApplicationHandler = new SetMessageHeaderHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>()
-                .ComposeForward(new AuthorizeHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>())
+            var submitApplicationHandler = new AuthorizeHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>()
                 .ComposeForward(new SubmitApplicationCommandHandler(EventStore))
                 .ComposeForward(new TimedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(4)))
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
