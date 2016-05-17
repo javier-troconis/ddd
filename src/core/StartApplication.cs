@@ -13,12 +13,7 @@ namespace core
 
     public static class StartApplication
     {
-        public static IEnumerable<IEvent> Execute()
-        {
-            return DoExecute();
-        }
-
-        private static IEnumerable<IEvent> DoExecute()
+        public static IEnumerable<IEvent> Apply()
         {
             yield return new ApplicationStarted();
         }

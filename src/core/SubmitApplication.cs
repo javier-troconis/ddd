@@ -43,7 +43,13 @@ namespace core
 
     public static class SubmitApplication
     {
-        public static IEnumerable<IEvent> Execute(WhenSubmittingApplicationState state, string submitter)
+        public static IEnumerable<IEvent> Apply(WhenSubmittingApplicationState state, string submitter)
+        {
+            Ensure(state);
+            yield return new ApplicationSubmitted(submitter);
+        }
+
+        private static void Ensure(WhenSubmittingApplicationState state)
         {
             if (!state.HasBeenStarted)
             {
@@ -53,12 +59,6 @@ namespace core
             {
                 throw new Exception("application has already been submitted");
             }
-            return DoExecute(state, submitter);
-        }
-
-        private static IEnumerable<IEvent> DoExecute(WhenSubmittingApplicationState state, string submitter)
-        {
-            yield return new ApplicationSubmitted(submitter);
         }
     }
 }

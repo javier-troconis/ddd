@@ -106,6 +106,7 @@ namespace host
             EventStore = new infra.EventStore(eventStoreConnection);
         }
 
+    
         public static void Main(string[] args)
         {
             var startApplicationHandler = new AuthorizeHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()
@@ -126,7 +127,7 @@ namespace host
                     startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
                     submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Submitter = "rich hickey", Version = 0 } }).Wait();
                 }
-                catch(AggregateException ex)
+                catch (AggregateException ex)
                 {
                     Console.WriteLine(ex.InnerException.Message);
                 }

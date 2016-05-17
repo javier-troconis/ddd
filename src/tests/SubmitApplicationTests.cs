@@ -17,7 +17,7 @@ namespace tests
         {
             var state = _state;
 
-            Assert.Throws<Exception>(() => SubmitApplication.Execute(state, "rich hickey"));
+            Assert.Throws<Exception>(() => SubmitApplication.Apply(state, "rich hickey"));
         }
 
         [Fact]
@@ -25,7 +25,7 @@ namespace tests
         {
             var state = _state.Handle(new ApplicationStarted());
 
-            var actual = SubmitApplication.Execute(state, "rich hickey");
+            var actual = SubmitApplication.Apply(state, "rich hickey");
 
             var expected = new IEvent[] {new ApplicationSubmitted("rich hickey")};
 
@@ -39,7 +39,7 @@ namespace tests
                 .Handle(new ApplicationStarted())
                 .Handle(new ApplicationSubmitted("rich hickey"));
 
-            Assert.Throws<Exception>(() => SubmitApplication.Execute(state, "rich hickey"));
+            Assert.Throws<Exception>(() => SubmitApplication.Apply(state, "rich hickey"));
         }
     }
 }

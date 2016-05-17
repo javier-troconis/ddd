@@ -29,7 +29,7 @@ namespace appservices
             var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
             var currentChanges = await _eventStore.ReadEventsAsync(applicationId);
             var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
-            var newChanges = SubmitApplication.Execute(currentState, message.Body.Submitter);
+            var newChanges = SubmitApplication.Apply(currentState, message.Body.Submitter);
             await OptimisticEventWriter.WriteEventsAsync(StreamVersionConflictResolution.AlwaysCommit, _eventStore, applicationId, message.Body.Version, newChanges);
             return message;
         }
