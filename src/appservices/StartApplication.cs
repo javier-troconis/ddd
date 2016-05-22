@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using core;
 using EventStore.ClientAPI;
@@ -30,7 +31,11 @@ namespace appservices
         {
             var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
             var newChanges = StartApplication.Apply();
-            await _eventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
+
+            var cancellationTokenSource = new CancellationTokenSource();
+            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(5));
+
+            await _eventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges, cancellationToken:cancellationTokenSource.Token);
             return message;
         }
     }

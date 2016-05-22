@@ -45,11 +45,11 @@ namespace core
     {
         public static IEnumerable<IEvent> Apply(WhenSubmittingApplicationState state, string submitter)
         {
-            Ensure(state);
+            AssertCanApply(state);
             yield return new ApplicationSubmitted(submitter);
         }
 
-        private static void Ensure(WhenSubmittingApplicationState state)
+        private static void AssertCanApply(WhenSubmittingApplicationState state)
         {
             if (!state.HasBeenStarted)
             {

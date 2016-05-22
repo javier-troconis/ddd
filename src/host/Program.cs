@@ -35,20 +35,20 @@ namespace host
     
 
 
-    class TimedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
-    {
-        private readonly TimeSpan _timeout;
+    //class TimedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
+    //{
+    //    private readonly TimeSpan _timeframe;
 
-        public TimedTaskHandler(TimeSpan timeout)
-        {
-            _timeout = timeout;
-        }
+    //    public TimedTaskHandler(TimeSpan timeframe)
+    //    {
+    //        _timeframe = timeframe;
+    //    }
 
-        public async Task<TOut> Handle(Task<TIn> message)
-        {
-            return await message.TimeoutAfter(_timeout);
-        }
-    }
+    //    public async Task<TOut> Handle(Task<TIn> message)
+    //    {
+    //        return await message.TimeoutAfter(_timeframe);
+    //    }
+    //}
 
     class TaskCompletedLoggerHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
     {
@@ -105,19 +105,22 @@ namespace host
 
             EventStore = new infra.EventStore(eventStoreConnection);
         }
-
     
         public static void Main(string[] args)
         {
+
+
+
+
             var startApplicationHandler = new AuthorizeHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()
                 .ComposeForward(new StartApplicationCommandHandler(EventStore))
-                .ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
+                //.ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
 
-            var submitApplicationHandler = new AuthorizeHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>()
-                .ComposeForward(new SubmitApplicationCommandHandler(EventStore))
-                .ComposeForward(new TimedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(4)))
-                .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
+            //var submitApplicationHandler = new AuthorizeHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>()
+            //    .ComposeForward(new SubmitApplicationCommandHandler(EventStore))
+            //    .ComposeForward(new TimedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(4)))
+            //    .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
             while (true)
             {
@@ -125,7 +128,7 @@ namespace host
                 try
                 {
                     startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
-                    submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Submitter = "rich hickey", Version = 0 } }).Wait();
+                    //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Submitter = "rich hickey", Version = 0 } }).Wait();
                 }
                 catch (AggregateException ex)
                 {

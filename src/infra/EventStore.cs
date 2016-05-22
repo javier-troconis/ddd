@@ -6,14 +6,15 @@ using EventStore.ClientAPI;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System.Linq;
+using System.Threading;
 using shared;
 
 namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber = 0);
-		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null);
+		Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber = 0, CancellationToken cancellationToken = default(CancellationToken));
+		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null, CancellationToken cancellationToken = default(CancellationToken));
 	}
 
 	public class EventStore : IEventStore
@@ -28,15 +29,18 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber)
+		public async Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber, CancellationToken cancellationToken = default(CancellationToken))
 		{
-			var resolvedEvents = await ReadResolvedEventsAsync(streamName, fromEventNumber).ConfigureAwait(false);
+            var resolvedEvents = await ReadResolvedEventsAsync(streamName, fromEventNumber)
+                .WithCancellation(cancellationToken)
+                .ConfigureAwait(false);
+
 			return resolvedEvents
 				.Select(DeserializeEvent)
 				.ToArray();
 		}
 
-		public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
+        public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null, CancellationToken cancellationToken = default(CancellationToken))
 		{
             eventHeader = eventHeader ?? new Dictionary<string, object>();
 			var eventData = events
@@ -44,16 +48,10 @@ namespace infra
 				.Select(ConfigureEventHeader)
 				.Select(ConvertToEventData);
 
-            //using (var tx = await _eventStoreConnection.StartTransactionAsync(streamName, streamExpectedVersion))
-            //{
-            //    
-            //}
-
-			var appendToStreamTask =  _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
-            var appendToStreamResult = await appendToStreamTask;
-
-            return appendToStreamResult;
-
+			return await _eventStoreConnection
+                .AppendToStreamAsync(streamName, streamExpectedVersion, eventData)
+                .WithCancellation(cancellationToken)
+                .ConfigureAwait(false);
         }
 
 		private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName, int fromEventNumber)
