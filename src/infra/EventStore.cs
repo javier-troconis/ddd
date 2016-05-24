@@ -42,6 +42,7 @@ namespace infra
 
         public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null, CancellationToken cancellationToken = default(CancellationToken))
 		{
+            
             eventHeader = eventHeader ?? new Dictionary<string, object>();
 			var eventData = events
                 .Select(@event => new Tuple<IDictionary<string, object>, IEvent>(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event))

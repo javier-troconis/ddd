@@ -32,23 +32,36 @@ namespace host
         }
     }
 
-    
+    class PersistEventsHandler : IMessageHandler<Tuple<Guid, IEnumerable<IEvent>>, Tuple<Guid, IEnumerable<IEvent>>>
+    {
+        private readonly IEventStore _eventStore;
+
+        public PersistEventsHandler(IEventStore eventStore)
+        {
+            _eventStore = eventStore;
+        }
+
+        public Tuple<Guid, IEnumerable<IEvent>> Handle(Tuple<Guid, IEnumerable<IEvent>> message)
+        {
+            throw new NotImplementedException();
+        }
+    }
 
 
-    //class TimedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
-    //{
-    //    private readonly TimeSpan _timeframe;
+    class TimeFramedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
+    {
+        private readonly CancellationTokenSource _cancellationTokenSource;
 
-    //    public TimedTaskHandler(TimeSpan timeframe)
-    //    {
-    //        _timeframe = timeframe;
-    //    }
+        public TimeFramedTaskHandler(TimeSpan timeframe)
+        {
+            _cancellationTokenSource = new CancellationTokenSource(timeframe);
+        }
 
-    //    public async Task<TOut> Handle(Task<TIn> message)
-    //    {
-    //        return await message.TimeoutAfter(_timeframe);
-    //    }
-    //}
+        public async Task<TOut> Handle(Task<TIn> message)
+        {
+            return await message.WithCancellation(_cancellationTokenSource.Token);
+        }
+    }
 
     class TaskCompletedLoggerHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
     {
