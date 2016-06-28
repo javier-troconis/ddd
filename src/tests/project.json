@@ -2,17 +2,14 @@
   "version": "1.0.0-rc2-*",
   "description": "tests Class Application",
   "authors": [ "jtroconis" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
-
+  "testRunner": "xunit",
   "dependencies": {
     "core": {
       "version": "1.0.0-rc2-*",
       "target": "project"
     },
-    "xunit": "2.1.0",
-    "xunit.runner.dnx": "2.1.0-rc2-*"
+    "dotnet-test-xunit": "1.0.0-rc2-*",
+    "xunit": "2.1.0"
   },
   "frameworks": {
     "net46": {

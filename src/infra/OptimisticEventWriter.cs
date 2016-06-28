@@ -8,16 +8,16 @@ using shared;
 
 namespace infra
 {
-    public delegate IEnumerable<IEvent> StreamVersionConflictResolutionStrategy(IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
+    public delegate IEnumerable<IEvent> ConflictResolutionStrategy(IEnumerable<IEvent> eventsToWrite, IEnumerable<IEvent> eventsSinceLastWrite);
 
     public static class StreamVersionConflictResolution
     {
-        public static readonly StreamVersionConflictResolutionStrategy AlwaysCommit = (eventsToWrite, eventsSinceLastWrite) => eventsToWrite;
+        public static readonly ConflictResolutionStrategy AlwaysCommit = (eventsToWrite, eventsSinceLastWrite) => eventsToWrite;
     }
 
     public static class OptimisticEventWriter
     {
-        public static async Task<WriteResult> WriteEventsAsync(StreamVersionConflictResolutionStrategy streamVersionConflictResolutionStrategy, IEventStore eventStore, 
+        public static async Task<WriteResult> WriteEventsAsync(ConflictResolutionStrategy conflictResolutionStrategy, IEventStore eventStore, 
             string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
         {
             while (true)
@@ -36,7 +36,7 @@ namespace infra
                 {
                     throw new Exception($"Version {streamExpectedVersion} does not exist for stream {streamName}");
                 }
-                events = streamVersionConflictResolutionStrategy(events, eventsSinceLastWrite);
+                events = conflictResolutionStrategy(events, eventsSinceLastWrite);
             }
         }
     }
