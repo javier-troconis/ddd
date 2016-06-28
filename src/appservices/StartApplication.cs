@@ -31,11 +31,7 @@ namespace appservices
         {
             var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
             var newChanges = StartApplication.Apply();
-
-            var cancellationTokenSource = new CancellationTokenSource();
-            cancellationTokenSource.CancelAfter(TimeSpan.FromSeconds(5));
-
-            await _eventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges, cancellationToken:cancellationTokenSource.Token);
+            await _eventStore.WriteEventsAsync(applicationId, ExpectedVersion.NoStream, newChanges);
             return message;
         }
     }

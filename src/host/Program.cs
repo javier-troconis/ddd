@@ -32,34 +32,18 @@ namespace host
         }
     }
 
-    class PersistEventsHandler : IMessageHandler<Tuple<Guid, IEnumerable<IEvent>>, Tuple<Guid, IEnumerable<IEvent>>>
-    {
-        private readonly IEventStore _eventStore;
-
-        public PersistEventsHandler(IEventStore eventStore)
-        {
-            _eventStore = eventStore;
-        }
-
-        public Tuple<Guid, IEnumerable<IEvent>> Handle(Tuple<Guid, IEnumerable<IEvent>> message)
-        {
-            throw new NotImplementedException();
-        }
-    }
-
-
     class TimeFramedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
     {
-        private readonly CancellationTokenSource _cancellationTokenSource;
-
+        private readonly TimeSpan _timeout;
+       
         public TimeFramedTaskHandler(TimeSpan timeout)
         {
-            _cancellationTokenSource = new CancellationTokenSource(timeout);
+            _timeout = timeout;
         }
 
         public async Task<TOut> Handle(Task<TIn> message)
-        {
-            return await message.WithCancellation(_cancellationTokenSource.Token);
+        {   var cancellationTokenSource = new CancellationTokenSource(_timeout);
+            return await message.WithCancellation(cancellationTokenSource.Token);
         }
     }
 
@@ -122,9 +106,8 @@ namespace host
       
         public static void Main(string[] args)
         {
-            var startApplicationHandler = new AuthorizeHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()
-                .ComposeForward(new StartApplicationCommandHandler(EventStore))
-                //.ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
+            var startApplicationHandler = new StartApplicationCommandHandler(EventStore)
+                .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
 
             //var submitApplicationHandler = new AuthorizeHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>()
@@ -132,20 +115,19 @@ namespace host
             //    .ComposeForward(new TimedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(4)))
             //    .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
-            //while (true)
-            //{
-            //    var applicationId = Guid.NewGuid();
-            //    try
-            //    {
-            //        startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
-            //        //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Submitter = "rich hickey", Version = 0 } }).Wait();
-            //    }
-            //    catch (AggregateException ex)
-            //    {
-            //        Console.WriteLine(ex.InnerException.Message);
-            //    }
-            //    Task.Delay(2000).Wait();
-            //}
+            while (true)
+            {
+                var applicationId = Guid.NewGuid();
+                try
+                {
+                    startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex.InnerException.Message);
+                }
+                Task.Delay(1000).Wait();
+            }
         }
 
     }
