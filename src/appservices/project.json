@@ -1,27 +1,27 @@
 ﻿{
-  "version": "1.0.0-rc1-*",
+  "version": "1.0.0-rc2-*",
   "description": "appservices Class Library",
   "authors": [ "jtroconis" ],
-  "tags": [ "" ],
-  "projectUrl": "",
-  "licenseUrl": "",
-
+ 
   "dependencies": {
     "shared": {
-      "version": "1.0.0-*",
+      "version": "1.0.0-rc2-*",
       "target": "project"
     },
     "infra": {
-      "version": "1.0.0-*",
+      "version": "1.0.0-rc2-*",
       "target": "project"
     },
     "core": {
-      "version": "1.0.0-*",
+      "version": "1.0.0-rc2-*",
       "target": "project"
     }
   },
+	"frameworks": {
+    "net46": {
+      "dependencies": {
 
-  "frameworks": {
-    "dnx46": { }
-  }
+      }
+    }
+	}
 }

@@ -52,9 +52,9 @@ namespace host
     {
         private readonly CancellationTokenSource _cancellationTokenSource;
 
-        public TimeFramedTaskHandler(TimeSpan timeframe)
+        public TimeFramedTaskHandler(TimeSpan timeout)
         {
-            _cancellationTokenSource = new CancellationTokenSource(timeframe);
+            _cancellationTokenSource = new CancellationTokenSource(timeout);
         }
 
         public async Task<TOut> Handle(Task<TIn> message)
@@ -118,13 +118,10 @@ namespace host
 
             EventStore = new infra.EventStore(eventStoreConnection);
         }
-    
+
+      
         public static void Main(string[] args)
         {
-
-
-
-
             var startApplicationHandler = new AuthorizeHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>()
                 .ComposeForward(new StartApplicationCommandHandler(EventStore))
                 //.ComposeForward(new TimedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
@@ -135,20 +132,20 @@ namespace host
             //    .ComposeForward(new TimedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(4)))
             //    .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
-            while (true)
-            {
-                var applicationId = Guid.NewGuid();
-                try
-                {
-                    startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
-                    //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Submitter = "rich hickey", Version = 0 } }).Wait();
-                }
-                catch (AggregateException ex)
-                {
-                    Console.WriteLine(ex.InnerException.Message);
-                }
-                Task.Delay(2000).Wait();
-            }
+            //while (true)
+            //{
+            //    var applicationId = Guid.NewGuid();
+            //    try
+            //    {
+            //        startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
+            //        //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Submitter = "rich hickey", Version = 0 } }).Wait();
+            //    }
+            //    catch (AggregateException ex)
+            //    {
+            //        Console.WriteLine(ex.InnerException.Message);
+            //    }
+            //    Task.Delay(2000).Wait();
+            //}
         }
 
     }

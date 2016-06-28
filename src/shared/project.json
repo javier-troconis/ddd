@@ -1,16 +1,15 @@
 ﻿{
-		"version": "1.0.0-rc1-*",
-		"description": "shared Class Library",
-		"authors": [ "jtroconis" ],
-		"tags": [ "" ],
-		"projectUrl": "",
-		"licenseUrl": "",
+  "version": "1.0.0-rc2-*",
+  "description": "shared Class Library",
+  "authors": [ "jtroconis" ],
+  "dependencies": {
 
-		"dependencies": {
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
 
-		},
-
-		"frameworks": {
-				"dnx46": { }
-		}
+      }
+    }
+  }
 }

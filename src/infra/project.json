@@ -1,21 +1,21 @@
 ﻿{
-		"version": "1.0.0-rc1-*",
-		"description": "infra Class Library",
-		"authors": [ "jtroconis" ],
-		"tags": [ "" ],
-		"projectUrl": "",
-		"licenseUrl": "",
+  "version": "1.0.0-rc2-*",
+  "description": "infra Class Library",
+  "authors": [ "jtroconis" ],
+ 
+  "dependencies": {
+    "shared": {
+      "version": "1.0.0-rc2-*",
+      "target": "project"
+    },
+    "EventStore.Client": "3.6.0",
+    "Newtonsoft.Json": "8.0.2"
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
 
-		"dependencies": {
-				"shared": {
-						"version": "1.0.0-*",
-						"target": "project"
-				},
-				"EventStore.Client": "3.6.0",
-				"Newtonsoft.Json": "8.0.2"
-		},
-
-		"frameworks": {
-				"dnx46": { }
-		}
+      }
+    }
+  }
 }

@@ -1,39 +1,38 @@
 ﻿{
-		"version": "1.0.0-rc1-*",
-		"description": "host Console Application",
-		"authors": [ "jtroconis" ],
-		"tags": [ "" ],
-		"projectUrl": "",
-		"licenseUrl": "",
-
-		"compilationOptions": {
-				"emitEntryPoint": true
-		},
+  "version": "1.0.0-rc2-*",
+  "description": "host Console Application",
+  "authors": [ "jtroconis" ],
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
 
   "dependencies": {
     "shared": {
-      "version": "1.0.0-*",
+      "version": "1.0.0-rc2-*",
       "target": "project"
     },
     "core": {
-      "version": "1.0.0-*",
+      "version": "1.0.0-rc2-*",
       "target": "project"
     },
     "infra": {
-      "version": "1.0.0-*",
+      "version": "1.0.0-rc2-*",
       "target": "project"
     },
     "appservices": {
-      "version": "1.0.0-*",
+      "version": "1.0.0-rc2-*",
       "target": "project"
     }
   },
 
-		"commands": {
-				"host": "host"
-		},
+  "buildOptions": {
+    "emitEntryPoint": true
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
 
-		"frameworks": {
-				"dnx46": { }
-		}
+      }
+    }
+  }
 }

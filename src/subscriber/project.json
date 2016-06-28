@@ -1,35 +1,34 @@
 ﻿{
-		"version": "1.0.0-rc1-*",
-		"description": "subscriber Console Application",
-		"authors": [ "jtroconis" ],
-		"tags": [ "" ],
-		"projectUrl": "",
-		"licenseUrl": "",
+  "version": "1.0.0-rc2-*",
+  "description": "subscriber Console Application",
+  "authors": [ "jtroconis" ],
+ 
+  "compilationOptions": {
+    "emitEntryPoint": true
+  },
 
-		"compilationOptions": {
-				"emitEntryPoint": true
-		},
+  "dependencies": {
+    "shared": {
+      "version": "1.0.0-rc2-*",
+      "target": "project"
+    },
+    "core": {
+      "version": "1.0.0-rc2-*",
+      "target": "project"
+    },
+    "infra": {
+      "version": "1.0.0-rc2-*",
+      "target": "project"
+    }
+  },
+  "buildOptions": {
+    "emitEntryPoint": true
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
 
-		"dependencies": {
-				"shared": {
-						"version": "1.0.0-*",
-						"target": "project"
-				},
-				"core": {
-						"version": "1.0.0-*",
-						"target": "project"
-				},
-				"infra": {
-						"version": "1.0.0-*",
-						"target": "project"
-				}
-		},
-
-		"commands": {
-				"host": "subscriber"
-		},
-
-		"frameworks": {
-				"dnx46": { }
-		}
+      }
+    }
+  }
 }
