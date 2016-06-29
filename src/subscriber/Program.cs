@@ -16,10 +16,9 @@ namespace subscriber
 	public class Program
 	{
 		private static readonly IEventStoreConnection Connection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
-		private static readonly ProjectionsManager ProjectionsManager = new ProjectionsManager(new ConsoleLogger(), EventStoreSettings.HttpEndPoint, TimeSpan.FromMilliseconds(5000));
 		private const string SubscriptionGroupName = "application1";
 		private static readonly string[] AvailableEventTypes = {"applicationsubmitted","applicationstarted"};
-		private static readonly Random Random = new Random();
+		private static readonly Random Rnd = new Random();
 
 		static Program()
 		{
@@ -86,9 +85,12 @@ namespace subscriber
 
 			//var projectionDefinition = string.Format(projectionDefinitionTemplate, projectionDestinationStream, onEventReceivedStatements);
 
-			var projectionDefinition = string.Format(projectionDefinitionTemplate, SubscriptionGroupName, onEventReceivedStatements);
 
-			CreateOrUpdateProjection(SubscriptionGroupName, projectionDefinition);
+            
+
+            var projectionDefinition = string.Format(projectionDefinitionTemplate, SubscriptionGroupName, onEventReceivedStatements);
+
+			CreateOrUpdateProjection(SubscriptionGroupName, projectionDefinition, 0, 10).Wait();
 
 			var subcriptionGroupSettingsBuilder = PersistentSubscriptionSettings.Create()
 					.ResolveLinkTos()
@@ -121,56 +123,65 @@ namespace subscriber
 					{
 						Subscribe();
 						Console.WriteLine("subscription dropped");
-					});
+					}, autoAck:false);
 		}
 
-		private static void CreateOrUpdateProjection(string projectionName, string projectionDefinition)
+		private static async Task CreateOrUpdateProjection(string projectionName, string projectionDefinition, int attemptNumber, int maxAttempts)
 		{
-			if (IsProjectionNew(projectionName))
-			{
-				CreateProjection(projectionName, projectionDefinition);
-			}
-			else if(HasProjectionChanged(projectionName, projectionDefinition))
-			{
-				UpdateProjection(projectionName, projectionDefinition);
-			}
+            var externalHttpEndPoint = EventStoreSettings.NodeConfigurations[Rnd.Next(EventStoreSettings.NodeConfigurations.Length)].ExternalHttpEndPoint;
+            var projectionsManager = new ProjectionsManager(new ConsoleLogger(), externalHttpEndPoint, TimeSpan.FromMilliseconds(5000));
+            try
+            {
+                if (await IsProjectionNew(projectionsManager, projectionName))
+                {
+                    await CreateProjection(projectionsManager, projectionName, projectionDefinition);
+                }
+                else if (await HasProjectionChanged(projectionsManager, projectionName, projectionDefinition))
+                {
+                    await UpdateProjection(projectionsManager, projectionName, projectionDefinition);
+                }
+            }
+            catch(Exception)
+            {
+                if (attemptNumber >= maxAttempts)
+                {
+                    throw;
+                }
+            }
+            await CreateOrUpdateProjection(projectionName, projectionDefinition, attemptNumber + 1, maxAttempts);
 		}
 
-		private static bool IsProjectionNew(string projectionName)
+		private static async Task<bool> IsProjectionNew(ProjectionsManager projectionsManager, string projectionName)
 		{
 			try
 			{
-				ProjectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials).Wait();
+                await projectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials);
 				return false;
 			}
-			catch (AggregateException ex)
+			catch (ProjectionCommandFailedException ex)
 			{
-				ProjectionCommandFailedException innerEx;
-				if (ex.InnerExceptions.Count > 1 || 
-					(innerEx = ex.InnerException as ProjectionCommandFailedException) == null || 
-					innerEx.HttpStatusCode != (int)HttpStatusCode.NotFound)
-				{
-					throw;
-				}
-			}
-			return true;
+                if (ex.HttpStatusCode != (int)HttpStatusCode.NotFound)
+                {
+                    throw;
+                }
+            }
+            return true;
 		}
 
-		private static void CreateProjection(string projectionName, string projectionDefinition)
+		private static Task CreateProjection(ProjectionsManager projectionsManager, string projectionName, string projectionDefinition)
 		{
-            ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials).Wait();	
+            return projectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials);	
 		}
 
-		private static bool HasProjectionChanged(string projectionName, string projectionDefinition)
+		private static async Task<bool> HasProjectionChanged(ProjectionsManager projectionsManager, string projectionName, string projectionDefinition)
 		{
-			var response = ProjectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials);
-			response.Wait();
-			return response.Result != projectionDefinition;
+			var storedProjectionDefinition = await projectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials);
+			return storedProjectionDefinition != projectionDefinition;
 		}
 
-		private static void UpdateProjection(string projectionName, string projectionDefinition)
+		private static Task UpdateProjection(ProjectionsManager projectionsManager, string projectionName, string projectionDefinition)
 		{
-			ProjectionsManager.UpdateQueryAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials).Wait();
+            return projectionsManager.UpdateQueryAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials);
 		}
 	}
 }

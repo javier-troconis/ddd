@@ -24,13 +24,8 @@ namespace infra
 
             var clusterSettings = ClusterSettings
                 .Create()
-
                 .DiscoverClusterViaGossipSeeds()
-                .SetGossipSeedEndPoints(
-                    new IPEndPoint(IPAddress.Parse("127.0.0.1"), 1113),
-                    new IPEndPoint(IPAddress.Parse("127.0.0.1"), 2113),
-                    new IPEndPoint(IPAddress.Parse("127.0.0.1"), 3113)
-                 )
+                .SetGossipSeedEndPoints(EventStoreSettings.NodeConfigurations.Select(x => x.InternalHttpEndPoint).ToArray())
                 .Build();
 
             return EventStoreConnection.Create(connectionSettings, clusterSettings);

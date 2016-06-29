@@ -8,6 +8,7 @@
   },
 
   "dependencies": {
+    "EventStore.Client": "3.6.2",
     "shared": {
       "version": "1.0.0-rc2-*",
       "target": "project"
@@ -27,7 +28,7 @@
   "frameworks": {
     "net46": {
       "dependencies": {
-
+        
       }
     }
   }
