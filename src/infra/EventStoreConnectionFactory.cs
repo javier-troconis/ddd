@@ -25,7 +25,7 @@ namespace infra
             var clusterSettings = ClusterSettings
                 .Create()
                 .DiscoverClusterViaGossipSeeds()
-                .SetGossipSeedEndPoints(EventStoreSettings.NodeConfigurations.Select(x => x.InternalHttpEndPoint).ToArray())
+                .SetGossipSeedEndPoints(EventStoreSettings.InternalHttpEndPoint)
                 .Build();
 
             return EventStoreConnection.Create(connectionSettings, clusterSettings);
