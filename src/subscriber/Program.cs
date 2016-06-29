@@ -147,8 +147,8 @@ namespace subscriber
                 {
                     throw;
                 }
+                await CreateOrUpdateProjection(projectionName, projectionDefinition, attemptNumber + 1, maxAttempts);
             }
-            await CreateOrUpdateProjection(projectionName, projectionDefinition, attemptNumber + 1, maxAttempts);
 		}
 
 		private static async Task<bool> IsProjectionNew(ProjectionsManager projectionsManager, string projectionName)
@@ -164,8 +164,8 @@ namespace subscriber
                 {
                     throw;
                 }
+                return true;
             }
-            return true;
 		}
 
 		private static Task CreateProjection(ProjectionsManager projectionsManager, string projectionName, string projectionDefinition)
