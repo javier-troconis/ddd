@@ -5,16 +5,16 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-    public static class FuncExtensions
+    public static class FuncComposer
     {
-        public static Func<TIn, TOut1> ComposeForward<TIn, TOut, TOut1>(this Func<TIn, TOut> @from, Func<TOut, TOut1> to)
+        public static Func<TIn, TOut1> ComposeForward<TIn, TOut, TOut1>(Func<TIn, TOut> @from, Func<TOut, TOut1> to)
         {
-            return FuncComposer.ComposeForward(@from, to);
+            return x => to(@from(x));
         }
 
         public static Func<TIn1, TOut> ComposeBackward<TIn1, TIn, TOut>(this Func<TIn, TOut> to, Func<TIn1, TIn> @from)
         {
-            return @from.ComposeForward(to);
+            return ComposeForward(@from, to);
         }
     }
 }
