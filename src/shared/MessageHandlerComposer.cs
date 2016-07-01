@@ -16,41 +16,38 @@ namespace shared
         public static ICompositeMessageHandler<TIn, TOut1> ComposeForward<TIn, TOut, TOut1>(
             IMessageHandler<TIn, TOut> @from, IMessageHandler<TOut, TOut1> to)
         {
-            return new MessageHandler<TIn, TOut, TOut1>(@from, to);
+            return new MessageHandler<TIn, TOut1>(new Func<TIn, TOut>(@from.Handle).ComposeForward(to.Handle));
         }
 
         public static ICompositeMessageHandler<TIn1, TOut> ComposeBackward<TIn1, TIn, TOut>(
             IMessageHandler<TIn, TOut> to, IMessageHandler<TIn1, TIn> @from)
         {
-            return new MessageHandler<TIn1, TIn, TOut>(@from, to);
+            return ComposeForward(@from, to);
         }
 
-        private class MessageHandler<TIn, TInOut, TOut> : ICompositeMessageHandler<TIn, TOut>
+        private class MessageHandler<TIn, TOut> : ICompositeMessageHandler<TIn, TOut>
         {
-            private readonly IMessageHandler<TIn, TInOut> _from;
-            private readonly IMessageHandler<TInOut, TOut> _to;
+            private readonly Func<TIn, TOut> _handle;
 
-            public MessageHandler(IMessageHandler<TIn, TInOut> @from, IMessageHandler<TInOut, TOut> to)
+            public MessageHandler(Func<TIn, TOut> handle)
             {
-                _to = to;
-                _from = @from;
+                _handle = handle;
             }
 
             public TOut Handle(TIn message)
             {
-                return _to.Handle(_from.Handle(message));
+                return _handle(message);
             }
 
             public ICompositeMessageHandler<TIn, TOut1> ComposeForward<TOut1>(IMessageHandler<TOut, TOut1> to)
             {
-                return new MessageHandler<TIn, TOut, TOut1>(this, to);
+                return MessageHandlerComposer.ComposeForward(this, to);
             }
 
             public ICompositeMessageHandler<TIn1, TOut> ComposeBackward<TIn1>(IMessageHandler<TIn1, TIn> @from)
             {
-                return new MessageHandler<TIn1, TIn, TOut>(@from, this);
+                return MessageHandlerComposer.ComposeBackward(this, @from);
             }
         }
-
     }
 }

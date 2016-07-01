@@ -20,8 +20,6 @@ namespace infra
 
             var connectionSettings = connectionSettingsBuilder.Build();
 
-            //return EventStoreConnection.Create(connectionSettings, EventStoreSettings.TcpEndPoint);
-
             var clusterSettings = ClusterSettings
                 .Create()
                 .DiscoverClusterViaGossipSeeds()

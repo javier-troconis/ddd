@@ -2,12 +2,13 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using contracts;
 using shared;
 
 namespace core
 {
 
-    public struct ApplicationSubmitted : IEvent
+    public struct ApplicationSubmitted : IApplicationSubmitted
     {
         public readonly string SubmittedBy;
 

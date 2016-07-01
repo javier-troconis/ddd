@@ -103,7 +103,6 @@ namespace host
             EventStore = new infra.EventStore(eventStoreConnection);
         }
 
-      
         public static void Main(string[] args)
         {
             var startApplicationHandler = new StartApplicationCommandHandler(EventStore)
