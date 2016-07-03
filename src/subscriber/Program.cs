@@ -117,7 +117,6 @@ namespace subscriber
                         try
                         {
                             Console.WriteLine($"stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
-                            //throw new Exception();
                             s.Acknowledge(e);
                         }
                         catch(Exception ex)
