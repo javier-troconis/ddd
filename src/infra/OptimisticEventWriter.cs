@@ -10,7 +10,7 @@ namespace infra
 {
     public delegate bool TryResolveConflict(IEnumerable<IEvent> changes, IEnumerable<IEvent> changesSinceLastWrite, out IEnumerable<IEvent> mergedChanges);
 
-    public static class ConflictResolutionType
+    public static class ConflictResolutionStrategy
     {
         public static readonly TryResolveConflict IgnoreConflict = delegate (IEnumerable<IEvent> changes, IEnumerable<IEvent> changesSinceLastWrite, out IEnumerable<IEvent> mergedChanges)
         {

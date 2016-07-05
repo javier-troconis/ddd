@@ -26,11 +26,11 @@ namespace appservices
 
         public async Task<Message<SubmitApplicationCommand>> Handle(Message<SubmitApplicationCommand> message)
         {
-            var applicationId = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
-            var currentChanges = await _eventStore.ReadEventsAsync(applicationId);
+            var streamName = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
+            var currentChanges = await _eventStore.ReadEventsAsync(streamName);
             var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
             var newChanges = SubmitApplication.Apply(currentState, message.Body.Submitter);
-            await OptimisticEventWriter.WriteEventsAsync(ConflictResolutionType.IgnoreConflict, _eventStore, applicationId, message.Body.Version, newChanges);
+            await OptimisticEventWriter.WriteEventsAsync(ConflictResolutionStrategy.IgnoreConflict, _eventStore, streamName, message.Body.Version, newChanges);
             return message;
         }
     }

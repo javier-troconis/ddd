@@ -16,11 +16,21 @@ namespace appservices
     }
 
 
-    public class StartApplicationCommandHandler : IMessageHandler<StartApplicationCommand, IEnumerable<IEvent>>
+    public class StartApplicationCommandHandler : IMessageHandler<Message<StartApplicationCommand>, Task<Message<StartApplicationCommand>>>
     {
-        public IEnumerable<IEvent> Handle(StartApplicationCommand message)
+        private readonly IEventStore _eventStore;
+
+        public StartApplicationCommandHandler(IEventStore eventStore)
         {
-            return StartApplication.Apply();
+            _eventStore = eventStore;
+        }
+
+        public async Task<Message<StartApplicationCommand>> Handle(Message<StartApplicationCommand> message)
+        {
+            var streamName = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
+            var newChanges = StartApplication.Apply();
+            await _eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, newChanges);
+            return message;
         }
     }
 }
