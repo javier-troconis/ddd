@@ -12,7 +12,7 @@ namespace infra
 
     public static class ConflictResolutionType
     {
-        public static readonly TryResolveConflict IgnoreChangesSinceLastWrite = delegate (IEnumerable<IEvent> changes, IEnumerable<IEvent> changesSinceLastWrite, out IEnumerable<IEvent> mergedChanges)
+        public static readonly TryResolveConflict IgnoreConflict = delegate (IEnumerable<IEvent> changes, IEnumerable<IEvent> changesSinceLastWrite, out IEnumerable<IEvent> mergedChanges)
         {
             mergedChanges = changes;
             return true;

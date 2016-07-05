@@ -66,6 +66,24 @@ namespace host
         }
     }
 
+    class EventWriterHandler<TIn, TOut> : IMessageHandler<IEnumerable<IEvent>, Task>
+    {
+        private readonly IEventStore _eventStore;
+        private readonly string _streamPrefix;
+
+        public EventWriterHandler(IEventStore eventStore, string streamPrefix)
+        {
+            _eventStore = eventStore;
+            _streamPrefix = streamPrefix;
+        }
+
+        public Task Handle(IEnumerable<IEvent> message)
+        {
+            //await OptimisticEventWriter.WriteEventsAsync(ConflictResolutionType.IgnoreConflict, _eventStore, applicationId, message.Body.Version, newChanges);
+            throw new NotImplementedException();
+        }
+    }
+
     public class Program
     {
         private static readonly IEventStore EventStore;
@@ -103,23 +121,32 @@ namespace host
             EventStore = new infra.EventStore(eventStoreConnection);
         }
 
+        
+
         public static void Main(string[] args)
         {
-            var startApplicationHandler = new StartApplicationCommandHandler(EventStore)
-                .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
-                .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
 
-            var submitApplicationHandler = new SubmitApplicationCommandHandler(EventStore)
-                .ComposeForward(new TimeFramedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(2)))
-                .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
+            //Console.WriteLine(new Func<int, int>(x => x).ComposeForward(new Func<int, string>(x => x.ToString()).ComposeForward(x => x)).ComposeForward(x => x + 1)(1));
+
+
+            Console.WriteLine(new Func<int, int>(x => x).ComposeBackward<int, int, int>(x => x).ComposeBackward<int, int, int>(x => x));
+
+            //var startApplicationHandler = new StartApplicationCommandHandler().ComposeForward(new EventWriterHandler(EventStore, "application"))
+
+            //    .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
+            //    .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
+
+            //var submitApplicationHandler = new SubmitApplicationCommandHandler(EventStore)
+            //    .ComposeForward(new TimeFramedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(2)))
+            //    .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
             while (true)
             {
                 var applicationId = Guid.NewGuid();
                 try
                 {
-                    startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
-                    submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = -1, Submitter = "javier" } }).Wait();
+                    //startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
+                    //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = -1, Submitter = "javier" } }).Wait();
                 }
                 catch (Exception ex)
                 {
