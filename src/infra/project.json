@@ -2,8 +2,9 @@
   "version": "1.0.0-rc2-*",
   "description": "infra Class Library",
   "authors": [ "jtroconis" ],
- 
+
   "dependencies": {
+    "ImpromptuInterface": "6.2.2",
     "shared": {
       "version": "1.0.0-rc2-*",
       "target": "project"

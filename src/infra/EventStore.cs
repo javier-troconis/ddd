@@ -22,7 +22,7 @@ namespace infra
 		private const int DefaultSliceSize = 10;
 		private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
 		private readonly IEventStoreConnection _eventStoreConnection;
-		private const string EventClrTypeHeader = "EventClrType";
+		public const string EventClrTypeHeader = "EventClrType";
 
 		public EventStore(IEventStoreConnection eventStoreConnection)
 		{

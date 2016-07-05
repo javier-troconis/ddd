@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using System.Threading.Tasks;
+using contracts;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
@@ -47,6 +48,10 @@ namespace subscriber
 
         public static void Main(string[] args)
         {
+            //var catchUpSubscription = EventBus.RegisterCatchUpSubscription(Connection, () => new ApplicationStatusDocumentWriter(), () => -1);
+
+            //catchUpSubscription.StartAsync().Wait();
+
             CreateSubscriberGroup().Wait();
 
             Subscribe().Wait();
@@ -105,7 +110,7 @@ namespace subscriber
             }
             catch (InvalidOperationException)
             {
-                
+
             }
         }
 
@@ -119,11 +124,11 @@ namespace subscriber
                             Console.WriteLine($"stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
                             s.Acknowledge(e);
                         }
-                        catch(Exception ex)
+                        catch (Exception ex)
                         {
                             s.Fail(e, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
                         }
-                        
+
                     },
                 async (s, r, e) =>
                     {

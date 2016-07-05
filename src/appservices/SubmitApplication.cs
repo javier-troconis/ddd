@@ -26,7 +26,7 @@ namespace appservices
 
         public async Task<Message<SubmitApplicationCommand>> Handle(Message<SubmitApplicationCommand> message)
         {
-            var streamName = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
+            var streamName = "application-" + NamingConvention.Stream(message.Body.ApplicationId);
             var currentChanges = await _eventStore.ReadEventsAsync(streamName);
             var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
             var newChanges = SubmitApplication.Apply(currentState, message.Body.Submitter);

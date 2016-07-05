@@ -27,7 +27,7 @@ namespace appservices
 
         public async Task<Message<StartApplicationCommand>> Handle(Message<StartApplicationCommand> message)
         {
-            var streamName = "application-" + StreamNamingConvention.From(message.Body.ApplicationId);
+            var streamName = "application-" + NamingConvention.Stream(message.Body.ApplicationId);
             var newChanges = StartApplication.Apply();
             await _eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, newChanges);
             return message;
