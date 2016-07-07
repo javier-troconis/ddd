@@ -30,7 +30,7 @@ namespace appservices
             var currentChanges = await _eventStore.ReadEventsAsync(streamName);
             var currentState = currentChanges.Aggregate(new WhenSubmittingApplicationState(), StreamStateFolder.Fold);
             var newChanges = SubmitApplication.Apply(currentState, message.Body.Submitter);
-            await OptimisticEventWriter.WriteEventsAsync(ConflictResolutionStrategy.IgnoreConflict, _eventStore, streamName, message.Body.Version, newChanges);
+            await OptimisticEventWriter.WriteEventsAsync(EventConflictResolutionStrategy.IgnoreConflictingChanges, _eventStore, streamName, message.Body.Version, newChanges);
             return message;
         }
     }

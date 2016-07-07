@@ -8,20 +8,20 @@ using shared;
 
 namespace infra
 {
-    public delegate bool TryResolveConflict(IEnumerable<IEvent> changes, IEnumerable<IEvent> changesSinceLastWrite, out IEnumerable<IEvent> mergedChanges);
+    public delegate bool TryResolveEventConflict(IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges);
 
-    public static class ConflictResolutionStrategy
+    public static class EventConflictResolutionStrategy
     {
-        public static readonly TryResolveConflict IgnoreConflict = delegate (IEnumerable<IEvent> changes, IEnumerable<IEvent> changesSinceLastWrite, out IEnumerable<IEvent> mergedChanges)
+        public static readonly TryResolveEventConflict IgnoreConflictingChanges = delegate (IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges)
         {
-            mergedChanges = changes;
+            mergedChanges = newChanges;
             return true;
         };
     }
 
     public static class OptimisticEventWriter
     {
-        public static async Task<WriteResult> WriteEventsAsync(TryResolveConflict tryResolveConflict, IEventStore eventStore, 
+        public static async Task<WriteResult> WriteEventsAsync(TryResolveEventConflict writeConflicted, IEventStore eventStore, 
             string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
         {
             while (true)
@@ -40,7 +40,7 @@ namespace infra
                 {
                     throw new Exception($"Non existent version {streamExpectedVersion} for stream {streamName}");
                 }
-                if (!tryResolveConflict(events, changesSinceLastWrite, out events))
+                if (!writeConflicted(events, changesSinceLastWrite, out events))
                 {
                     throw new ConcurrencyException();
                 }

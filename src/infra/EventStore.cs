@@ -22,7 +22,7 @@ namespace infra
 		private const int DefaultSliceSize = 10;
 		private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
 		private readonly IEventStoreConnection _eventStoreConnection;
-		public const string EventClrTypeHeader = "EventClrType";
+		private const string EventClrTypeHeader = "EventClrType";
 
 		public EventStore(IEventStoreConnection eventStoreConnection)
 		{
@@ -46,7 +46,7 @@ namespace infra
 
             var eventData = events
 				.Select(@event => ((Func<Tuple<IDictionary<string, object>, IEvent>, Tuple<IDictionary<string, object>, IEvent>>)ConfigureEventHeader)
-                    .ComposeForward(ConvertToEventData)(new Tuple<IDictionary<string, object>, IEvent>(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event)));
+                    .ComposeForward(ConvertToEventData)(Tuple.Create<IDictionary<string, object>, IEvent>(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event)));
 
 			return await _eventStoreConnection
                 .AppendToStreamAsync(streamName, streamExpectedVersion, eventData)
