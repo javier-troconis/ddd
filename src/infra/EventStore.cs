@@ -45,10 +45,11 @@ namespace infra
             eventHeader = eventHeader ?? new Dictionary<string, object>();
 
             var eventData = events
-				.Select(@event => ((Func<Tuple<IDictionary<string, object>, IEvent>, Tuple<IDictionary<string, object>, IEvent>>)ConfigureEventHeader)
-                    .ComposeForward(ConvertToEventData)(Tuple.Create<IDictionary<string, object>, IEvent>(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event)));
-
-			return await _eventStoreConnection
+                .Select(@event => Tuple.Create(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event)
+                    .PipeForward(ConfigureEventHeader)
+                    .PipeForward(ConvertToEventData));
+                   
+            return await _eventStoreConnection
                 .AppendToStreamAsync(streamName, streamExpectedVersion, eventData)
                 .WithCancellation(cancellationToken)
                 .ConfigureAwait(false);
@@ -77,14 +78,14 @@ namespace infra
 			return resolvedEvents;
 		}
 
-        private static Tuple<IDictionary<string, object>, IEvent> ConfigureEventHeader(Tuple<IDictionary<string, object>, IEvent> arg)
+        private static Tuple<Dictionary<string, object>, IEvent> ConfigureEventHeader(Tuple<Dictionary<string, object>, IEvent> arg)
 		{
 			var eventType = arg.Item2.GetType();
             arg.Item1[EventClrTypeHeader] = eventType.AssemblyQualifiedName;
 			return arg;
 		}
 
-		private static EventData ConvertToEventData(Tuple<IDictionary<string, object>, IEvent> arg)
+		private static EventData ConvertToEventData(Tuple<Dictionary<string, object>, IEvent> arg)
 		{
 			var eventId = Guid.NewGuid();
 			var eventType = arg.Item2.GetType();
