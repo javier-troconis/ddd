@@ -8,11 +8,11 @@ using shared;
 
 namespace infra
 {
-    public delegate bool TryResolveEventConflict(IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges);
+    public delegate bool TryResolveConflict(IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges);
 
-    public static class EventConflictResolutionStrategy
+    public static class ConflictResolutionStrategy
     {
-        public static readonly TryResolveEventConflict IgnoreConflictingChanges = delegate (IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges)
+        public static readonly TryResolveConflict IgnoreConflictingChanges = delegate (IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges)
         {
             mergedChanges = newChanges;
             return true;
@@ -21,26 +21,26 @@ namespace infra
 
     public static class OptimisticEventWriter
     {
-        public static async Task<WriteResult> WriteEventsAsync(TryResolveEventConflict writeConflicted, IEventStore eventStore, 
+        public static async Task<WriteResult> WriteEventsAsync(TryResolveConflict tryResolveConflict, IEventStore eventStore, 
             string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
         {
             while (true)
             {
-                IEnumerable<IEvent> changesSinceLastWrite;
+                IEnumerable<IEvent> eventsSinceLastWrite;
                 try
                 {
                     return await eventStore.WriteEventsAsync(streamName, streamExpectedVersion, events, eventHeader);
                 }
                 catch (WrongExpectedVersionException)
                 {
-                    changesSinceLastWrite = await eventStore.ReadEventsAsync(streamName, streamExpectedVersion + 1);
-                    streamExpectedVersion = streamExpectedVersion + changesSinceLastWrite.Count();
+                    eventsSinceLastWrite = await eventStore.ReadEventsAsync(streamName, streamExpectedVersion + 1);
+                    streamExpectedVersion = streamExpectedVersion + eventsSinceLastWrite.Count();
                 }
-                if (!changesSinceLastWrite.Any())
+                if (!eventsSinceLastWrite.Any())
                 {
                     throw new Exception($"Non existent version {streamExpectedVersion} for stream {streamName}");
                 }
-                if (!writeConflicted(events, changesSinceLastWrite, out events))
+                if (!tryResolveConflict(events, eventsSinceLastWrite, out events))
                 {
                     throw new ConcurrencyException();
                 }
