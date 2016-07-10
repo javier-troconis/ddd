@@ -19,7 +19,8 @@ namespace subscriber
         private static readonly IEventStoreConnection Connection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
         private const string SubscriptionGroupName = "application1";
         private static readonly string[] AvailableEventTypes = { "applicationsubmitted", "applicationstarted" };
-        private static readonly ProjectionsManager ProjectionsManager = new ProjectionsManager(new ConsoleLogger(), EventStoreSettings.ExternalHttpEndPoint, TimeSpan.FromMilliseconds(5000));
+        private static readonly ProjectionsManager ProjectionsManager = new ProjectionsManager(new ConsoleLogger(), 
+            new IPEndPoint(Dns.GetHostEntry(EventStoreSettings.ClusterDns).AddressList[0], EventStoreSettings.ExternalHttpPort), TimeSpan.FromMilliseconds(5000));
 
         static Program()
         {
