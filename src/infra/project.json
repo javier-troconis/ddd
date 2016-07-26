@@ -9,7 +9,7 @@
       "version": "1.0.0-rc2-*",
       "target": "project"
     },
-    "EventStore.Client": "3.6.2",
+    "EventStore.Client": "3.7.0",
     "Newtonsoft.Json": "8.0.2"
   },
   "frameworks": {

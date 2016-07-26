@@ -21,29 +21,29 @@ namespace infra
 
     public static class OptimisticEventWriter
     {
-        public static async Task<WriteResult> WriteEventsAsync(TryResolveConflict tryResolveConflict, IEventStore eventStore, 
-            string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
+        public static async Task<WriteResult> WriteEventsAsync(TryResolveConflict tryResolveConflict, IEventStore eventStore, string streamName, int streamExpectedVersion, 
+            IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
         {
             while (true)
             {
-                IEnumerable<IEvent> eventsSinceLastWrite;
                 try
                 {
                     return await eventStore.WriteEventsAsync(streamName, streamExpectedVersion, events, eventHeader);
                 }
                 catch (WrongExpectedVersionException)
                 {
-                    eventsSinceLastWrite = await eventStore.ReadEventsAsync(streamName, streamExpectedVersion + 1);
-                    streamExpectedVersion = streamExpectedVersion + eventsSinceLastWrite.Count();
-                }
-                if (!eventsSinceLastWrite.Any())
-                {
-                    throw new Exception($"Non existent version {streamExpectedVersion} for stream {streamName}");
-                }
-                if (!tryResolveConflict(events, eventsSinceLastWrite, out events))
-                {
-                    throw new ConcurrencyException();
-                }
+                    var nextStreamVersion = streamExpectedVersion + 1;
+                    var eventsSinceLastWrite = await eventStore.ReadEventsAsync(streamName, nextStreamVersion);
+                     if (!eventsSinceLastWrite.Any())
+                    {
+                        throw new Exception($"stream {streamName} is not at version {nextStreamVersion}");
+                    }
+                    if (!tryResolveConflict(events, eventsSinceLastWrite, out events))
+                    {
+                        throw new ConcurrencyException();
+                    }
+                    streamExpectedVersion += eventsSinceLastWrite.Count;
+                } 
             }
         }
     }

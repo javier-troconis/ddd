@@ -7,7 +7,7 @@ using shared;
 
 namespace subscriber
 {
-    public class ApplicationStatusDocumentWriter : IMessageHandler<IApplicationStarted, Task>, IMessageHandler<IApplicationSubmitted, Task>
+    public class ApplicationStatusWriter : IMessageHandler<IApplicationStarted, Task>, IMessageHandler<IApplicationSubmitted, Task>
     {
         public Task Handle(IApplicationStarted message)
         {

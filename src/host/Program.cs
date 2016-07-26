@@ -35,14 +35,15 @@ namespace host
     class TimeFramedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
     {
         private readonly TimeSpan _timeout;
-       
+
         public TimeFramedTaskHandler(TimeSpan timeout)
         {
             _timeout = timeout;
         }
 
         public async Task<TOut> Handle(Task<TIn> message)
-        {   var cancellationTokenSource = new CancellationTokenSource(_timeout);
+        {
+            var cancellationTokenSource = new CancellationTokenSource(_timeout);
             return await message.WithCancellation(cancellationTokenSource.Token);
         }
     }
@@ -68,50 +69,19 @@ namespace host
 
     public class Program
     {
-        private static readonly IEventStore EventStore;
-
-        static Program()
-        {
-            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
-
-            eventStoreConnection.Disconnected += (s, a) =>
-            {
-                Console.WriteLine("disconnected");
-            };
-
-            eventStoreConnection.Closed += (s, a) =>
-            {
-                Console.WriteLine("closed");
-            };
-
-            eventStoreConnection.ErrorOccurred += (s, a) =>
-            {
-                Console.WriteLine("errorocurred" + a.Exception);
-            };
-
-            eventStoreConnection.Connected += (s, a) =>
-            {
-                Console.WriteLine("connected");
-            };
-
-            eventStoreConnection.Reconnecting += (s, a) =>
-            {
-                Console.WriteLine("reconnecting");
-            };
-            eventStoreConnection.ConnectAsync().Wait();
-
-            EventStore = new infra.EventStore(eventStoreConnection);
-        }
-
-        
-
         public static void Main(string[] args)
         {
-            var startApplicationHandler = new StartApplicationCommandHandler(EventStore)
+            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x
+                .KeepReconnecting()
+                .SetMaxDiscoverAttempts(int.MaxValue));
+            eventStoreConnection.ConnectAsync().Wait();
+            var eventStore = new infra.EventStore(eventStoreConnection);
+
+            var startApplicationHandler = new StartApplicationCommandHandler(eventStore)
                 .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
 
-            var submitApplicationHandler = new SubmitApplicationCommandHandler(EventStore)
+            var submitApplicationHandler = new SubmitApplicationCommandHandler(eventStore)
                 .ComposeForward(new TimeFramedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(2)))
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 

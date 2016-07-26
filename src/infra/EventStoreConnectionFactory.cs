@@ -10,11 +10,12 @@ namespace infra
 {
     public static class EventStoreConnectionFactory
     {
-		public static IEventStoreConnection Create(Action<ConnectionSettingsBuilder> configureConnectionSettings = null)
-		{
-			var connectionSettingsBuilder = ConnectionSettings
-					.Create()
-					.SetDefaultUserCredentials(EventStoreSettings.Credentials);
+        public static IEventStoreConnection Create(Action<ConnectionSettingsBuilder> configureConnectionSettings = null)
+        {
+            var connectionSettingsBuilder = ConnectionSettings
+                    .Create()
+                    .UseConsoleLogger()
+                    .SetDefaultUserCredentials(EventStoreSettings.Credentials);
 
             configureConnectionSettings?.Invoke(connectionSettingsBuilder);
 
@@ -22,11 +23,40 @@ namespace infra
 
             var clusterSettings = ClusterSettings
                 .Create()
-                .DiscoverClusterViaDns().SetClusterDns(EventStoreSettings.ClusterDns)
+                .DiscoverClusterViaDns()
+                .SetClusterDns(EventStoreSettings.ClusterDns)
                 .SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
+                .SetMaxDiscoverAttempts(int.MaxValue)
                 .Build();
 
-            return EventStoreConnection.Create(connectionSettings, clusterSettings);
+            var connection = EventStoreConnection.Create(connectionSettings, clusterSettings);
+
+            connection.Disconnected += (s, a) =>
+            {
+                Console.WriteLine("disconnected");
+            };
+
+            connection.Closed += (s, a) =>
+            {
+                Console.WriteLine("closed");
+            };
+
+            connection.ErrorOccurred += (s, a) =>
+            {
+                Console.WriteLine("errorocurred" + a.Exception);
+            };
+
+            connection.Connected += (s, a) =>
+            {
+                Console.WriteLine("connected");
+            };
+
+            connection.Reconnecting += (s, a) =>
+            {
+                Console.WriteLine("reconnecting");
+            };
+
+            return connection;
         }
     }
 }

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading.Tasks;
 using contracts;
@@ -16,171 +17,41 @@ namespace subscriber
 {
     public class Program
     {
-        private static readonly IEventStoreConnection Connection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
-        private const string SubscriptionGroupName = "application1";
-        private static readonly string[] AvailableEventTypes = { "applicationsubmitted", "applicationstarted" };
-        private static readonly ProjectionsManager ProjectionsManager = new ProjectionsManager(new ConsoleLogger(), 
-            new IPEndPoint(Dns.GetHostEntry(EventStoreSettings.ClusterDns).AddressList[0], EventStoreSettings.ExternalHttpPort), TimeSpan.FromMilliseconds(5000));
 
-        static Program()
-        {
-            Connection.Disconnected += (s, a) =>
-            {
-                Console.WriteLine("disconnected");
-            };
 
-            Connection.Closed += (s, a) =>
-            {
-                Console.WriteLine("closed");
-            };
-
-            Connection.Connected += (s, a) =>
-            {
-                Console.WriteLine("connected");
-            };
-
-            Connection.Reconnecting += (s, a) =>
-            {
-                Console.WriteLine("reconnecting");
-            };
-
-            Connection.ConnectAsync().Wait();
-        }
+        private const string _subscriptionGroupName = "application1";
+        private static readonly string[] _eventTypes = { "applicationsubmitted", "applicationstarted" };
 
         public static void Main(string[] args)
         {
-            //var catchUpSubscription = EventBus.RegisterCatchUpSubscription(Connection, () => new ApplicationStatusDocumentWriter(), () => -1);
-
-            //catchUpSubscription.StartAsync().Wait();
-
-            CreateSubscriberGroup().Wait();
-
-            Subscribe().Wait();
-
-            while (true)
-            {
-                //Console.ReadLine();
-                //Task.Delay(2000)
-                //	.ContinueWith(delegate
-                //	{
-                //		CreateSubscriberGroup();
-                //	}).Wait();
-            }
-        }
-
-        public static async Task CreateSubscriberGroup()
-        {
-            //var eventTypes = AvailableEventTypes.Take(Random.Next(1, AvailableEventTypes.Length + 1)).ToArray();
-            var eventTypes = AvailableEventTypes;
-
-            Console.WriteLine("listening to: " + string.Join(", ", eventTypes));
-
+            var projectionManager = new ProjectionManager(new ConsoleLogger(), EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort);
             const string onEventReceivedStatementTemplate = "'{0}': onEventReceived";
             const string projectionDefinitionTemplate =
                 @"var onEventReceived = function(s, e) {{ " +
                     "linkTo('{0}', e); " +
                 "}};" +
                 "fromAll().when({{ {1} }});";
+            var onEventReceivedStatements = string.Join(",", _eventTypes.Select(eventType => string.Format(onEventReceivedStatementTemplate, eventType)));
+            var projectionDefinition = string.Format(projectionDefinitionTemplate, _subscriptionGroupName, onEventReceivedStatements);
+            projectionManager.CreateOrUpdateProjectionAsync("application1", projectionDefinition, EventStoreSettings.Credentials, int.MaxValue).Wait();
 
-            var onEventReceivedStatements = string.Join(",", eventTypes.Select(eventType => string.Format(onEventReceivedStatementTemplate, eventType)));
+            var connection = EventStoreConnectionFactory.Create(x => x.KeepReconnecting());
+            connection.ConnectAsync().Wait();
 
-            //var projectionDestinationStream = $"{SubscriptionGroupName}-{Guid.NewGuid().ToString("N").ToLower()}";
+            var consumerGroupManager = new ConsumerGroupManager(connection);
+            consumerGroupManager.EnsureConsumerAsync(EventStoreSettings.Credentials, "application1", "application1").Wait();
 
-            //Connection.AppendToStreamAsync("projectionsink", ExpectedVersion.Any, new EventData(Guid.NewGuid(), SubscriptionGroupName, false, 
-            //	Encoding.UTF8.GetBytes($"{{'destinationStream' : '{projectionDestinationStream}'}}"), new byte[0]));
-
-            //var projectionDefinition = string.Format(projectionDefinitionTemplate, projectionDestinationStream, onEventReceivedStatements);
-
-
-
-
-            var projectionDefinition = string.Format(projectionDefinitionTemplate, SubscriptionGroupName, onEventReceivedStatements);
-
-            CreateOrUpdateProjection(SubscriptionGroupName, projectionDefinition).Wait();
-
-            var subcriptionGroupSettingsBuilder = PersistentSubscriptionSettings.Create()
-                    .ResolveLinkTos()
-                    .WithMaxRetriesOf(2)
-                    .MinimumCheckPointCountOf(2)
-                    .StartFromCurrent();
-            var subcriptionGroupSettings = subcriptionGroupSettingsBuilder.Build();
-
-            try
+            var persistentSubscriber = new PersistentSubscription(connection, "application1", "application1", e =>
             {
-                await Connection.CreatePersistentSubscriptionAsync(SubscriptionGroupName, SubscriptionGroupName, subcriptionGroupSettings, EventStoreSettings.Credentials);
-            }
-            catch (InvalidOperationException)
-            {
+                Console.WriteLine($"processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
+                return Task.FromResult(true);
+            }, 1000, new ConsoleLogger());
+            persistentSubscriber.StartAsync().Wait();
 
-            }
+
+            while (true);
         }
 
-        public static async Task Subscribe()
-        {
-            await Connection.ConnectToPersistentSubscriptionAsync(SubscriptionGroupName, SubscriptionGroupName,
-                (s, e) =>
-                    {
-                        try
-                        {
-                            Console.WriteLine($"stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
-                            s.Acknowledge(e);
-                        }
-                        catch (Exception ex)
-                        {
-                            s.Fail(e, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
-                        }
-
-                    },
-                async (s, r, e) =>
-                    {
-                        await Subscribe();
-                        Console.WriteLine("subscription dropped");
-                    }, autoAck: false);
-        }
-
-        private static async Task CreateOrUpdateProjection(string projectionName, string projectionDefinition)
-        {
-            if (await IsProjectionNew(projectionName))
-            {
-                await CreateProjection(projectionName, projectionDefinition);
-            }
-            else if (await HasProjectionChanged(projectionName, projectionDefinition))
-            {
-                await UpdateProjection(projectionName, projectionDefinition);
-            }
-        }
-
-        private static async Task<bool> IsProjectionNew(string projectionName)
-        {
-            try
-            {
-                await ProjectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials);
-                return false;
-            }
-            catch (ProjectionCommandFailedException ex)
-            {
-                if (ex.HttpStatusCode != (int)HttpStatusCode.NotFound)
-                {
-                    throw;
-                }
-                return true;
-            }
-        }
-
-        private static Task CreateProjection(string projectionName, string projectionDefinition)
-        {
-            return ProjectionsManager.CreateContinuousAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials);
-        }
-
-        private static async Task<bool> HasProjectionChanged(string projectionName, string projectionDefinition)
-        {
-            var storedProjectionDefinition = await ProjectionsManager.GetQueryAsync(projectionName, EventStoreSettings.Credentials);
-            return storedProjectionDefinition != projectionDefinition;
-        }
-
-        private static Task UpdateProjection(string projectionName, string projectionDefinition)
-        {
-            return ProjectionsManager.UpdateQueryAsync(projectionName, projectionDefinition, EventStoreSettings.Credentials);
-        }
+        
     }
 }
