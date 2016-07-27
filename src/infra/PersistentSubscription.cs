@@ -48,9 +48,9 @@ namespace infra
                 }
                 catch (Exception ex)
                 {
-                    _logger.Error(ex, "Exception occurred attempting to reconnect to dropped persistent subscription. Subscriber Info: StreamName:{0}, GroupName:{1}", _streamName, _consumerGroupName);
+                    _logger.Error(ex, "Exception occurred attempting to connect to persistent subscription. Subscriber Info: StreamName:{0}, GroupName:{1}", _streamName, _consumerGroupName);
                 }
-
+                connection.Dispose();
                 await Task.Delay(_reconnectDelayInMilliseconds);
             }
         }
@@ -81,11 +81,5 @@ namespace infra
                 await StartAsync();
             };
         }
-
-        //private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
-        //{
-        //    _logger.Error(exception, "PersistentSubscription was dropped. Reason:{0}. Subscriber Info: StreamName:{1}, GroupName:{2}", reason, _streamName, _consumerGroupName);
-        //    await StartAsync();
-        //}
     }
 }
