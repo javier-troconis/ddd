@@ -40,9 +40,9 @@ namespace infra
         {
             for (var attempt = 1; maxAttempts >= attempt; ++attempt)
             {
-                for(int httpEndPointIndex = 0, j = _httpEndPoints.Length; j > httpEndPointIndex; ++httpEndPointIndex)
+                for(int i = 0, j = _httpEndPoints.Length; j > i; ++i)
                 {
-                    var projectionManager = new ProjectionsManager(_logger, _httpEndPoints[httpEndPointIndex], TimeSpan.FromMilliseconds(5000));
+                    var projectionManager = new ProjectionsManager(_logger, _httpEndPoints[i], TimeSpan.FromMilliseconds(5000));
                     try
                     {
                         var isProjectionNew = await TryCreateProjection(projectionManager, userCredentials, projectionName, projectionDefinition);
@@ -54,10 +54,9 @@ namespace infra
                     }
                     catch(Exception)
                     {
-                        //ignore
+                        _logger.Info("Creating or updating projection {0} attempt {1}/{2} failed: {3}", projectionName, attempt, maxAttempts, _httpEndPoints[i].Address);
                     }
                 }
-                _logger.Info("Creating or updating projection {0} attempt {1}/{2} failed", projectionName, attempt, maxAttempts);
                 await Task.Delay(500);
             }
             throw new Exception($"Failed to create or update projection {projectionName} in {maxAttempts}");

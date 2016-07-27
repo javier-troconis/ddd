@@ -42,7 +42,7 @@ namespace infra
                 try
                 {
                     await _eventStoreConnection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventReceived, OnSubscriptionDropped, autoAck: false);
-                    break;
+                    return;
                 }
                 catch (Exception ex)
                 {
