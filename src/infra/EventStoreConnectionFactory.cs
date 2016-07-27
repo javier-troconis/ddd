@@ -8,9 +8,9 @@ using EventStore.ClientAPI.SystemData;
 
 namespace infra
 {
-    public static class EventStoreConnectionFactory
+    public class EventStoreConnectionFactory
     {
-        public static IEventStoreConnection Create(Action<ConnectionSettingsBuilder> configureConnectionSettings = null)
+        public IEventStoreConnection Create(Action<ConnectionSettingsBuilder> configureConnectionSettings = null)
         {
             var connectionSettingsBuilder = ConnectionSettings
                     .Create()

@@ -10,11 +10,11 @@ namespace infra
 {
     public class ConsumerGroupManager
     {
-        private readonly IEventStoreConnection _connection;
+        private readonly EventStoreConnectionFactory _connectionFactory;
 
-        public ConsumerGroupManager(IEventStoreConnection connection)
+        public ConsumerGroupManager(EventStoreConnectionFactory connectionFactory)
         {
-            _connection = connection;
+            _connectionFactory = connectionFactory;
         }
 
         public async Task EnsureConsumerAsync(UserCredentials userCredentials, string streamName, string consumerGroupName)
@@ -23,13 +23,17 @@ namespace infra
                 .ResolveLinkTos()
                 .StartFromCurrent()
                 .WithExtraStatistics();
-            try
+            using (var connection = _connectionFactory.Create())
             {
-                await _connection.CreatePersistentSubscriptionAsync(streamName, consumerGroupName, subscriptionSettings, userCredentials);
-            }
-            catch (InvalidOperationException)
-            {
+                await connection.ConnectAsync();
+                try
+                {
+                    await connection.CreatePersistentSubscriptionAsync(streamName, consumerGroupName, subscriptionSettings, userCredentials);
+                }
+                catch (InvalidOperationException)
+                {
 
+                }
             }
         }
     }

@@ -54,7 +54,7 @@ namespace host
     {
         public static void Main(string[] args)
         {
-            var eventStoreConnection = EventStoreConnectionFactory.Create(x => x
+            var eventStoreConnection = new EventStoreConnectionFactory().Create(x => x
                 .KeepReconnecting()
                 .SetMaxDiscoverAttempts(int.MaxValue));
             eventStoreConnection.ConnectAsync().Wait();

@@ -10,22 +10,22 @@ namespace infra
 {
     public class PersistentSubscription : ISubscription
     {
-        private readonly IEventStoreConnection _eventStoreConnection;
         private readonly string _consumerGroupName;
+        private readonly EventStoreConnectionFactory _eventStoreConnectionFactory;
         private readonly string _streamName;
         private readonly Func<ResolvedEvent, Task<bool>> _tryHandleEvent;
         private readonly int _reconnectDelayInMilliseconds;
         private readonly ILogger _logger;
 
 
-        public PersistentSubscription(IEventStoreConnection eventStoreConnection,
+        public PersistentSubscription(EventStoreConnectionFactory eventStoreConnectionFactory,
             string streamName,
             string consumerGroupName,
             Func<ResolvedEvent, Task<bool>> tryHandleEvent,
             int reconnectDelayInMilliseconds,
             ILogger logger)
         {
-            _eventStoreConnection = eventStoreConnection;
+            _eventStoreConnectionFactory = eventStoreConnectionFactory;
             _streamName = streamName;
             _consumerGroupName = consumerGroupName;
             _tryHandleEvent = tryHandleEvent;
@@ -39,9 +39,11 @@ namespace infra
         {
             while (true)
             {
+                var connection = _eventStoreConnectionFactory.Create(x => x.KeepReconnecting());
                 try
                 {
-                    await _eventStoreConnection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventReceived, OnSubscriptionDropped, autoAck: false);
+                    await connection.ConnectAsync();
+                    await connection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventReceived, OnSubscriptionDropped(connection), autoAck: false);
                     return;
                 }
                 catch (Exception ex)
@@ -70,10 +72,20 @@ namespace infra
             }
         }
 
-        private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
+        private Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> OnSubscriptionDropped(IEventStoreConnection connection)
         {
-            _logger.Error(exception, "PersistentSubscription was dropped. Reason:{0}. Subscriber Info: StreamName:{1}, GroupName:{2}", reason, _streamName, _consumerGroupName);
-            await StartAsync();
+            return async (subscription, reason, exception) =>
+            {
+                connection.Dispose();
+                _logger.Error(exception, "PersistentSubscription was dropped. Reason:{0}. Subscriber Info: StreamName:{1}, GroupName:{2}", reason, _streamName, _consumerGroupName);
+                await StartAsync();
+            };
         }
+
+        //private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
+        //{
+        //    _logger.Error(exception, "PersistentSubscription was dropped. Reason:{0}. Subscriber Info: StreamName:{1}, GroupName:{2}", reason, _streamName, _consumerGroupName);
+        //    await StartAsync();
+        //}
     }
 }
