@@ -15,23 +15,6 @@ using shared;
 
 namespace host
 {
-    class SetMessageHeaderHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : IHeader, TOut
-    {
-        public TOut Handle(TIn message)
-        {
-            message.Header = new Dictionary<string, object>();
-            return message;
-        }
-    }
-
-    class AuthorizeHandler<TIn, TOut> : IMessageHandler<TIn, TOut> where TIn : IHeader, TOut
-    {
-        public TOut Handle(TIn message)
-        {
-            return message;
-        }
-    }
-
     class TimeFramedTaskHandler<TIn, TOut> : IMessageHandler<Task<TIn>, Task<TOut>> where TIn : TOut
     {
         private readonly TimeSpan _timeout;
