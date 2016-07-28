@@ -10,9 +10,9 @@ namespace infra
 {
     public class ConsumerGroupManager
     {
-        private readonly EventStoreConnectionFactory _connectionFactory;
+        private readonly IEventStoreConnectionFactory _connectionFactory;
 
-        public ConsumerGroupManager(EventStoreConnectionFactory connectionFactory)
+        public ConsumerGroupManager(IEventStoreConnectionFactory connectionFactory)
         {
             _connectionFactory = connectionFactory;
         }
@@ -23,7 +23,7 @@ namespace infra
                 .ResolveLinkTos()
                 .StartFromCurrent()
                 .WithExtraStatistics();
-            using (var connection = _connectionFactory.Create())
+            using (var connection = _connectionFactory.CreateConnection())
             {
                 await connection.ConnectAsync();
                 try

@@ -35,10 +35,12 @@ namespace subscriber
             var projectionDefinition = string.Format(projectionDefinitionTemplate, _subscriptionGroupName, onEventReceivedStatements);
             projectionManager.CreateOrUpdateProjectionAsync("application1", projectionDefinition, EventStoreSettings.Credentials, int.MaxValue).Wait();
 
-            var consumerGroupManager = new ConsumerGroupManager(new EventStoreConnectionFactory());
+            var consumerGroupManager = new ConsumerGroupManager(
+                new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).KeepReconnecting()));
             consumerGroupManager.EnsureConsumerAsync(EventStoreSettings.Credentials, "application1", "application1").Wait();
 
-            var persistentSubscriber = new PersistentSubscription(new EventStoreConnectionFactory(), "application1", "application1", e =>
+            var persistentSubscriber = new PersistentSubscription(
+                new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()), "application1", "application1", e =>
             {
                 Console.WriteLine($"processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
                 return Task.FromResult(true);

@@ -11,14 +11,14 @@ namespace infra
     public class PersistentSubscription : ISubscription
     {
         private readonly string _consumerGroupName;
-        private readonly EventStoreConnectionFactory _eventStoreConnectionFactory;
+        private readonly IEventStoreConnectionFactory _eventStoreConnectionFactory;
         private readonly string _streamName;
         private readonly Func<ResolvedEvent, Task<bool>> _tryHandleEvent;
         private readonly int _reconnectDelayInMilliseconds;
         private readonly ILogger _logger;
 
 
-        public PersistentSubscription(EventStoreConnectionFactory eventStoreConnectionFactory,
+        public PersistentSubscription(IEventStoreConnectionFactory eventStoreConnectionFactory,
             string streamName,
             string consumerGroupName,
             Func<ResolvedEvent, Task<bool>> tryHandleEvent,
@@ -33,23 +33,21 @@ namespace infra
             _logger = logger;
         }
 
-      
-
         public async Task StartAsync()
         {
-            while (true)
+            while(true)
             {
-                var connection = _eventStoreConnectionFactory.Create(x => x.KeepReconnecting());
+                var connection = _eventStoreConnectionFactory.CreateConnection();
+                await connection.ConnectAsync();
                 try
                 {
-                    await connection.ConnectAsync();
                     await connection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventReceived, OnSubscriptionDropped(connection), autoAck: false);
                     return;
                 }
                 catch (Exception ex)
                 {
                     _logger.Error(ex, "Exception occurred attempting to connect to persistent subscription. Subscriber Info: StreamName:{0}, GroupName:{1}", _streamName, _consumerGroupName);
-                }
+                } 
                 connection.Dispose();
                 await Task.Delay(_reconnectDelayInMilliseconds);
             }
@@ -72,7 +70,7 @@ namespace infra
             }
         }
 
-        private Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> OnSubscriptionDropped(IEventStoreConnection connection)
+        private Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
         {
             return async (subscription, reason, exception) =>
             {

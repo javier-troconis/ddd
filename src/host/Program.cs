@@ -54,11 +54,10 @@ namespace host
     {
         public static void Main(string[] args)
         {
-            var eventStoreConnection = new EventStoreConnectionFactory().Create(x => x
-                .KeepReconnecting()
-                .SetMaxDiscoverAttempts(int.MaxValue));
-            eventStoreConnection.ConnectAsync().Wait();
-            var eventStore = new infra.EventStore(eventStoreConnection);
+            var connection = new EventStoreConnectionFactory(x => x
+                .KeepReconnecting().SetDefaultUserCredentials(EventStoreSettings.Credentials)).CreateConnection();
+            connection.ConnectAsync().Wait();
+            var eventStore = new infra.EventStore(connection);
 
             var startApplicationHandler = new StartApplicationCommandHandler(eventStore)
                 .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))

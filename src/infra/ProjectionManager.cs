@@ -54,7 +54,7 @@ namespace infra
                     }
                     catch(Exception)
                     {
-                        _logger.Info("Creating or updating projection {0} attempt {1}/{2} failed: {3}", projectionName, attempt, maxAttempts, _httpEndPoints[i].Address);
+                        _logger.Info("Creating or updating projection {0} attempt {1}/{2} failed on : {3}", projectionName, attempt, maxAttempts, _httpEndPoints[i].Address);
                     }
                 }
                 await Task.Delay(500);

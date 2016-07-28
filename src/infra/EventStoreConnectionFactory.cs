@@ -8,16 +8,25 @@ using EventStore.ClientAPI.SystemData;
 
 namespace infra
 {
-    public class EventStoreConnectionFactory
+    public interface IEventStoreConnectionFactory
     {
-        public IEventStoreConnection Create(Action<ConnectionSettingsBuilder> configureConnectionSettings = null)
-        {
-            var connectionSettingsBuilder = ConnectionSettings
-                    .Create()
-                    .UseConsoleLogger()
-                    .SetDefaultUserCredentials(EventStoreSettings.Credentials);
+        IEventStoreConnection CreateConnection();
+    }
 
-            configureConnectionSettings?.Invoke(connectionSettingsBuilder);
+    public class EventStoreConnectionFactory : IEventStoreConnectionFactory
+    {
+        private readonly Action<ConnectionSettingsBuilder> _configureConnectionSettings;
+
+        public EventStoreConnectionFactory(Action<ConnectionSettingsBuilder> configureConnectionSettings = null)
+        {
+            _configureConnectionSettings = configureConnectionSettings;
+        }
+
+        public IEventStoreConnection CreateConnection()
+        {
+            var connectionSettingsBuilder = ConnectionSettings.Create();
+
+            _configureConnectionSettings?.Invoke(connectionSettingsBuilder);
 
             var connectionSettings = connectionSettingsBuilder.Build();
 
