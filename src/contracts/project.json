@@ -1,11 +1,11 @@
 ﻿{
-  "version": "1.0.0-rc2-*",
+  "version": "1.0.0",
   "description": "contracts Class Library",
   "authors": [ "jtroconis" ],
 
   "dependencies": {
     "shared": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     }
   },

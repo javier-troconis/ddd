@@ -1,5 +1,5 @@
 ﻿{
-  "version": "1.0.0-rc2-*",
+  "version": "1.0.0",
   "description": "host Console Application",
   "authors": [ "jtroconis" ],
   "compilationOptions": {
@@ -8,19 +8,19 @@
 
   "dependencies": {
     "shared": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     },
     "core": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     },
     "infra": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     },
     "appservices": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     }
   },

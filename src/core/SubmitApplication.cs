@@ -44,13 +44,8 @@ namespace core
 
     public static class SubmitApplication
     {
+        //todo: fix this
         public static IEnumerable<IEvent> Apply(WhenSubmittingApplicationState state, string submitter)
-        {
-            AssertCanApply(state);
-            yield return new ApplicationSubmitted(submitter);
-        }
-
-        private static void AssertCanApply(WhenSubmittingApplicationState state)
         {
             if (!state.HasBeenStarted)
             {
@@ -60,6 +55,8 @@ namespace core
             {
                 throw new Exception("application has already been submitted");
             }
+
+            yield return new ApplicationSubmitted(submitter);
         }
     }
 }

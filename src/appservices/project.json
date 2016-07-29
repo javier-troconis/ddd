@@ -1,19 +1,19 @@
 ﻿{
-  "version": "1.0.0-rc2-*",
+  "version": "1.0.0",
   "description": "appservices Class Library",
   "authors": [ "jtroconis" ],
  
   "dependencies": {
     "shared": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     },
     "infra": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     },
     "core": {
-      "version": "1.0.0-rc2-*",
+      "version": "1.0.*",
       "target": "project"
     }
   },
