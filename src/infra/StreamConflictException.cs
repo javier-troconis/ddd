@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace infra
 {
-    public class ConcurrencyException : Exception
+    public class StreamConflictException : Exception
     {
      
     }

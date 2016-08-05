@@ -33,14 +33,14 @@ namespace infra
                 catch (WrongExpectedVersionException)
                 {
                     var nextStreamVersion = streamExpectedVersion + 1;
-                    var eventsSinceLastWrite = await eventStore.ReadEventsAsync(streamName, nextStreamVersion);
+                    var eventsSinceLastWrite = await eventStore.ReadEventsForwardAsync(streamName, nextStreamVersion);
                      if (!eventsSinceLastWrite.Any())
                     {
                         throw new Exception($"stream {streamName} is not at version {nextStreamVersion}");
                     }
                     if (!tryResolveConflict(events, eventsSinceLastWrite, out events))
                     {
-                        throw new ConcurrencyException();
+                        throw new StreamConflictException();
                     }
                     streamExpectedVersion += eventsSinceLastWrite.Count;
                 } 

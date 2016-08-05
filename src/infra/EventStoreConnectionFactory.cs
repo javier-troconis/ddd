@@ -38,34 +38,7 @@ namespace infra
                 .SetMaxDiscoverAttempts(int.MaxValue)
                 .Build();
 
-            var connection = EventStoreConnection.Create(connectionSettings, clusterSettings);
-
-            connection.Disconnected += (s, a) =>
-            {
-                Console.WriteLine("disconnected");
-            };
-
-            connection.Closed += (s, a) =>
-            {
-                Console.WriteLine("closed");
-            };
-
-            connection.ErrorOccurred += (s, a) =>
-            {
-                Console.WriteLine("errorocurred" + a.Exception);
-            };
-
-            connection.Connected += (s, a) =>
-            {
-                Console.WriteLine("connected");
-            };
-
-            connection.Reconnecting += (s, a) =>
-            {
-                Console.WriteLine("reconnecting");
-            };
-
-            return connection;
+            return EventStoreConnection.Create(connectionSettings, clusterSettings);
         }
     }
 }

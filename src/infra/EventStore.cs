@@ -13,7 +13,7 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber = 0, CancellationToken cancellationToken = default(CancellationToken));
+		Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber = 0, CancellationToken cancellationToken = default(CancellationToken));
 		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null, CancellationToken cancellationToken = default(CancellationToken));
 	}
 
@@ -29,7 +29,7 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyCollection<IEvent>> ReadEventsAsync(string streamName, int fromEventNumber, CancellationToken cancellationToken = default(CancellationToken))
+		public async Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber, CancellationToken cancellationToken = default(CancellationToken))
 		{
             var resolvedEvents = await ReadResolvedEventsAsync(streamName, fromEventNumber)
                 .WithCancellation(cancellationToken)
