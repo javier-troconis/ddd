@@ -181,4 +181,11 @@ let rec merge_sort =
         let y = merge_sort y
         merge x y
 
+let powerOfFour n = 
+    let nSquared = n * n
+    nSquared * nSquared
 
+let k = printfn "h"; 1 + 1
+
+let j = printfn "h"
+        2+2

@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using contracts;
 using EventStore.ClientAPI;
@@ -39,13 +40,23 @@ namespace subscriber
                 new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).KeepReconnecting()));
             consumerGroupManager.EnsureConsumerAsync(EventStoreSettings.Credentials, "application1", "application1").Wait();
 
-            var persistentSubscriber = new PersistentSubscription(
-                new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()), "application1", "application1", e =>
-            {
-                Console.WriteLine($"processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
-                return Task.FromResult(true);
-            }, 1000, new ConsoleLogger());
-            persistentSubscriber.StartAsync().Wait();
+            var persistentSubscription = new PersistentSubscription(
+                new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()), "application1", "application1",
+                e =>
+                {
+                    Console.WriteLine($"persistent subscription processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
+                    return Task.FromResult(true);
+                }, 1000, new ConsoleLogger());
+            persistentSubscription.StartAsync().Wait();
+
+            var catchUpSubscription = new CatchUpSubscription(new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
+                "application1",
+                e =>
+                {
+                    Console.WriteLine($"catchup subscription processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId} | thread : {Thread.CurrentThread.GetHashCode()}");
+                    return Task.FromResult(true);
+                }, 1000, () => Task.FromResult(default(int?)), new ConsoleLogger());
+            catchUpSubscription.StartAsync().Wait();
 
             while (true);
         }
