@@ -185,7 +185,48 @@ let powerOfFour n =
     let nSquared = n * n
     nSquared * nSquared
 
-let k = printfn "h"; 1 + 1
+let k = 
+    printfn "h"
+    1 + 1
 
-let j = printfn "h"
-        2+2
+let j = 
+    printfn "h"
+    2 + 2
+
+let rec drop_element list element = 
+    match list with
+    | [] -> []
+    | hd :: tl -> 
+        let new_list = drop_element tl element
+        if hd = element then new_list
+        else hd :: new_list
+
+
+List.fold (fun a b -> b::a) [] [1..20]
+
+let compositeOp = List.map (fun i -> i+1) 
+                  >> List.filter (fun i -> i>5)
+
+compositeOp [1..10]
+
+let compositeOp1 x = x |> List.map (fun i -> i+1) 
+                  |> List.filter (fun i -> i>5)
+
+compositeOp1 [1..10]
+
+let t_a x = x + x
+let t_b = (+)
+let t_c x = (+) x
+let t_d x = x 1 + 1
+let t_e x y z = x + y + z
+let t_f x = x 1 |> (+)
+let t_g x y = y x + x
+let t_h x = x 1 1 + 1
+
+
+
+
+
+
+
+
