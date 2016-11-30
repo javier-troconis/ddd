@@ -21,6 +21,7 @@ namespace subscriber
 
 
         private const string _subscriptionGroupName = "application1";
+        private const string _subscriptionStreamName = "application1";
         private static readonly string[] _eventTypes = { "applicationsubmitted", "applicationstarted" };
 
         public static void Main(string[] args)
@@ -33,30 +34,33 @@ namespace subscriber
                 "}};" +
                 "fromAll().when({{ {1} }});";
             var onEventReceivedStatements = string.Join(",", _eventTypes.Select(eventType => string.Format(onEventReceivedStatementTemplate, eventType)));
-            var projectionDefinition = string.Format(projectionDefinitionTemplate, _subscriptionGroupName, onEventReceivedStatements);
+            var projectionDefinition = string.Format(projectionDefinitionTemplate, "application1", onEventReceivedStatements);
             projectionManager.CreateOrUpdateProjectionAsync("application1", projectionDefinition, EventStoreSettings.Credentials, int.MaxValue).Wait();
 
             var consumerGroupManager = new ConsumerGroupManager(
                 new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).KeepReconnecting()));
-            consumerGroupManager.EnsureConsumerAsync(EventStoreSettings.Credentials, "application1", "application1").Wait();
+            consumerGroupManager.EnsureConsumerAsync(EventStoreSettings.Credentials, _subscriptionStreamName, _subscriptionGroupName).Wait();
 
             var persistentSubscription = new PersistentSubscription(
-                new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()), "application1", "application1",
-                e =>
+                new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
+                    _subscriptionStreamName, _subscriptionGroupName,
+                async e =>
                 {
                     Console.WriteLine($"persistent subscription processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
-                    return Task.FromResult(true);
+                    await Task.Delay(500);
+                    return await Task.FromResult(true);
                 }, 1000, new ConsoleLogger());
             persistentSubscription.StartAsync().Wait();
 
-            var catchUpSubscription = new CatchUpSubscription(new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
-                "application1",
-                e =>
-                {
-                    Console.WriteLine($"catchup subscription processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId} | thread : {Thread.CurrentThread.GetHashCode()}");
-                    return Task.FromResult(true);
-                }, 1000, () => Task.FromResult(default(int?)), new ConsoleLogger());
-            catchUpSubscription.StartAsync().Wait();
+            //var catchUpSubscription = new CatchUpSubscription(
+            //    new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
+            //    "application1",
+            //    e =>
+            //    {
+            //        Console.WriteLine($"catchup subscription processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId} | thread : {Thread.CurrentThread.GetHashCode()}");
+            //        return Task.FromResult(true);
+            //    }, 1000, () => Task.FromResult(default(int?)), new ConsoleLogger());
+            //catchUpSubscription.StartAsync().Wait();
 
             while (true);
         }

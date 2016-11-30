@@ -223,6 +223,12 @@ let t_f x = x 1 |> (+)
 let t_g x y = y x + x
 let t_h x = x 1 1 + 1
 
+let rec gcd = 
+    function
+    | 0, b -> b
+    | a, b -> gcd (b % a, a)
+
+
 
 
 
