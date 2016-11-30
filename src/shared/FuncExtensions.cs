@@ -7,14 +7,14 @@ namespace shared
 {
     public static class FuncExtensions
     {
-        public static Func<TIn, TOut1> ComposeForward<TIn, TOut, TOut1>(this Func<TIn, TOut> @from, Func<TOut, TOut1> to)
+        public static Func<TIn1, TOut2> ComposeForward<TIn1, TOut1, TOut2>(this Func<TIn1, TOut1> a, Func<TOut1, TOut2> b)
         {
-            return x => to(@from(x));
+            return x => b(a(x));
         }
 
-        public static Func<TIn1, TOut> ComposeBackward<TIn1, TIn, TOut>(this Func<TIn, TOut> to, Func<TIn1, TIn> @from)
+        public static Func<TIn2, TOut1> ComposeBackward<TIn2, TOut2, TOut1>(this Func<TOut2, TOut1> a, Func<TIn2, TOut2> b)
         {
-            return @from.ComposeForward(to);
+            return b.ComposeForward(a);
         }
     }
 }

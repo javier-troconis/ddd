@@ -7,9 +7,9 @@ namespace shared
 {
     public static class ObjectExtensions
     {
-        public static TOut PipeForward<TIn, TOut>(this TIn o, Func<TIn, TOut> to)
+        public static TOut PipeForward<TIn, TOut>(this TIn a, Func<TIn, TOut> b)
         {
-            return to(o);
+            return b(a);
         }
     }
 }
