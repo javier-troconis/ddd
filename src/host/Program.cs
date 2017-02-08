@@ -70,16 +70,11 @@ namespace host
             while (true)
             {
                 var applicationId = Guid.NewGuid();
-                try
-                {
-                    startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
-                    submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = -1, Submitter = "javier" } }).Wait();
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex.InnerException.Message);
-                }
-                Task.Delay(1000).Wait();
+               
+                startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
+              //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = -1, Submitter = "javier" } }).Wait();
+                
+                Task.Delay(500).Wait();
             }
         }
 

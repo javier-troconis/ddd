@@ -4,4 +4,9 @@
     {
         TOut Handle(TIn message);
 	}
+
+    public interface IMessageHandler<in TIn>
+    {
+        void Handle(TIn message);
+    }
 }

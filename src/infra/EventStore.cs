@@ -13,26 +13,25 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber = 0, CancellationToken cancellationToken = default(CancellationToken));
-		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null, CancellationToken cancellationToken = default(CancellationToken));
+		Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber = 0);
+		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IEvent, IDictionary<string, object>> beforeSavingEvent = null);
 	}
 
 	public class EventStore : IEventStore
 	{
-		private const int DefaultSliceSize = 10;
-		private static readonly JsonSerializerSettings SerializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
+		private const int _defaultSliceSize = 10;
+		private static readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
 		private readonly IEventStoreConnection _eventStoreConnection;
-		private const string EventClrTypeHeader = "EventClrType";
+		private const string _eventClrTypeHeader = "EventClrType";
 
 		public EventStore(IEventStoreConnection eventStoreConnection)
 		{
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber, CancellationToken cancellationToken = default(CancellationToken))
+		public async Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber)
 		{
             var resolvedEvents = await ReadResolvedEventsAsync(streamName, fromEventNumber)
-                .WithCancellation(cancellationToken)
                 .ConfigureAwait(false);
 
             return resolvedEvents
@@ -40,29 +39,27 @@ namespace infra
 				.ToArray();
 		}
 
-        public async Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null, CancellationToken cancellationToken = default(CancellationToken))
+        public Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IEvent, IDictionary<string, object>> beforeSavingEvent = null)
 		{
-            eventHeader = eventHeader ?? new Dictionary<string, object>();
+            var eventsData = events
+                .Select(@event =>
+                {
+                    var eventHeader = new Dictionary<string, object>();
+                    beforeSavingEvent?.Invoke(@event, eventHeader);
+                    return ConvertToEventData(@event, eventHeader);
+                });
+            return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData);
 
-            var eventData = events
-                .Select(@event => Tuple.Create(eventHeader.ToDictionary(x => x.Key, x => x.Value), @event)
-                    .PipeForward(ConfigureEventHeader)
-                    .PipeForward(ConvertToEventData));
-                   
-            return await _eventStoreConnection
-                .AppendToStreamAsync(streamName, streamExpectedVersion, eventData)
-                .WithCancellation(cancellationToken)
-                .ConfigureAwait(false);
         }
 
-		private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName, int fromEventNumber)
+        private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName, int fromEventNumber)
 		{
 			var resolvedEvents = new List<ResolvedEvent>();
 
 			StreamEventsSlice slice;
 			do
 			{
-				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, fromEventNumber, DefaultSliceSize, false).ConfigureAwait(false);
+				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, fromEventNumber, _defaultSliceSize, false).ConfigureAwait(false);
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
 					throw new Exception($"stream {streamName} not found");
@@ -72,7 +69,7 @@ namespace infra
 					throw new Exception($"stream {streamName} has been deleted");
 				}
 				resolvedEvents.AddRange(slice.Events);
-                fromEventNumber += DefaultSliceSize;
+                fromEventNumber += _defaultSliceSize;
             } while (!slice.IsEndOfStream);
 
 			return resolvedEvents;
@@ -81,24 +78,23 @@ namespace infra
         private static Tuple<Dictionary<string, object>, IEvent> ConfigureEventHeader(Tuple<Dictionary<string, object>, IEvent> arg)
 		{
 			var eventType = arg.Item2.GetType();
-            arg.Item1[EventClrTypeHeader] = eventType.AssemblyQualifiedName;
+            arg.Item1[_eventClrTypeHeader] = eventType.AssemblyQualifiedName;
 			return arg;
 		}
 
-		private static EventData ConvertToEventData(Tuple<Dictionary<string, object>, IEvent> arg)
-		{
-			var eventId = Guid.NewGuid();
-			var eventType = arg.Item2.GetType();
-			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(arg.Item2, SerializerSettings));
-			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(arg.Item1, SerializerSettings));
-			return new EventData(eventId, eventType.Name.ToLower(), true, eventData, eventMetadata);
-		}
+        private static EventData ConvertToEventData(IEvent @event, IDictionary<string, object> eventHeader)
+        {
+            var eventType = @event.GetType();
+            var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, _serializerSettings));
+            var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventHeader, _serializerSettings));
+            return new EventData(Guid.NewGuid(), eventType.Name.ToLower(), true, eventData, eventMetadata);
+        }
 
-		private static IEvent DeserializeEvent(ResolvedEvent resolvedEvent)
+        private static IEvent DeserializeEvent(ResolvedEvent resolvedEvent)
 		{
 			var recordedEvent = resolvedEvent.Event;
 			var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
-			var eventClrTypeName = (string)eventMetadata.Property(EventClrTypeHeader).Value;
+			var eventClrTypeName = (string)eventMetadata.Property(_eventClrTypeHeader).Value;
 			return (IEvent)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
 		}
 

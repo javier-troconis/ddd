@@ -21,7 +21,7 @@ namespace infra
         {
             var subscriptionSettings = PersistentSubscriptionSettings.Create()
                 .ResolveLinkTos()
-                .StartFromCurrent()
+                .StartFromCurrent().MinimumCheckPointCountOf(0).MaximumCheckPointCountOf(1).CheckPointAfter(TimeSpan.FromSeconds(1))
                 .WithExtraStatistics();
             using (var connection = _connectionFactory.CreateConnection())
             {

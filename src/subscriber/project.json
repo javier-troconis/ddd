@@ -8,6 +8,7 @@
   },
 
   "dependencies": {
+    "System.Threading.Tasks.Dataflow": "4.6.0",
     "shared": {
       "version": "1.0.*",
       "target": "project"

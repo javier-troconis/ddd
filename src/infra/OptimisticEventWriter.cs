@@ -22,13 +22,13 @@ namespace infra
     public static class OptimisticEventWriter
     {
         public static async Task<WriteResult> WriteEventsAsync(TryResolveConflict tryResolveConflict, IEventStore eventStore, string streamName, int streamExpectedVersion, 
-            IEnumerable<IEvent> events, IDictionary<string, object> eventHeader = null)
+            IEnumerable<IEvent> events, Action<IEvent, IDictionary<string, object>> beforeSavingEvent = null)
         {
             while (true)
             {
                 try
                 {
-                    return await eventStore.WriteEventsAsync(streamName, streamExpectedVersion, events, eventHeader);
+                    return await eventStore.WriteEventsAsync(streamName, streamExpectedVersion, events, beforeSavingEvent);
                 }
                 catch (WrongExpectedVersionException)
                 {

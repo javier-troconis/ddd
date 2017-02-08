@@ -5,13 +5,13 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-    public class NewType<T> : IEquatable<NewType<T>>
+    public class NewType<T> : IEquatable<NewType<T>> where T : class
     {
         public readonly T Value;
 
         protected NewType(T value)
         {
-            Value.EnsureNotNull();
+            Ensure.NotNull(value, nameof(value));
             Value = value;
         }
 
