@@ -79,13 +79,6 @@ namespace infra
 			return resolvedEvents;
 		}
 
-        private static Tuple<Dictionary<string, object>, IEvent> ConfigureEventHeader(Tuple<Dictionary<string, object>, IEvent> arg)
-		{
-			var eventType = arg.Item2.GetType();
-            arg.Item1[_eventClrTypeHeader] = eventType.AssemblyQualifiedName;
-			return arg;
-		}
-
         private static EventData ConvertToEventData(IEvent @event, IDictionary<string, object> eventHeader)
         {
             var eventType = @event.GetType();
