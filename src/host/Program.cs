@@ -54,6 +54,7 @@ namespace host
     {
         public static void Main(string[] args)
         {
+            
             var connection = new EventStoreConnectionFactory(x => x
                 .KeepReconnecting().SetDefaultUserCredentials(EventStoreSettings.Credentials)).CreateConnection();
             connection.ConnectAsync().Wait();
@@ -67,16 +68,24 @@ namespace host
                 .ComposeForward(new TimeFramedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(2)))
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
+            int j = 0;
             while (true)
             {
                 var applicationId = Guid.NewGuid();
                
                 startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
-              //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = -1, Submitter = "javier" } }).Wait();
+                submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = 0, Submitter = (++j).ToString() } }).Wait();
                 
                 Task.Delay(500).Wait();
             }
+
+
+            //var x = Option.Some(1);
+            //var y = Option.None;
         }
 
+    
+      
+        
     }
 }

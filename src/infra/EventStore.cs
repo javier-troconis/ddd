@@ -44,7 +44,11 @@ namespace infra
             var eventsData = events
                 .Select(@event =>
                 {
-                    var eventHeader = new Dictionary<string, object>();
+                    var eventHeader = new Dictionary<string, object>
+                    {
+                        { _eventClrTypeHeader, @event.GetType().AssemblyQualifiedName },
+                        { "topics", @event.GetEventTopics() }
+                    };
                     beforeSavingEvent?.Invoke(@event, eventHeader);
                     return ConvertToEventData(@event, eventHeader);
                 });

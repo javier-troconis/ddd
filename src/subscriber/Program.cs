@@ -20,7 +20,7 @@ using shared;
 
 namespace subscriber
 {
-    public class Program : IMessageHandler<IApplicationStarted>
+    public class Program : IMessageHandler<IApplicationStarted>, IMessageHandler<IApplicationSubmitted>
     {
         public static Task RegisterByEventTopicProjectionAsync(ProjectionManager projectionManager, UserCredentials userCredentials)
         {
@@ -113,6 +113,11 @@ fromCategory('topic')
         }
 
         public void Handle(IApplicationStarted message)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Handle(IApplicationSubmitted message)
         {
             throw new NotImplementedException();
         }

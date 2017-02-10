@@ -29,7 +29,7 @@ namespace appservices
         {
             var streamName = "application-" + NamingConvention.Stream(message.Body.ApplicationId);
             var newChanges = StartApplication.Apply();
-            await _eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, newChanges, (e, h) => h["topics"] = e.GetEventTopics());
+            await _eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, newChanges);
             return message;
         }
     }
