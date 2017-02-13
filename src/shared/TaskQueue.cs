@@ -39,7 +39,8 @@ namespace shared
 
             public Channel(string name)
             {
-                _queue = new ActionBlock<Func<string, Task>>(x => x(name),
+                _queue = new ActionBlock<Func<string, Task>>(
+                    x => x(name),
                     new ExecutionDataflowBlockOptions
                     {
                         MaxDegreeOfParallelism = 1,
