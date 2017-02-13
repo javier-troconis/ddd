@@ -69,6 +69,9 @@ namespace host
                 .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
             int j = 0;
+
+
+
             while (true)
             {
                 var applicationId = Guid.NewGuid();

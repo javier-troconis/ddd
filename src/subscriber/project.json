@@ -9,6 +9,7 @@
 
   "dependencies": {
     "System.Threading.Tasks.Dataflow": "4.6.0",
+    "NEST": "2.4.1",
     "shared": {
       "version": "1.0.*",
       "target": "project"
