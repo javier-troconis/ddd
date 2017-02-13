@@ -35,23 +35,11 @@ namespace shared
         private class Channel
         {
             private readonly CancellationTokenSource _queueCancellationTokenSource = new CancellationTokenSource();
-            private readonly ActionBlock<Tuple<Func<Task>, TaskSucceeded, TaskFailed>> _queue;
+            private readonly ActionBlock<Func<string, Task>> _queue;
 
             public Channel(string name)
             {
-                _queue = new ActionBlock<Tuple<Func<Task>, TaskSucceeded, TaskFailed>>(async x =>
-                {
-                    try
-                    {
-                        await x.Item1();
-                    }
-                    catch (Exception ex)
-                    {
-                        x.Item3?.Invoke(name, ex);
-                        return;
-                    }
-                    x.Item2?.Invoke(name);
-                },
+                _queue = new ActionBlock<Func<string, Task>>(x => x(name),
                     new ExecutionDataflowBlockOptions
                     {
                         MaxDegreeOfParallelism = 1,
@@ -61,7 +49,19 @@ namespace shared
 
             public Task<bool> SendAsync(Func<Task> getTask, TaskSucceeded taskSucceeded, TaskFailed taskFailed)
             {
-                return _queue.SendAsync(Tuple.Create(getTask, taskSucceeded, taskFailed));
+                return _queue.SendAsync(async name =>
+                {
+                    try
+                    {
+                        await getTask();
+                    }
+                    catch (Exception ex)
+                    {
+                        taskFailed?.Invoke(name, ex);
+                        return;
+                    }
+                    taskSucceeded.Invoke(name);
+                });
             }
 
             public void Cancel()
