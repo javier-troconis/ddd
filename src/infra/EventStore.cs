@@ -47,7 +47,9 @@ namespace infra
                     var eventHeader = new Dictionary<string, object>
                     {
                         { _eventClrTypeHeader, @event.GetType().AssemblyQualifiedName },
-                        { "topics", @event.GetEventTopics() }
+                        { "topics", @event.GetEventTopics() },
+                        { "streamId", streamName },
+                        { "recordedOn", DateTime.UtcNow }
                     };
                     beforeSavingEvent?.Invoke(@event, eventHeader);
                     return ConvertToEventData(@event, eventHeader);

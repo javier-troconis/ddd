@@ -12,22 +12,22 @@ namespace shared
 
     public delegate void TaskFailed(string channelName, Exception ex);
 
-    public static class TaskQueue
+    public sealed class TaskQueue
     {
-        private static readonly ConcurrentDictionary<string, Lazy<Channel>> _channels = new ConcurrentDictionary<string, Lazy<Channel>>();
+        private readonly ConcurrentDictionary<string, Lazy<Channel>> _channels = new ConcurrentDictionary<string, Lazy<Channel>>();
 
-        public static Task<bool> SendToChannelAsync(string channelName, Func<Task> getTask, TaskSucceeded taskSucceeded = null, TaskFailed taskFailed = null)
+        public Task<bool> SendToChannelAsync(string channelName, Func<Task> getTask, TaskSucceeded taskSucceeded = null, TaskFailed taskFailed = null)
         {
             var channel = _channels.GetOrAdd(channelName, new Lazy<Channel>(() => new Channel(channelName)));
             return channel.Value.SendAsync(getTask, taskSucceeded, taskFailed);
         }
 
-        public static void CancelChannel(string channelName)
+        public void CancelChannel(string channelName)
         {
             _channels[channelName].Value.Cancel();
         }
 
-        public static Task CompleteChannelAsync(string channelName)
+        public Task CompleteChannelAsync(string channelName)
         {
             return _channels[channelName].Value.CompleteAsync();
         }

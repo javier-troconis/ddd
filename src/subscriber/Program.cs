@@ -185,28 +185,29 @@ fromCategory('topic')
             {
                 
             }
+
+            var taskQueue = new TaskQueue();
             
             new CatchUpSubscription(
                 new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
                 typeof(Program).GetEventStoreName(),
                 e =>
                 {
-                    JToken streamToken;
-                    var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(e.Event.Metadata));
-                    if (!eventMetadata.TryGetValue("stream", out streamToken))
+                    object streamId;
+                    var eventMetadata = JsonConvert.DeserializeObject<IDictionary<string, object>>(Encoding.UTF8.GetString(e.Event.Metadata));
+                    if (!eventMetadata.TryGetValue("streamId", out streamId))
                     {
                         return Task.FromResult(true);
                     }
-                    var stream = streamToken.Value<string>();
-                    return TaskQueue.SendToChannelAsync(elasticIndex, () =>
+                    return taskQueue.SendToChannelAsync(elasticIndex, () =>
                     {
-                        Console.WriteLine($"processing - {stream} | {e.OriginalEventNumber}");
+                        Console.WriteLine($"processing - {streamId} | {e.OriginalEventNumber}");
                         if (string.Equals(e.Event.EventType, typeof(IApplicationStarted).GetEventStoreName()))
                         {
-                            return IndexAsync(elasticClient, elasticIndex, new TestDocument { Id = stream, Value = e.OriginalEventNumber }, e.OriginalEventNumber);
+                            return IndexAsync(elasticClient, elasticIndex, new TestDocument { Id = streamId.ToString(), Value = e.OriginalEventNumber }, e.OriginalEventNumber);
                         }
-                        return UpdateAsync(elasticClient, elasticIndex, new TestDocument { Id = stream }, x => x.Value = e.OriginalEventNumber, e.OriginalEventNumber);
-                    }, x => Console.WriteLine($"processed - {stream} | {e.OriginalEventNumber}"), (x, y) => Console.WriteLine("failed"));
+                        return UpdateAsync(elasticClient, elasticIndex, new TestDocument { Id = streamId.ToString() }, x => x.Value = e.OriginalEventNumber, e.OriginalEventNumber);
+                    }, x => Console.WriteLine($"processed - {streamId} | {e.OriginalEventNumber}"), (x, y) => Console.WriteLine("failed"));
                 }, 1000, () => GetDocumentTypeVersion<TestDocument>(elasticClient, elasticIndex), new ConsoleLogger())
                 .StartAsync().Wait();
 
