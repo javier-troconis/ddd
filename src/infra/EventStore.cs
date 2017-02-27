@@ -49,7 +49,8 @@ namespace infra
                         { _eventClrTypeHeader, @event.GetType().AssemblyQualifiedName },
                         { "topics", @event.GetEventTopics() },
                         { "streamId", streamName },
-                        { "recordedOn", DateTime.UtcNow }
+                        { "eventId", Guid.NewGuid() },
+                        { "createdDate", DateTime.UtcNow }
                     };
                     beforeSavingEvent?.Invoke(@event, eventHeader);
                     return ConvertToEventData(@event, eventHeader);
