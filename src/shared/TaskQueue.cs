@@ -61,7 +61,7 @@ namespace shared
                         taskFailed?.Invoke(name, ex);
                         return;
                     }
-                    taskSucceeded.Invoke(name);
+                    taskSucceeded?.Invoke(name);
                 });
             }
 

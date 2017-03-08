@@ -20,6 +20,8 @@ using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.SystemData;
 
+using ImpromptuInterface;
+
 using Nest;
 
 using Newtonsoft.Json;
@@ -34,16 +36,10 @@ namespace subscriber
         public static Task RegisterByEventTopicProjectionAsync(ProjectionManager projectionManager, UserCredentials userCredentials)
         {
             const string projectionDefinitionTemplate =
-                @"function emitTopic(e) {
+               @"function emitTopic(e) {
     return function(topic) {
-        var metadata = Object.keys(e.metadata).reduce(function(x, y) {
-            if(y[0] === '$'){
-                return x;
-            }
-            x[y] = e.metadata[y];
-            return x;
-        }, {});
-        emit('topic-' + topic, topic, e.body, metadata);
+           var message = { streamId: 'topics', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false };
+           eventProcessor.emit(message);
     };
 }
 
@@ -51,13 +47,13 @@ fromAll()
     .when({
         $any: function(s, e) {
             var topics;
-            if (e.streamId === 'topic-' + e.eventType || !e.metadata || !(topics = e.metadata.topics)) {
+            if (e.streamId === 'topics' || !e.metadata || !(topics = e.metadata.topics)) {
                 return;
             }
             topics.forEach(emitTopic(e));
         }
     });";
-            return projectionManager.CreateOrUpdateProjectionAsync("by_event_topic", projectionDefinitionTemplate, userCredentials, int.MaxValue);
+            return projectionManager.CreateOrUpdateProjectionAsync("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
         }
 
         public static Task RegisterSubscriptionStreamAsync(ProjectionManager projectionManager, UserCredentials userCredentials, Type subscriberType)
@@ -66,20 +62,21 @@ fromAll()
                 @"var topics = [{0}];
 
 function handle(s, e) {{
-    var latestTopic = e.metadata.topics.filter(function(topic) {{
-         return topics.indexOf(topic) >= 0;
-    }}).slice(-1)[0];
-    if(latestTopic === e.eventType) {{
-        linkTo('{1}', e);
+    var link = e.bodyRaw;
+    if(link !== s) {{ 
+        var message = {{ streamId: '{1}', eventName: '$>', body: link, isJson: false }};
+        eventProcessor.emit(message);
     }}
+    return link;
 }}
 
-var handlers = topics.reduce(function(x, y) {{
-    x[y] = handle;
-    return x;
-}}, {{}});
+var handlers = topics.reduce(
+    function(x, y) {{
+        x[y] = handle;
+        return x;
+    }}, {{ }});
 
-fromCategory('topic')
+fromStream('topics')
     .when(handlers);";
 
             var toStream = subscriberType.GetEventStoreName();
@@ -88,6 +85,18 @@ fromCategory('topic')
             var fromTopics = eventTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
             var projectionDefinition = string.Format(projectionDefinitionTemplate, string.Join(",\n", fromTopics), toStream);
             return projectionManager.CreateOrUpdateProjectionAsync(projectionName, projectionDefinition, userCredentials, int.MaxValue);
+        }
+
+        internal static IEvent DeserializeEvent(Type subscriberType, ResolvedEvent resolvedEvent)
+        {
+            var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+            var topics = ((JArray)eventMetadata["topics"]).ToObject<string[]>();
+            var candidateEventTypes = subscriberType
+               .GetMessageHandlerTypes()
+               .Select(x => x.GetGenericArguments()[0]);
+            var eventType = topics.Join(candidateEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).First();
+            dynamic eventData = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data));
+            return Impromptu.CoerceConvert(eventData, eventType);
         }
 
         public static async Task<int?> GetDocumentTypeVersion<TDocument>(IElasticClient elasticClient) where TDocument : class
@@ -138,6 +147,10 @@ fromCategory('topic')
         {
             var projectionManager = new ProjectionManager(new ConsoleLogger(), EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort);
 
+
+            
+
+
             RegisterByEventTopicProjectionAsync(projectionManager, EventStoreSettings.Credentials).Wait();
             RegisterSubscriptionStreamAsync(projectionManager, EventStoreSettings.Credentials, typeof(Program)).Wait();
 
@@ -152,9 +165,9 @@ fromCategory('topic')
             //    }, 1000, new ConsoleLogger());
             //persistentSubscription.StartAsync().Wait();
 
-            var elasticClient = new ElasticClientBuilder(new[] { new Uri("http://localhost:9200") }, "admin", "admin")
-                .MapDefaultTypeIndices(typeof(Program).Assembly)
-                .Create();
+            //var elasticClient = new ElasticClientBuilder(new[] { new Uri("http://localhost:9200") }, "admin", "admin")
+            //    .MapDefaultTypeIndices(typeof(Program).Assembly)
+            //    .Create();
             
 
             //try
@@ -197,11 +210,8 @@ fromCategory('topic')
                 typeof(Program).GetEventStoreName(),
                 e =>
                 {
-                    var eventMetadata = JsonConvert.DeserializeObject<IDictionary<string, object>>(Encoding.UTF8.GetString(e.Event.Metadata));
-
-                    Console.WriteLine(eventMetadata["eventId"]);
-                    Console.WriteLine();
-                    
+                    Console.WriteLine(e.Event.EventId);
+                    Console.WriteLine();                    
                     return Task.FromResult(true);
                 }, 1000, () => Task.FromResult(default(int?)), new ConsoleLogger())
                 .StartAsync().Wait();

@@ -15,9 +15,14 @@ namespace infra
             return subscriberType.GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMessageHandler<>));
         }
 
-        public static string[] GetEventTopics(this IEvent @event)
+        public static string GetStreamName(this Type entityType, Guid entityId, string streamCategory = "")
         {
-            return EventTopic.GetAllTopics(@event);
+            var streamName = $"{entityType.GetEventStoreName()}_{entityId.ToString("N").ToLower()}";
+            if (!string.IsNullOrEmpty(streamCategory))
+            {
+                streamName = streamCategory + "-" + streamName;
+            }
+            return streamName;
         }
 
         public static string GetEventStoreName(this Type type)
@@ -25,24 +30,14 @@ namespace infra
             return type.FullName.Replace('.', '_');
         }
 
-        private static class EventTopic
+        public static string[] GetEventTopics(this Type eventType)
         {
-            private static readonly ConcurrentDictionary<Type, string[]> _eventTopicsCache = new ConcurrentDictionary<Type, string[]>();
-            private static readonly Type _baseEventType = typeof(IEvent);
-
-            public static string[] GetAllTopics(IEvent @event)
-            {
-                return _eventTopicsCache.GetOrAdd(@event.GetType(), CreateTopics);
-            }
-
-            private static string[] CreateTopics(Type eventType)
-            {
-                return eventType
-                    .GetInterfaces()
-                    .Where(x => x != _baseEventType && _baseEventType.IsAssignableFrom(x))
-                    .Select(x => x.GetEventStoreName())
-                    .ToArray();
-            }
+            var baseEventType = typeof(IEvent);
+            return eventType
+                .GetInterfaces()
+                .Where(x => x != baseEventType && baseEventType.IsAssignableFrom(x))
+                .Select(x => x.GetEventStoreName())
+                .ToArray();
         }
     }
 }
