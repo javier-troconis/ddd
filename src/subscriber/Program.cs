@@ -58,28 +58,33 @@ fromAll()
 
         public static Task RegisterSubscriptionStreamAsync(ProjectionManager projectionManager, UserCredentials userCredentials, Type subscriberType)
         {
-            const string projectionDefinitionTemplate =
-                @"var topics = [{0}];
+			const string projectionDefinitionTemplate =
+				@"var topics = [{0}];
 
 function handle(s, e) {{
-    var link = e.bodyRaw;
-    if(link !== s) {{ 
-        var message = {{ streamId: '{1}', eventName: '$>', body: link, isJson: false }};
+    var event = e.bodyRaw;
+    if(event !== s.lastEvent) {{ 
+        var message = {{ streamId: '{1}', eventName: '$>', body: event, isJson: false }};
         eventProcessor.emit(message);
     }}
-    return link;
+	s.lastEvent = event;
 }}
 
 var handlers = topics.reduce(
     function(x, y) {{
         x[y] = handle;
         return x;
-    }}, {{ }});
+    }}, 
+	{{
+		$init: function(){{
+			return {{ lastEvent: ''}};
+		}}
+	}});
 
 fromStream('topics')
     .when(handlers);";
 
-            var toStream = subscriberType.GetEventStoreName();
+			var toStream = subscriberType.GetEventStoreName();
             var projectionName = subscriberType.GetEventStoreName();
             var eventTypes = subscriberType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0]);
             var fromTopics = eventTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
