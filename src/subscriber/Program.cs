@@ -155,7 +155,7 @@ fromStream('topics')
             RegisterByEventTopicProjectionAsync(projectionManager, EventStoreSettings.Credentials).Wait();
             RegisterSubscriptionStreamAsync(projectionManager, EventStoreSettings.Credentials, typeof(Program)).Wait();
 
-	        var handle = HandleEvent(() => new Program()).ComposeForward(_writeCheckpoint.ToAsync());
+	        var handle = HandleEvent(() => new Program(new ElasticClient())).ComposeForward(_writeCheckpoint.ToAsync());
 
 			new CatchUpSubscription(
 					new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()).CreateConnection,
@@ -194,6 +194,13 @@ fromStream('topics')
 			Console.WriteLine("wrote checkpoint: " + resolvedEvent.OriginalEventNumber);
 			return resolvedEvent;
 		};
+
+	    readonly IElasticClient _elasticClient;
+
+		public Program(IElasticClient elasticClient)
+		{
+			_elasticClient = elasticClient;
+		}
 
 		public Task Handle(IApplicationStarted message)
         {
