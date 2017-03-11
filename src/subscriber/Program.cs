@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Security.Authentication.ExtendedProtection;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -33,77 +34,6 @@ namespace subscriber
 {
     public class Program : IMessageHandler<IApplicationStarted, Task>, IMessageHandler<IApplicationSubmitted, Task>
     {
-        static Task RegisterByEventTopicProjectionAsync(ProjectionManager projectionManager, UserCredentials userCredentials)
-        {
-            const string projectionDefinitionTemplate =
-               @"function emitTopic(e) {
-    return function(topic) {
-           var message = { streamId: 'topics', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false };
-           eventProcessor.emit(message);
-    };
-}
-
-fromAll()
-    .when({
-        $any: function(s, e) {
-            var topics;
-            if (e.streamId === 'topics' || !e.metadata || !(topics = e.metadata.topics)) {
-                return;
-            }
-            topics.forEach(emitTopic(e));
-        }
-    });";
-            return projectionManager.CreateOrUpdateProjectionAsync("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
-        }
-
-        static Task RegisterSubscriptionStreamAsync(ProjectionManager projectionManager, UserCredentials userCredentials, Type subscriberType)
-        {
-			const string projectionDefinitionTemplate =
-				@"var topics = [{0}];
-
-function handle(s, e) {{
-    var event = e.bodyRaw;
-    if(event !== s.lastEvent) {{ 
-        var message = {{ streamId: '{1}', eventName: '$>', body: event, isJson: false }};
-        eventProcessor.emit(message);
-    }}
-	s.lastEvent = event;
-}}
-
-var handlers = topics.reduce(
-    function(x, y) {{
-        x[y] = handle;
-        return x;
-    }}, 
-	{{
-		$init: function(){{
-			return {{ lastEvent: ''}};
-		}}
-	}});
-
-fromStream('topics')
-    .when(handlers);";
-
-			var toStream = subscriberType.GetEventStoreName();
-            var projectionName = subscriberType.GetEventStoreName();
-            var eventTypes = subscriberType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0]);
-            var fromTopics = eventTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
-            var projectionDefinition = string.Format(projectionDefinitionTemplate, string.Join(",\n", fromTopics), toStream);
-            return projectionManager.CreateOrUpdateProjectionAsync(projectionName, projectionDefinition, userCredentials, int.MaxValue);
-        }
-
-        static IEvent DeserializeEvent<TSubscriber>(ResolvedEvent resolvedEvent)
-        {
-            var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-            var topics = ((JArray)eventMetadata["topics"]).ToObject<string[]>();
-            var candidateEventTypes = typeof(TSubscriber)
-			   .GetMessageHandlerTypes()
-               .Select(x => x.GetGenericArguments()[0]);
-            var eventType = topics.Join(candidateEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).First();
-            dynamic eventData = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data));
-            return Impromptu.CoerceConvert(eventData, eventType);
-        }
-
 		//static async Task<int?> GetDocumentTypeVersion<TDocument>(IElasticClient elasticClient) where TDocument : class
 		//{
 		//    const string maxVersionQueryKey = "max_version";
@@ -148,23 +78,32 @@ fromStream('topics')
             await IndexAsync(elasticClient, getResponse.Source, expectedVersion + 1);
         }
 
+	    private static Func<ResolvedEvent, Task<ResolvedEvent>> Enqueue(TaskQueue taskQueue, string queueName, Func<ResolvedEvent, Task<ResolvedEvent>> eventHandling)
+	    {
+		    return async resolvedEvent =>
+			{
+				await taskQueue.SendToChannelAsync(queueName, () => eventHandling(resolvedEvent));
+				return resolvedEvent;
+			};
+		} 
+
         public static void Main(string[] args)
         {
-            var projectionManager = new ProjectionManager(new ConsoleLogger(), EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort);
+	       var queue = new TaskQueue();
 
-            RegisterByEventTopicProjectionAsync(projectionManager, EventStoreSettings.Credentials).Wait();
-            RegisterSubscriptionStreamAsync(projectionManager, EventStoreSettings.Credentials, typeof(Program)).Wait();
-
-	        var handle = HandleEvent(() => new Program(new ElasticClient())).ComposeForward(_writeCheckpoint.ToAsync());
-
-			new CatchUpSubscription(
-					new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()).CreateConnection,
-					typeof(Program).GetEventStoreName(), 
-					handle,
-					1000, 
-					() => Task.FromResult(default(int?)))
-                .StartAsync()
+			new EventBus(
+				EventStoreSettings.ClusterDns, 
+				EventStoreSettings.Username, 
+				EventStoreSettings.Password, 
+				EventStoreSettings.ExternalHttpPort, 
+				new ConsoleLogger())
+		        .RegisterCatchupSubscriber(
+					new Program(new ElasticClient()), 
+					() => Task.FromResult(default(int?)), 
+					_writeCheckpoint.ToAsync().ComposeBackward)
+		        .Start()
 				.Wait();
+
 
             while (true)
             {
@@ -172,22 +111,6 @@ fromStream('topics')
             }
         }
 
-	    static Func<ResolvedEvent, Task<ResolvedEvent>> HandleEvent<TSubscriber>(Func<TSubscriber> createSubscriber)
-	    {
-			var subscriber = createSubscriber();
-		    return async resolvedEvent =>
-		    {
-				var @event = DeserializeEvent<TSubscriber>(resolvedEvent);
-				await HandleEvent(subscriber, (dynamic)@event);
-				return resolvedEvent;
-		    };
-	    }
-
-		static Task HandleEvent<TEvent>(object subscriber, TEvent @event) where TEvent : IEvent
-		{
-			var handler = (IMessageHandler<TEvent, Task>)subscriber;
-			return handler.Handle(@event);
-		}
 
 		private static readonly Func<ResolvedEvent, ResolvedEvent> _writeCheckpoint = resolvedEvent =>
 		{
@@ -195,6 +118,7 @@ fromStream('topics')
 			return resolvedEvent;
 		};
 
+	    private static readonly Random _rnd = new Random();
 	    readonly IElasticClient _elasticClient;
 
 		public Program(IElasticClient elasticClient)
@@ -203,8 +127,8 @@ fromStream('topics')
 		}
 
 		public Task Handle(IApplicationStarted message)
-        {
-	        return Task.CompletedTask;
+		{
+			return Task.Delay(_rnd.Next(3000));   
         }
 
         public Task Handle(IApplicationSubmitted message)

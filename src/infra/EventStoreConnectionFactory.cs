@@ -15,20 +15,21 @@ namespace infra
 
     public class EventStoreConnectionFactory : IEventStoreConnectionFactory
     {
-        private readonly Action<ConnectionSettingsBuilder> _configureConnectionSettings;
+        private readonly Action<ConnectionSettingsBuilder> _configure;
 
-        public EventStoreConnectionFactory(Action<ConnectionSettingsBuilder> configureConnectionSettings = null)
+        public EventStoreConnectionFactory(Action<ConnectionSettingsBuilder> configure = null)
         {
-            _configureConnectionSettings = configureConnectionSettings;
+            _configure = configure;
         }
 
         public IEventStoreConnection CreateConnection()
         {
             var connectionSettingsBuilder = ConnectionSettings.Create();
 
-            _configureConnectionSettings?.Invoke(connectionSettingsBuilder);
+            _configure?.Invoke(connectionSettingsBuilder);
 
             var connectionSettings = connectionSettingsBuilder.Build();
+			
 
             var clusterSettings = ClusterSettings
                 .Create()

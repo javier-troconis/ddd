@@ -16,27 +16,18 @@ namespace infra
         private readonly ILogger _logger;
         private readonly IPEndPoint[] _httpEndPoints;
 
-        private ProjectionManager(ILogger logger)
-        {
-            _logger = logger;
-        }
-
-        public ProjectionManager(ILogger logger, IPEndPoint httpEndPoint) 
-            : this(logger)
-        {
-            _httpEndPoints = new [] { httpEndPoint };
-        }
+ 
 
         public ProjectionManager(ILogger logger, string clusterDns, int externalHttpPort)
-             : this(logger)
         {
-            _httpEndPoints = Dns.GetHostEntry(clusterDns)
+	        _logger = logger;
+	        _httpEndPoints = Dns.GetHostEntry(clusterDns)
                 .AddressList
                 .Select(x => new IPEndPoint(x, externalHttpPort))
                 .ToArray();
         }
 
-        public async Task CreateOrUpdateProjectionAsync(string projectionName, string projectionDefinition, UserCredentials userCredentials,  int maxAttempts)
+	    public async Task CreateOrUpdateProjectionAsync(string projectionName, string projectionDefinition, UserCredentials userCredentials,  int maxAttempts)
         {
             for (var attempt = 1; maxAttempts >= attempt; ++attempt)
             {

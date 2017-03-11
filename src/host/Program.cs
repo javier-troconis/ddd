@@ -59,7 +59,7 @@ namespace host
         public static void Main(string[] args)
         {
 			var connection = new EventStoreConnectionFactory(x => x
-                .KeepReconnecting().SetDefaultUserCredentials(EventStoreSettings.Credentials)).CreateConnection();
+                .KeepReconnecting().SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))).CreateConnection();
             connection.ConnectAsync().Wait();
             var eventStore = new infra.EventStore(connection);
 
@@ -78,7 +78,7 @@ namespace host
                 startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
                 //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = 0, Submitter = "blah" } }).Wait();
                 
-                Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+                Task.Delay(TimeSpan.FromSeconds(1)).Wait();
             }
         }
 
