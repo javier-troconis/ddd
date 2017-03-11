@@ -1,7 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Caching.Memory;
 
 namespace shared
 {
@@ -40,5 +43,31 @@ namespace shared
         {
             return f2.ComposeForward(f1);
         }
-    }
+
+		public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions)
+		{
+			return x => cache.GetOrCreate(x, z =>
+			{
+				z.SetOptions(memoryCacheEntryOptions);
+				return new Lazy<T2>(() => f(x), LazyThreadSafetyMode.ExecutionAndPublication);
+			}).Value;
+		}
+
+		public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions)
+		{
+			var f1 = new Func<Tuple<T1, T2>, T3>(x => f(x.Item1, x.Item2)).Memoize(cache, memoryCacheEntryOptions);
+			return (x, y) => f1(new Tuple<T1, T2>(x, y));
+		}
+
+		public static Func<T1, T2, T3, T4> Memoize<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions)
+		{
+			var f1 = new Func<Tuple<T1, T2, T3>, T4>(x => f(x.Item1, x.Item2, x.Item3)).Memoize(cache, memoryCacheEntryOptions);
+			return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
+		}
+
+		public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, T2> f)
+		{
+			return async x => f(await x);
+		}
+	}
 }

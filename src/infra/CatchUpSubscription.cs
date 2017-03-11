@@ -9,33 +9,31 @@ namespace infra
 {
     public class CatchUpSubscription : ISubscription
     {
-        private readonly IEventStoreConnectionFactory _eventStoreConnectionFactory;
-        private readonly ILogger _logger;
+        private readonly Func<IEventStoreConnection> _createConnection;
         private readonly string _streamName;
         private readonly int _reconnectDelayInMilliseconds;
-        private readonly Func<ResolvedEvent, Task<bool>> _tryHandleEvent;
+        private readonly Func<ResolvedEvent, Task> _handleEvent;
         private readonly Func<Task<int?>> _getLastCheckpoint;
 
-        public CatchUpSubscription(IEventStoreConnectionFactory eventStoreConnectionFactory,
+        public CatchUpSubscription(
+			Func<IEventStoreConnection> createConnection,
             string streamName,
-            Func<ResolvedEvent, Task<bool>> tryHandleEvent,
+            Func<ResolvedEvent, Task> handleEvent,
             int reconnectDelayInMilliseconds,
-            Func<Task<int?>> getLastCheckpoint,
-            ILogger logger)
+            Func<Task<int?>> getLastCheckpoint)
         {
-            _eventStoreConnectionFactory = eventStoreConnectionFactory;
+			_createConnection = createConnection;
             _streamName = streamName;
-            _tryHandleEvent = tryHandleEvent;
+            _handleEvent = handleEvent;
             _reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
             _getLastCheckpoint = getLastCheckpoint;
-            _logger = logger;
         }
 
         public async Task StartAsync()
         {
             while (true)
             {
-                var connection = _eventStoreConnectionFactory.CreateConnection();
+                var connection = _createConnection();
                 await connection.ConnectAsync();
                 var lastCheckpoint = await _getLastCheckpoint();
                 try
@@ -43,33 +41,25 @@ namespace infra
                     connection.SubscribeToStreamFrom(_streamName, lastCheckpoint, CatchUpSubscriptionSettings.Default, OnEventReceived, subscriptionDropped: OnSubscriptionDropped(connection));
                     return;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    _logger.Error(ex, "Exception occurred attempting to connect to catchup subscription. Subscriber Info: StreamName:{0}", _streamName);
+                    
                 }
                 connection.Dispose();
                 await Task.Delay(_reconnectDelayInMilliseconds);
             }
         }
 
-        private async void OnEventReceived(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
+        private void OnEventReceived(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
         {
-            try
-            {
-                await _tryHandleEvent(resolvedEvent);
-            }
-            catch (Exception ex)
-            {
-                _logger.Error(ex, "CatchUpSubscription failed to handle {@Event} from stream {OriginalStreamId}", resolvedEvent.Event, resolvedEvent.OriginalStreamId);
-            }
+            _handleEvent(resolvedEvent);
         }
 
         private Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
         {
             return async (subscription, reason, exception) =>
             {
-                connection.Dispose();
-                _logger.Error(exception, "CatchUpSubscription was dropped. Reason:{0}. Subscriber Info: StreamName:{1}", reason, _streamName);
+				connection.Dispose();
                 await StartAsync();
             };
         }

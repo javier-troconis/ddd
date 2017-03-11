@@ -11,42 +11,39 @@ namespace infra
     public class PersistentSubscription : ISubscription
     {
         private readonly string _consumerGroupName;
-        private readonly IEventStoreConnectionFactory _eventStoreConnectionFactory;
+        private readonly Func<IEventStoreConnection> _createConnection;
         private readonly string _streamName;
-        private readonly Func<ResolvedEvent, Task<bool>> _tryHandleEvent;
+        private readonly Func<ResolvedEvent, Task> _handleEvent;
         private readonly int _reconnectDelayInMilliseconds;
-        private readonly ILogger _logger;
 
-
-        public PersistentSubscription(IEventStoreConnectionFactory eventStoreConnectionFactory,
+        public PersistentSubscription(
+			Func<IEventStoreConnection> createConnection,
             string streamName,
             string consumerGroupName,
-            Func<ResolvedEvent, Task<bool>> tryHandleEvent,
-            int reconnectDelayInMilliseconds,
-            ILogger logger)
+            Func<ResolvedEvent, Task> handleEvent,
+            int reconnectDelayInMilliseconds)
         {
-            _eventStoreConnectionFactory = eventStoreConnectionFactory;
+			_createConnection = createConnection;
             _streamName = streamName;
             _consumerGroupName = consumerGroupName;
-            _tryHandleEvent = tryHandleEvent;
+            _handleEvent = handleEvent;
             _reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
-            _logger = logger;
         }
 
         public async Task StartAsync()
         {
             while(true)
             {
-                var connection = _eventStoreConnectionFactory.CreateConnection();
+                var connection = _createConnection();
                 await connection.ConnectAsync();
                 try
                 {
                     await connection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventReceived, OnSubscriptionDropped(connection), autoAck: false);
                     return;
                 }
-                catch (Exception ex)
+                catch
                 {
-                    _logger.Error(ex, "Exception occurred attempting to connect to persistent subscription. Subscriber Info: StreamName:{0}, GroupName:{1}", _streamName, _consumerGroupName);
+                    
                 } 
                 connection.Dispose();
                 await Task.Delay(_reconnectDelayInMilliseconds);
@@ -57,17 +54,14 @@ namespace infra
         {
             try
             {
-                var isEventHandled = await _tryHandleEvent(resolvedEvent);
-                if (isEventHandled)
-                {
-                    subscription.Acknowledge(resolvedEvent);
-                }
+                await _handleEvent(resolvedEvent);
             }
             catch (Exception ex)
             {
-                _logger.Error(ex, "PersistentSubscription failed to handle {@Event} from stream {OriginalStreamId}", resolvedEvent.Event, resolvedEvent.OriginalStreamId);
                 subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
+	            return;
             }
+			subscription.Acknowledge(resolvedEvent);
         }
 
         private Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
@@ -75,7 +69,6 @@ namespace infra
             return async (subscription, reason, exception) =>
             {
                 connection.Dispose();
-                _logger.Error(exception, "PersistentSubscription was dropped. Reason:{0}. Subscriber Info: StreamName:{1}, GroupName:{2}", reason, _streamName, _consumerGroupName);
                 await StartAsync();
             };
         }

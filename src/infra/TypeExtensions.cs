@@ -12,7 +12,7 @@ namespace infra
     {
         public static IEnumerable<Type> GetMessageHandlerTypes(this Type subscriberType)
         {
-            return subscriberType.GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMessageHandler<>));
+            return subscriberType.GetInterfaces().Where(i => i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMessageHandler<,>));
         }
 
         public static string GetStreamName(this Type entityType, Guid entityId, string streamCategory = "")

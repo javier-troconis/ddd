@@ -2,11 +2,12 @@
   "version": "1.0.0",
   "description": "shared Class Library",
   "authors": [ "jtroconis" ],
-  "dependencies": {
-    "System.Runtime":"4.0.20",
-    "System.Threading.Tasks":"4.0.10",
-    "System.Threading.Tasks.Dataflow": "4.6.0"
-  },
+	"dependencies": {
+		"System.Runtime": "4.0.20",
+		"System.Threading.Tasks": "4.0.10",
+		"System.Threading.Tasks.Dataflow": "4.6.0",
+		"Microsoft.Extensions.Caching.Memory": "1.1.0"
+	},
   "frameworks": {
     "net46": {
       "dependencies": {

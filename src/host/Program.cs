@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -11,6 +12,9 @@ using core;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using infra;
+
+using Newtonsoft.Json;
+
 using shared;
 
 namespace host
@@ -54,8 +58,7 @@ namespace host
     {
         public static void Main(string[] args)
         {
-            
-            var connection = new EventStoreConnectionFactory(x => x
+			var connection = new EventStoreConnectionFactory(x => x
                 .KeepReconnecting().SetDefaultUserCredentials(EventStoreSettings.Credentials)).CreateConnection();
             connection.ConnectAsync().Wait();
             var eventStore = new infra.EventStore(connection);

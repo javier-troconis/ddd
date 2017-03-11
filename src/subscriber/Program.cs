@@ -31,9 +31,9 @@ using shared;
 
 namespace subscriber
 {
-    public class Program : IMessageHandler<IApplicationStarted>, IMessageHandler<IApplicationSubmitted>
+    public class Program : IMessageHandler<IApplicationStarted, Task>, IMessageHandler<IApplicationSubmitted, Task>
     {
-        public static Task RegisterByEventTopicProjectionAsync(ProjectionManager projectionManager, UserCredentials userCredentials)
+        static Task RegisterByEventTopicProjectionAsync(ProjectionManager projectionManager, UserCredentials userCredentials)
         {
             const string projectionDefinitionTemplate =
                @"function emitTopic(e) {
@@ -56,7 +56,7 @@ fromAll()
             return projectionManager.CreateOrUpdateProjectionAsync("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
         }
 
-        public static Task RegisterSubscriptionStreamAsync(ProjectionManager projectionManager, UserCredentials userCredentials, Type subscriberType)
+        static Task RegisterSubscriptionStreamAsync(ProjectionManager projectionManager, UserCredentials userCredentials, Type subscriberType)
         {
 			const string projectionDefinitionTemplate =
 				@"var topics = [{0}];
@@ -92,39 +92,39 @@ fromStream('topics')
             return projectionManager.CreateOrUpdateProjectionAsync(projectionName, projectionDefinition, userCredentials, int.MaxValue);
         }
 
-        internal static IEvent DeserializeEvent(Type subscriberType, ResolvedEvent resolvedEvent)
+        static IEvent DeserializeEvent<TSubscriber>(ResolvedEvent resolvedEvent)
         {
             var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
             var topics = ((JArray)eventMetadata["topics"]).ToObject<string[]>();
-            var candidateEventTypes = subscriberType
-               .GetMessageHandlerTypes()
+            var candidateEventTypes = typeof(TSubscriber)
+			   .GetMessageHandlerTypes()
                .Select(x => x.GetGenericArguments()[0]);
             var eventType = topics.Join(candidateEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).First();
             dynamic eventData = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data));
             return Impromptu.CoerceConvert(eventData, eventType);
         }
 
-        public static async Task<int?> GetDocumentTypeVersion<TDocument>(IElasticClient elasticClient) where TDocument : class
-        {
-            const string maxVersionQueryKey = "max_version";
-            const string elasticVersionFieldName = "_version";
-            var searchResponse = await elasticClient.SearchAsync<TDocument>(s => s
-                .Size(0)
-                .Aggregations(agregateSelector => agregateSelector
-                    .Max(maxVersionQueryKey, maxSelector => maxSelector
-                        .Field(elasticVersionFieldName))));
-            var maxVersionAggregation = searchResponse.Aggs.Max(maxVersionQueryKey);
-            var maxVersion = maxVersionAggregation.Value;
-            return (int?)maxVersion;
-        }
+		//static async Task<int?> GetDocumentTypeVersion<TDocument>(IElasticClient elasticClient) where TDocument : class
+		//{
+		//    const string maxVersionQueryKey = "max_version";
+		//    const string elasticVersionFieldName = "_version";
+		//    var searchResponse = await elasticClient.SearchAsync<TDocument>(s => s
+		//        .Size(0)
+		//        .Aggregations(agregateSelector => agregateSelector
+		//            .Max(maxVersionQueryKey, maxSelector => maxSelector
+		//                .Field(elasticVersionFieldName))));
+		//    var maxVersionAggregation = searchResponse.Aggs.Max(maxVersionQueryKey);
+		//    var maxVersion = maxVersionAggregation.Value;
+		//    return (int?)maxVersion;
+		//}
 
-        private static Task MapType<TDocument>(IElasticClient elasticClient) where TDocument : class
-        {
-            return elasticClient.MapAsync<TDocument>(mapping => mapping
-                .AutoMap());
-        }
+		//private static Task MapType<TDocument>(IElasticClient elasticClient) where TDocument : class
+		//{
+		//    return elasticClient.MapAsync<TDocument>(mapping => mapping
+		//        .AutoMap());
+		//}
 
-        public static async Task IndexAsync<TDocument>(IElasticClient elasticClient, TDocument document, long version) where TDocument : class
+		static async Task IndexAsync<TDocument>(IElasticClient elasticClient, TDocument document, long version) where TDocument : class
         {
             try
             {
@@ -141,100 +141,69 @@ fromStream('topics')
 
        
 
-        public static async Task UpdateAsync<TDocument>(IElasticClient elasticClient, TDocument documentSample, Action<TDocument> updateDocument, long version) where TDocument : class
+        static async Task UpdateAsync<TDocument>(IElasticClient elasticClient, Guid documentId, Action<TDocument> updateDocument, long expectedVersion) where TDocument : class
         {
-            IGetResponse<TDocument> getResponse = await elasticClient.GetAsync<TDocument>(documentSample);
+            IGetResponse<TDocument> getResponse = await elasticClient.GetAsync<TDocument>(documentId);
             updateDocument(getResponse.Source);
-            await IndexAsync(elasticClient, getResponse.Source, version);
+            await IndexAsync(elasticClient, getResponse.Source, expectedVersion + 1);
         }
 
         public static void Main(string[] args)
         {
             var projectionManager = new ProjectionManager(new ConsoleLogger(), EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort);
 
-
-            
-
-
             RegisterByEventTopicProjectionAsync(projectionManager, EventStoreSettings.Credentials).Wait();
             RegisterSubscriptionStreamAsync(projectionManager, EventStoreSettings.Credentials, typeof(Program)).Wait();
 
-            //var persistentSubscription = new PersistentSubscription(
-            //    new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
-            //        _subscriptionStreamName, _subscriptionGroupName,
-            //    async e =>
-            //    {
-            //        Console.WriteLine($"persistent subscription processed stream: {e.Event.EventStreamId} | event: {e.OriginalEventNumber} - {e.Event.EventType} - {e.Event.EventId}");
-            //        await Task.Delay(500);
-            //        return await Task.FromResult(true);
-            //    }, 1000, new ConsoleLogger());
-            //persistentSubscription.StartAsync().Wait();
+	        var handle = HandleEvent(() => new Program()).ComposeForward(_writeCheckpoint.ToAsync());
 
-            //var elasticClient = new ElasticClientBuilder(new[] { new Uri("http://localhost:9200") }, "admin", "admin")
-            //    .MapDefaultTypeIndices(typeof(Program).Assembly)
-            //    .Create();
-            
-
-            //try
-            //{
-            //    elasticClient.CreateIndexAsync(elasticIndex).Wait();
-            //    MapType<TestDocument>(elasticClient, elasticIndex).Wait();
-            //}
-            //catch
-            //{
-
-            //}
-
-            //var taskQueue = new TaskQueue();
-
-            //new CatchUpSubscription(
-            //    new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
-            //    typeof(Program).GetEventStoreName(),
-            //    e =>
-            //    {
-            //        object streamId;
-            //        var eventMetadata = JsonConvert.DeserializeObject<IDictionary<string, object>>(Encoding.UTF8.GetString(e.Event.Metadata));
-            //        if (!eventMetadata.TryGetValue("streamId", out streamId))
-            //        {
-            //            return Task.FromResult(true);
-            //        }
-            //        return taskQueue.SendToChannelAsync(elasticIndex, () =>
-            //        {
-            //            Console.WriteLine($"processing - {streamId} | {e.OriginalEventNumber}");
-            //            if (string.Equals(e.Event.EventType, typeof(IApplicationStarted).GetEventStoreName()))
-            //            {
-            //                return IndexAsync(elasticClient, elasticIndex, new TestDocument { Id = streamId.ToString(), Value = e.OriginalEventNumber }, e.OriginalEventNumber);
-            //            }
-            //            return UpdateAsync(elasticClient, elasticIndex, new TestDocument { Id = streamId.ToString() }, x => x.Value = e.OriginalEventNumber, e.OriginalEventNumber);
-            //        }, x => Console.WriteLine($"processed - {streamId} | {e.OriginalEventNumber}"), (x, y) => Console.WriteLine("failed"));
-            //    }, 1000, () => GetDocumentTypeVersion<TestDocument>(elasticClient, elasticIndex), new ConsoleLogger())
-            //    .StartAsync().Wait();
-
-            new CatchUpSubscription(
-                new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()),
-                typeof(Program).GetEventStoreName(),
-                e =>
-                {
-                    Console.WriteLine(e.Event.EventId);
-                    Console.WriteLine();                    
-                    return Task.FromResult(true);
-                }, 1000, () => Task.FromResult(default(int?)), new ConsoleLogger())
-                .StartAsync().Wait();
+			new CatchUpSubscription(
+					new EventStoreConnectionFactory(x => x.SetDefaultUserCredentials(EventStoreSettings.Credentials).UseConsoleLogger().KeepReconnecting()).CreateConnection,
+					typeof(Program).GetEventStoreName(), 
+					handle,
+					1000, 
+					() => Task.FromResult(default(int?)))
+                .StartAsync()
+				.Wait();
 
             while (true)
             {
+
             }
         }
 
-        public void Handle(IApplicationStarted message)
+	    static Func<ResolvedEvent, Task<ResolvedEvent>> HandleEvent<TSubscriber>(Func<TSubscriber> createSubscriber)
+	    {
+			var subscriber = createSubscriber();
+		    return async resolvedEvent =>
+		    {
+				var @event = DeserializeEvent<TSubscriber>(resolvedEvent);
+				await HandleEvent(subscriber, (dynamic)@event);
+				return resolvedEvent;
+		    };
+	    }
+
+		static Task HandleEvent<TEvent>(object subscriber, TEvent @event) where TEvent : IEvent
+		{
+			var handler = (IMessageHandler<TEvent, Task>)subscriber;
+			return handler.Handle(@event);
+		}
+
+		private static readonly Func<ResolvedEvent, ResolvedEvent> _writeCheckpoint = resolvedEvent =>
+		{
+			Console.WriteLine("wrote checkpoint: " + resolvedEvent.OriginalEventNumber);
+			return resolvedEvent;
+		};
+
+		public Task Handle(IApplicationStarted message)
         {
-            throw new NotImplementedException();
+	        return Task.CompletedTask;
         }
 
-        public void Handle(IApplicationSubmitted message)
+        public Task Handle(IApplicationSubmitted message)
         {
-            throw new NotImplementedException();
-        }
+			return Task.CompletedTask;
+		}
     }
 
     [ElasticsearchType]
