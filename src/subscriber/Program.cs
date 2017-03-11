@@ -100,7 +100,7 @@ namespace subscriber
 		        .RegisterCatchupSubscriber(
 					new Program(new ElasticClient()), 
 					() => Task.FromResult(default(int?)), 
-					_writeCheckpoint.ToAsync().ComposeBackward)
+					eventHandling => Enqueue(queue, nameof(Program), _writeCheckpoint.ToAsync().ComposeBackward(eventHandling)))
 		        .Start()
 				.Wait();
 
@@ -128,7 +128,7 @@ namespace subscriber
 
 		public Task Handle(IApplicationStarted message)
 		{
-			return Task.Delay(_rnd.Next(3000));   
+			return Task.Delay(_rnd.Next(1000));   
         }
 
         public Task Handle(IApplicationSubmitted message)
