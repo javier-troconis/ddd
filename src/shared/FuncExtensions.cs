@@ -65,9 +65,9 @@ namespace shared
 			return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
 		}
 
-		public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, T2> f)
+		public static Func<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this Func<T1, Task<T2>> f)
 		{
-			return async x => f(await x);
+			return async x => await f(await x);
 		}
 	}
 }

@@ -32,8 +32,8 @@ using shared;
 
 namespace subscriber
 {
-    public class Program : IMessageHandler<IApplicationStarted, Task>, IMessageHandler<IApplicationSubmitted, Task>
-    {
+	public class Program : IMessageHandler<IApplicationStarted, Task>, IMessageHandler<IApplicationSubmitted, Task>
+	{
 		//static async Task<int?> GetDocumentTypeVersion<TDocument>(IElasticClient elasticClient) where TDocument : class
 		//{
 		//    const string maxVersionQueryKey = "max_version";
@@ -55,71 +55,66 @@ namespace subscriber
 		//}
 
 		static async Task IndexAsync<TDocument>(IElasticClient elasticClient, TDocument document, long version) where TDocument : class
-        {
-            try
-            {
-                await elasticClient.IndexAsync(document, s => s
-                    .VersionType(VersionType.External)
-                    .Version(version)
-                    .Refresh()
-                    );
-            }
-            catch (ElasticsearchClientException ex) when (ex.Response.ServerError.Status == (int)HttpStatusCode.Conflict)
-            {
-            }
-        }
-
-       
-
-        static async Task UpdateAsync<TDocument>(IElasticClient elasticClient, Guid documentId, Action<TDocument> updateDocument, long expectedVersion) where TDocument : class
-        {
-            IGetResponse<TDocument> getResponse = await elasticClient.GetAsync<TDocument>(documentId);
-            updateDocument(getResponse.Source);
-            await IndexAsync(elasticClient, getResponse.Source, expectedVersion + 1);
-        }
-
-	    private static Func<ResolvedEvent, Task<ResolvedEvent>> Enqueue(TaskQueue taskQueue, string queueName, Func<ResolvedEvent, Task<ResolvedEvent>> eventHandling)
-	    {
-		    return async resolvedEvent =>
+		{
+			try
 			{
-				await taskQueue.SendToChannelAsync(queueName, () => eventHandling(resolvedEvent));
+				await elasticClient.IndexAsync(document, s => s
+					.VersionType(VersionType.External)
+					.Version(version)
+					.Refresh()
+					);
+			}
+			catch (ElasticsearchClientException ex) when (ex.Response.ServerError.Status == (int)HttpStatusCode.Conflict)
+			{
+			}
+		}
+
+		static async Task UpdateAsync<TDocument>(IElasticClient elasticClient, Guid documentId, Action<TDocument> updateDocument, long expectedVersion) where TDocument : class
+		{
+			IGetResponse<TDocument> getResponse = await elasticClient.GetAsync<TDocument>(documentId);
+			updateDocument(getResponse.Source);
+			await IndexAsync(elasticClient, getResponse.Source, expectedVersion + 1);
+		}
+
+		private static Func<ResolvedEvent, Task<ResolvedEvent>> Enqueue(TaskQueue queue, string queueName, Func<ResolvedEvent, Task<ResolvedEvent>> handle)
+		{
+			return async resolvedEvent =>
+			{
+				await queue.SendToChannelAsync(queueName, () => handle(resolvedEvent));
 				return resolvedEvent;
 			};
-		} 
+		}
 
-        public static void Main(string[] args)
-        {
-	       var queue = new TaskQueue();
+		public static void Main(string[] args)
+		{
+			var queue = new TaskQueue();
 
 			new EventBus(
-				EventStoreSettings.ClusterDns, 
-				EventStoreSettings.Username, 
-				EventStoreSettings.Password, 
-				EventStoreSettings.ExternalHttpPort, 
+				EventStoreSettings.ClusterDns,
+				EventStoreSettings.Username,
+				EventStoreSettings.Password,
+				EventStoreSettings.ExternalHttpPort,
 				new ConsoleLogger())
-		        .RegisterCatchupSubscriber(
-					new Program(new ElasticClient()), 
-					() => Task.FromResult(default(int?)), 
-					eventHandling => Enqueue(queue, nameof(Program), _writeCheckpoint.ToAsync().ComposeBackward(eventHandling)))
-		        .Start()
+				.RegisterCatchupSubscriber(
+					new Program(new ElasticClient()),
+					() => Task.FromResult(default(int?)),
+					handle => Enqueue(queue, nameof(Program), handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
+				.Start()
 				.Wait();
 
+			while (true)
+			{
+			}
+		}
 
-            while (true)
-            {
-
-            }
-        }
-
-
-		private static readonly Func<ResolvedEvent, ResolvedEvent> _writeCheckpoint = resolvedEvent =>
+		private static readonly Func<ResolvedEvent, Task<ResolvedEvent>> _writeCheckpoint = resolvedEvent =>
 		{
 			Console.WriteLine("wrote checkpoint: " + resolvedEvent.OriginalEventNumber);
-			return resolvedEvent;
+			return Task.FromResult(resolvedEvent);
 		};
 
-	    private static readonly Random _rnd = new Random();
-	    readonly IElasticClient _elasticClient;
+		private static readonly Random _rnd = new Random();
+		readonly IElasticClient _elasticClient;
 
 		public Program(IElasticClient elasticClient)
 		{
@@ -128,19 +123,19 @@ namespace subscriber
 
 		public Task Handle(IApplicationStarted message)
 		{
-			return Task.Delay(_rnd.Next(1000));   
-        }
+			return Task.Delay(_rnd.Next(1000));
+		}
 
-        public Task Handle(IApplicationSubmitted message)
-        {
+		public Task Handle(IApplicationSubmitted message)
+		{
 			return Task.CompletedTask;
 		}
-    }
+	}
 
-    [ElasticsearchType]
-    public class TestDocument
-    {
-        public string Id { get; set; }
-        public long Value { get; set; }
-    }
+	[ElasticsearchType]
+	public class TestDocument
+	{
+		public string Id { get; set; }
+		public long Value { get; set; }
+	}
 }

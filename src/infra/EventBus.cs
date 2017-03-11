@@ -44,9 +44,9 @@ namespace infra
 			_subscriberRegistrations = subscriberRegistrations;
 		}
 
-		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<int?>> getCheckpoint, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null)
+		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<int?>> getCheckpoint, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> handle = null)
 		{
-			processEventHandling = processEventHandling ?? (x => x);
+			handle = handle ?? (x => x);
 			return new EventBus(_clusterDns, _username, _password, _externalHttpPort, _logger,
 				new Dictionary<Type, Func<Task>>(_subscriberRegistrations)
 				{
@@ -62,7 +62,7 @@ namespace infra
 											.KeepReconnecting())
 										.CreateConnection,
 									typeof(TSubscriber).GetEventStoreName(),
-									processEventHandling(resolvedEvent => HandleEvent(subscriber, resolvedEvent)),
+									handle(resolvedEvent => HandleEvent(subscriber, resolvedEvent)),
 									1000,
 									getCheckpoint)
 								.StartAsync();
