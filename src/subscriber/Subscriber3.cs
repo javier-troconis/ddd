@@ -16,19 +16,19 @@ namespace subscriber
 	{
 		public Task Handle(IRecordedEvent<IApplicationStartedV3> message)
 		{
-			Console.WriteLine(nameof(Subscriber3) + " " + message.EventNumber);
+			Console.WriteLine(message.EventId + " - " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 
 	    public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 	    {
-			Console.WriteLine(nameof(Subscriber3) + " " + message.EventNumber);
+			Console.WriteLine(message.EventId + " - " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 
 	    public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
 	    {
-			Console.WriteLine(nameof(Subscriber3) + " " + message.EventNumber);
+			Console.WriteLine(message.EventId + " - " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 	}

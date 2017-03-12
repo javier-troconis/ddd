@@ -95,18 +95,10 @@ namespace subscriber
 				EventStoreSettings.Password,
 				EventStoreSettings.ExternalHttpPort,
 				new ConsoleLogger())
-				//.RegisterCatchupSubscriber(
-				//	new Subscriber1(),
-				//	() => Task.FromResult(default(int?)),
-				//	handle => Enqueue(queue, "x", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
-				//.RegisterCatchupSubscriber(
-				//	new Subscriber2(),
-				//	() => Task.FromResult(default(int?)),
-				//	handle => Enqueue(queue, "y", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.RegisterCatchupSubscriber(
 					new Subscriber3(),
 					() => Task.FromResult(default(int?)),
-					handle => Enqueue(queue, "z", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
+					handle => Enqueue(queue, "x", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.Start()
 				.Wait();
 
@@ -117,7 +109,7 @@ namespace subscriber
 
 		private static readonly Func<ResolvedEvent, Task<ResolvedEvent>> _writeCheckpoint = resolvedEvent =>
 		{
-			Console.WriteLine("wrote checkpoint: " + resolvedEvent.OriginalEventNumber);
+			Console.WriteLine("checkpointing - " + resolvedEvent.OriginalEventNumber);
 			return Task.FromResult(resolvedEvent);
 		};
 	}

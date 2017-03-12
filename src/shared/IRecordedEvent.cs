@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-    public interface IRecordedEvent<out TData> where TData : IEvent
+    public interface IRecordedEvent<out TData>
     {
 	    int EventNumber { get; }
 	    Guid EventId { get; }
