@@ -32,7 +32,7 @@ using shared;
 
 namespace subscriber
 {
-	public class Program : IMessageHandler<IApplicationStarted, Task>, IMessageHandler<IApplicationSubmitted, Task>
+	public class Program
 	{
 		//static async Task<int?> GetDocumentTypeVersion<TDocument>(IElasticClient elasticClient) where TDocument : class
 		//{
@@ -95,16 +95,23 @@ namespace subscriber
 				EventStoreSettings.Password,
 				EventStoreSettings.ExternalHttpPort,
 				new ConsoleLogger())
+				//.RegisterCatchupSubscriber(
+				//	new Subscriber1(),
+				//	() => Task.FromResult(default(int?)),
+				//	handle => Enqueue(queue, "x", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
+				//.RegisterCatchupSubscriber(
+				//	new Subscriber2(),
+				//	() => Task.FromResult(default(int?)),
+				//	handle => Enqueue(queue, "y", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.RegisterCatchupSubscriber(
-					new Program(new ElasticClient()),
+					new Subscriber3(),
 					() => Task.FromResult(default(int?)),
-					handle => Enqueue(queue, nameof(Program), handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
+					handle => Enqueue(queue, "z", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.Start()
 				.Wait();
 
 			while (true)
 			{
-
 			}
 		}
 
@@ -113,23 +120,6 @@ namespace subscriber
 			Console.WriteLine("wrote checkpoint: " + resolvedEvent.OriginalEventNumber);
 			return Task.FromResult(resolvedEvent);
 		};
-
-		readonly IElasticClient _elasticClient;
-
-		public Program(IElasticClient elasticClient)
-		{
-			_elasticClient = elasticClient;
-		}
-
-		public Task Handle(IApplicationStarted message)
-		{
-			return Task.CompletedTask;
-		}
-
-		public Task Handle(IApplicationSubmitted message)
-		{
-			return Task.CompletedTask;
-		}
 	}
 
 	[ElasticsearchType]

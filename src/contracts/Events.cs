@@ -6,12 +6,19 @@ using shared;
 
 namespace contracts
 {
-    public interface IApplicationStarted : IEvent
+    public interface IApplicationStartedV1 : IEvent
     {
-
     }
 
-    public interface IApplicationSubmitted : IEvent
+	public interface IApplicationStartedV2 : IApplicationStartedV1
+	{
+	}
+
+	public interface IApplicationStartedV3 : IApplicationStartedV2
+	{
+	}
+
+	public interface IApplicationSubmittedV1 : IEvent
     {
 
     }

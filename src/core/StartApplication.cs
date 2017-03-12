@@ -7,16 +7,36 @@ using shared;
 
 namespace core
 {
-    public struct ApplicationStarted : IApplicationStarted
+    public struct ApplicationStartedV1 : IApplicationStartedV1
     {
-
+	   
     }
 
-    public static class StartApplication
+	public struct ApplicationStartedV2 : IApplicationStartedV2
+	{
+		
+	}
+
+	public struct ApplicationStartedV3 : IApplicationStartedV3
+	{
+	
+	}
+
+	public static class StartApplication
     {
-        public static IEnumerable<IEvent> Apply()
+        public static IEnumerable<IEvent> ApplyApplicationStartedV1()
         {
-            yield return new ApplicationStarted();
+            yield return new ApplicationStartedV1();
         }
-    }
+
+		public static IEnumerable<IEvent> ApplyApplicationStartedV2()
+		{
+			yield return new ApplicationStartedV2();
+		}
+
+		public static IEnumerable<IEvent> ApplyApplicationStartedV3()
+		{
+			yield return new ApplicationStartedV3();
+		}
+	}
 }

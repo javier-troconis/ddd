@@ -8,19 +8,19 @@ using shared;
 namespace core
 {
 
-    public struct ApplicationSubmitted : IApplicationSubmitted
+    public struct ApplicationSubmittedV1 : IApplicationSubmittedV1
     {
         public readonly string SubmittedBy;
 
-        public ApplicationSubmitted(string submittedBy)
+        public ApplicationSubmittedV1(string submittedBy)
         {
             SubmittedBy = submittedBy;
         }
     }
 
     public struct WhenSubmittingApplicationState :
-        IMessageHandler<ApplicationStarted, WhenSubmittingApplicationState>,
-        IMessageHandler<ApplicationSubmitted, WhenSubmittingApplicationState>
+        IMessageHandler<ApplicationStartedV1, WhenSubmittingApplicationState>,
+        IMessageHandler<ApplicationSubmittedV1, WhenSubmittingApplicationState>
     {
         public readonly bool HasBeenStarted;
         public readonly bool HasBeenSubmitted;
@@ -31,12 +31,12 @@ namespace core
             HasBeenSubmitted = hasBeenSubmitted;
         }
 
-        public WhenSubmittingApplicationState Handle(ApplicationSubmitted message)
+        public WhenSubmittingApplicationState Handle(ApplicationSubmittedV1 message)
         {
             return new WhenSubmittingApplicationState(HasBeenStarted, true);
         }
 
-        public WhenSubmittingApplicationState Handle(ApplicationStarted message)
+        public WhenSubmittingApplicationState Handle(ApplicationStartedV1 message)
         {
             return new WhenSubmittingApplicationState(true, HasBeenSubmitted);
         }
@@ -56,7 +56,7 @@ namespace core
                 throw new Exception("application has already been submitted");
             }
 
-            yield return new ApplicationSubmitted(submitter);
+            yield return new ApplicationSubmittedV1(submitter);
         }
     }
 }

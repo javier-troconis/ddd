@@ -7,7 +7,7 @@ using System.Net.Sockets;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
-using appservices;
+
 using core;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
@@ -63,22 +63,23 @@ namespace host
             connection.ConnectAsync().Wait();
             var eventStore = new infra.EventStore(connection);
 
-            var startApplicationHandler = new StartApplicationCommandHandler(eventStore)
-                .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
-                .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
+            //var startApplicationHandler = new StartApplicationCommandHandler(eventStore)
+            //    .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
+            //    .ComposeForward(new TaskCompletedLoggerHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: started"));
 
-            var submitApplicationHandler = new SubmitApplicationCommandHandler(eventStore)
-                .ComposeForward(new TimeFramedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(2)))
-                .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
+            //var submitApplicationHandler = new SubmitApplicationCommandHandler(eventStore)
+            //    .ComposeForward(new TimeFramedTaskHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(TimeSpan.FromSeconds(2)))
+            //    .ComposeForward(new TaskCompletedLoggerHandler<Message<SubmitApplicationCommand>, Message<SubmitApplicationCommand>>(Console.WriteLine, message => $"application {message.Body.ApplicationId}: submitted"));
 
             while (true)
             {
                 var applicationId = Guid.NewGuid();
-               
-                startApplicationHandler.Handle(new Message<StartApplicationCommand> { Body = new StartApplicationCommand { ApplicationId = applicationId } }).Wait();
-                //submitApplicationHandler.Handle(new Message<SubmitApplicationCommand> { Body = new SubmitApplicationCommand { ApplicationId = applicationId, Version = 0, Submitter = "blah" } }).Wait();
-                
-                Task.Delay(TimeSpan.FromSeconds(1)).Wait();
+				var streamName = "application-" + NamingConvention.Stream(applicationId);
+	            var events = StartApplication.ApplyApplicationStartedV1()
+					.Concat(StartApplication.ApplyApplicationStartedV2())
+					.Concat(StartApplication.ApplyApplicationStartedV3());
+				eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, events);
+				Task.Delay(TimeSpan.FromSeconds(5)).Wait();
             }
         }
 

@@ -23,11 +23,11 @@ namespace tests
         [Fact]
         public void when_application_is_submitted()
         {
-            var state = _state.Handle(new ApplicationStarted());
+            var state = _state.Handle(new ApplicationStartedV1());
 
             var actual = SubmitApplication.Apply(state, "rich hickey");
 
-            var expected = new IEvent[] {new ApplicationSubmitted("rich hickey")};
+            var expected = new IEvent[] {new ApplicationSubmittedV1("rich hickey")};
 
             Assert.Equal(actual, expected);
         }
@@ -36,8 +36,8 @@ namespace tests
         public void when_application_has_already_been_submitted()
         {
             var state = _state
-                .Handle(new ApplicationStarted())
-                .Handle(new ApplicationSubmitted("rich hickey"));
+                .Handle(new ApplicationStartedV1())
+                .Handle(new ApplicationSubmittedV1("rich hickey"));
 
             Assert.Throws<Exception>(() => SubmitApplication.Apply(state, "rich hickey"));
         }
