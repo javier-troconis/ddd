@@ -104,6 +104,7 @@ namespace subscriber
 
 			while (true)
 			{
+
 			}
 		}
 
@@ -113,7 +114,6 @@ namespace subscriber
 			return Task.FromResult(resolvedEvent);
 		};
 
-		private static readonly Random _rnd = new Random();
 		readonly IElasticClient _elasticClient;
 
 		public Program(IElasticClient elasticClient)
@@ -123,7 +123,7 @@ namespace subscriber
 
 		public Task Handle(IApplicationStarted message)
 		{
-			return Task.Delay(_rnd.Next(1000));
+			return Task.CompletedTask;
 		}
 
 		public Task Handle(IApplicationSubmitted message)

@@ -13,20 +13,20 @@ namespace infra
         private readonly string _streamName;
         private readonly int _reconnectDelayInMilliseconds;
         private readonly Func<ResolvedEvent, Task> _handleEvent;
-        private readonly Func<Task<int?>> _getLastCheckpoint;
+        private readonly Func<Task<int?>> _getCheckpoint;
 
         public CatchUpSubscription(
 			Func<IEventStoreConnection> createConnection,
             string streamName,
             Func<ResolvedEvent, Task> handleEvent,
             int reconnectDelayInMilliseconds,
-            Func<Task<int?>> getLastCheckpoint)
+            Func<Task<int?>> getCheckpoint)
         {
 			_createConnection = createConnection;
             _streamName = streamName;
             _handleEvent = handleEvent;
             _reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
-            _getLastCheckpoint = getLastCheckpoint;
+            _getCheckpoint = getCheckpoint;
         }
 
         public async Task StartAsync()
@@ -35,7 +35,7 @@ namespace infra
             {
                 var connection = _createConnection();
                 await connection.ConnectAsync();
-                var lastCheckpoint = await _getLastCheckpoint();
+                var lastCheckpoint = await _getCheckpoint();
                 try
                 {
                     connection.SubscribeToStreamFrom(_streamName, lastCheckpoint, CatchUpSubscriptionSettings.Default, OnEventReceived, subscriptionDropped: OnSubscriptionDropped(connection));

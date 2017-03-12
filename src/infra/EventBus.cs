@@ -22,7 +22,7 @@ namespace infra
 {
 	public sealed class EventBus
 	{
-		private readonly Dictionary<Type, Func<Task>> _subscriberRegistrations = new Dictionary<Type, Func<Task>>();
+		private readonly IEnumerable<Func<Task>> _subscriberRegistrations;
 		private readonly string _clusterDns;
 		private readonly string _username;
 		private readonly string _password;
@@ -30,17 +30,18 @@ namespace infra
 		private readonly ILogger _logger;
 
 		public EventBus(string clusterDns, string username, string password, int externalHttpPort, ILogger logger)
+			: this(clusterDns, username, password, externalHttpPort, logger, Enumerable.Empty<Func<Task>>())
+		{
+			
+		}
+
+		private EventBus(string clusterDns, string username, string password, int externalHttpPort, ILogger logger, IEnumerable<Func<Task>> subscriberRegistrations)
 		{
 			_clusterDns = clusterDns;
 			_username = username;
 			_password = password;
 			_externalHttpPort = externalHttpPort;
 			_logger = logger;
-		}
-
-		private EventBus(string clusterDns, string username, string password, int externalHttpPort, ILogger logger, Dictionary<Type, Func<Task>> subscriberRegistrations)
-			: this(clusterDns, username, password, externalHttpPort, logger)
-		{
 			_subscriberRegistrations = subscriberRegistrations;
 		}
 
@@ -48,33 +49,30 @@ namespace infra
 		{
 			handle = handle ?? (x => x);
 			return new EventBus(_clusterDns, _username, _password, _externalHttpPort, _logger,
-				new Dictionary<Type, Func<Task>>(_subscriberRegistrations)
+				_subscriberRegistrations.Concat(new List<Func<Task>>
 				{
+					async () =>
 					{
-						typeof(TSubscriber),
-						async () =>
-						{
-							await RegisterSubscriptionStreamAsync<TSubscriber>(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
-							await new CatchUpSubscription(
-									new EventStoreConnectionFactory(x => x
-											.SetDefaultUserCredentials(new UserCredentials(_username, _password))
-											.UseConsoleLogger()
-											.KeepReconnecting())
-										.CreateConnection,
-									typeof(TSubscriber).GetEventStoreName(),
-									handle(resolvedEvent => HandleEvent(subscriber, resolvedEvent)),
-									1000,
-									getCheckpoint)
-								.StartAsync();
-						}
+						await RegisterSubscriptionStreamAsync<TSubscriber>(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
+						await new CatchUpSubscription(
+							new EventStoreConnectionFactory(x => x
+								.SetDefaultUserCredentials(new UserCredentials(_username, _password))
+								.UseConsoleLogger()
+								.KeepReconnecting())
+								.CreateConnection,
+							typeof(TSubscriber).GetEventStoreName(),
+							handle(resolvedEvent => HandleEvent(subscriber, resolvedEvent)),
+							1000,
+							getCheckpoint)
+							.StartAsync();
 					}
-				});
+				}));
 		}
 
 		public async Task Start()
 		{
 			await RegisterByEventTopicProjectionAsync(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
-			await Task.WhenAll(_subscriberRegistrations.Values.Select(x => x()));
+			await Task.WhenAll(_subscriberRegistrations.Select(x => x()));
 		}
 
 		internal static async Task<ResolvedEvent> HandleEvent(object subscriber, ResolvedEvent resolvedEvent)
