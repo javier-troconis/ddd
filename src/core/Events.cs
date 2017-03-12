@@ -7,22 +7,22 @@ using contracts;
 
 namespace core
 {
-	public struct ApplicationStartedV1 : IApplicationStartedV1
+	public class ApplicationStartedV1 : IApplicationStartedV1
 	{
 
 	}
 
-	public struct ApplicationStartedV2 : IApplicationStartedV2
+	public class ApplicationStartedV2 : IApplicationStartedV2
 	{
 
 	}
 
-	public struct ApplicationStartedV3 : IApplicationStartedV3
+	public class ApplicationStartedV3 : IApplicationStartedV3
 	{
 
 	}
 
-	public struct ApplicationSubmittedV1 : IApplicationSubmittedV1
+	public class ApplicationSubmittedV1 : IApplicationSubmittedV1
 	{
 		public ApplicationSubmittedV1(string submittedBy)
 		{

@@ -3,13 +3,15 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
+using contracts;
+
 using shared;
 
 namespace core
 {
 	public struct SubmitApplicationState :
-		 IMessageHandler<ApplicationStartedV1, SubmitApplicationState>,
-		 IMessageHandler<ApplicationSubmittedV1, SubmitApplicationState>
+		 IMessageHandler<IApplicationStartedV1, SubmitApplicationState>,
+		 IMessageHandler<IApplicationSubmittedV1, SubmitApplicationState>
 	{
 		public readonly bool HasBeenStarted;
 		public readonly bool HasBeenSubmitted;
@@ -20,12 +22,12 @@ namespace core
 			HasBeenSubmitted = hasBeenSubmitted;
 		}
 
-		public SubmitApplicationState Handle(ApplicationSubmittedV1 message)
+		public SubmitApplicationState Handle(IApplicationSubmittedV1 message)
 		{
 			return new SubmitApplicationState(HasBeenStarted, true);
 		}
 
-		public SubmitApplicationState Handle(ApplicationStartedV1 message)
+		public SubmitApplicationState Handle(IApplicationStartedV1 message)
 		{
 			return new SubmitApplicationState(true, HasBeenSubmitted);
 		}
