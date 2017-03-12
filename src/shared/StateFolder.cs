@@ -1,14 +1,17 @@
-﻿namespace shared
+﻿using System.Collections.Generic;
+using System.Linq;
+
+namespace shared
 {
 	// fold over recorded events
     public static class StateFolder
     {
-        public static TState Fold<TState>(TState state, object @event)
-        {
-            return Fold(state, (dynamic)@event);
-        }
+	    public static TState FoldOver<TState>(this IEnumerable<object> events, TState state)
+	    {
+			return events.Aggregate(state, (x, y) => Handle(state, (dynamic)y));
+		}
 
-        private static TState Fold<TState, TEvent>(TState state, TEvent @event)
+        private static TState Handle<TState, TEvent>(TState state, TEvent @event)
         {
             var handler = state as IMessageHandler<TEvent, TState>;
             return Equals(handler, null) ? state : handler.Handle(@event);

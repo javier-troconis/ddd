@@ -12,7 +12,7 @@ namespace infra
 
     public static class ConflictResolutionStrategy
     {
-        public static readonly TryResolveConflict IgnoreConflictingChanges = delegate (IEnumerable<object> newChanges, IEnumerable<object> conflictingChanges, out IEnumerable<object> mergedChanges)
+        public static readonly TryResolveConflict SkipConflicts = delegate (IEnumerable<object> newChanges, IEnumerable<object> conflictingChanges, out IEnumerable<object> mergedChanges)
         {
             mergedChanges = newChanges;
             return true;
@@ -21,19 +21,19 @@ namespace infra
 
     public static class OptimisticEventWriter
     {
-        public static async Task<WriteResult> WriteEventsAsync(TryResolveConflict tryResolveConflict, IEventStore eventStore, string streamName, int streamExpectedVersion, 
+        public static async Task<WriteResult> WriteEvents(TryResolveConflict tryResolveConflict, IEventStore eventStore, string streamName, int streamExpectedVersion, 
             IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null)
         {
             while (true)
             {
                 try
                 {
-                    return await eventStore.WriteEventsAsync(streamName, streamExpectedVersion, events, beforeSavingEvent);
+                    return await eventStore.WriteEvents(streamName, streamExpectedVersion, events, beforeSavingEvent);
                 }
                 catch (WrongExpectedVersionException)
                 {
                     var nextStreamVersion = streamExpectedVersion + 1;
-                    var eventsSinceLastWrite = await eventStore.ReadEventsForwardAsync(streamName, nextStreamVersion);
+                    var eventsSinceLastWrite = await eventStore.ReadEventsForward(streamName, nextStreamVersion);
                      if (!eventsSinceLastWrite.Any())
                     {
                         throw new Exception($"stream {streamName} is not at version {nextStreamVersion}");

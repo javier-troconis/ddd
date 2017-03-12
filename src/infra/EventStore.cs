@@ -13,8 +13,8 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyCollection<object>> ReadEventsForwardAsync(string streamName, int fromEventNumber = 0);
-		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null);
+		Task<IEnumerable<object>> ReadEventsForward(string streamName, int fromEventNumber = 0);
+		Task<WriteResult> WriteEvents(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null);
 	}
 
 	public class EventStore : IEventStore
@@ -29,17 +29,13 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyCollection<object>> ReadEventsForwardAsync(string streamName, int fromEventNumber)
+		public async Task<IEnumerable<object>> ReadEventsForward(string streamName, int fromEventNumber)
 		{
-            var resolvedEvents = await ReadResolvedEventsAsync(streamName, fromEventNumber)
-                .ConfigureAwait(false);
-
-            return resolvedEvents
-                .Select(DeserializeEvent)
-				.ToArray();
+            var resolvedEvents = await ReadResolvedEvents(streamName, fromEventNumber).ConfigureAwait(false);
+			return resolvedEvents.Select(DeserializeEvent);
 		}
 
-        public Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null)
+        public Task<WriteResult> WriteEvents(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null)
 		{
             var eventsData = events
                 .Select(@event =>
@@ -57,7 +53,7 @@ namespace infra
 
         }
 
-        private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEventsAsync(string streamName, int fromEventNumber)
+        private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEvents(string streamName, int fromEventNumber)
 		{
 			var resolvedEvents = new List<ResolvedEvent>();
 

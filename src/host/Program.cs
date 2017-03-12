@@ -61,7 +61,7 @@ namespace host
 			var connection = new EventStoreConnectionFactory(x => x
                 .KeepReconnecting().SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))).CreateConnection();
             connection.ConnectAsync().Wait();
-            var eventStore = new infra.EventStore(connection);
+            IEventStore eventStore = new infra.EventStore(connection);
 
             //var startApplicationHandler = new StartApplicationCommandHandler(eventStore)
             //    .ComposeForward(new TimeFramedTaskHandler<Message<StartApplicationCommand>, Message<StartApplicationCommand>>(TimeSpan.FromSeconds(2)))
@@ -78,14 +78,15 @@ namespace host
 	            var events = Commands.StartApplicationV1()
 					.Concat(Commands.StartApplicationV2())
 					.Concat(Commands.StartApplicationV3());
-				eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, events).Wait();
+				eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, events).Wait();
 
-				var readEventsForwardTask = eventStore.ReadEventsForwardAsync(streamName, 0);
+				var readEventsForwardTask = eventStore.ReadEventsForward(streamName);
 	            readEventsForwardTask.Wait();
 	            events = readEventsForwardTask.Result;
-				var currentState = events.Aggregate(new SubmitApplicationState(), StateFolder.Fold);
-				events = Commands.SubmitApplicationV1(currentState, "xxx");
-				OptimisticEventWriter.WriteEventsAsync(ConflictResolutionStrategy.IgnoreConflictingChanges, eventStore, streamName, -1, events).Wait();
+
+				events = Commands.SubmitApplicationV1(events.FoldOver(new SubmitApplicationState()), "xxx");
+
+				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, -1, events).Wait();
 
 				Task.Delay(TimeSpan.FromSeconds(1)).Wait();
             }
