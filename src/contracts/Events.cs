@@ -6,7 +6,7 @@ using shared;
 
 namespace contracts
 {
-    public interface IApplicationStartedV1 : IEvent
+    public interface IApplicationStartedV1
     {
     }
 
@@ -18,9 +18,9 @@ namespace contracts
 	{
 	}
 
-	public interface IApplicationSubmittedV1 : IEvent
+	public interface IApplicationSubmittedV1
     {
-
+		string SubmittedBy { get; }
     }
 
 }

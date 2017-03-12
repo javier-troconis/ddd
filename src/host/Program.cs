@@ -75,11 +75,19 @@ namespace host
             {
                 var applicationId = Guid.NewGuid();
 				var streamName = "application-" + NamingConvention.Stream(applicationId);
-	            var events = StartApplication.ApplyApplicationStartedV1()
-					.Concat(StartApplication.ApplyApplicationStartedV2())
-					.Concat(StartApplication.ApplyApplicationStartedV3());
-				eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, events);
-				Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+	            var events = Commands.StartApplicationV1()
+					.Concat(Commands.StartApplicationV2())
+					.Concat(Commands.StartApplicationV3());
+				eventStore.WriteEventsAsync(streamName, ExpectedVersion.NoStream, events).Wait();
+
+				var readEventsForwardTask = eventStore.ReadEventsForwardAsync(streamName, 0);
+	            readEventsForwardTask.Wait();
+	            events = readEventsForwardTask.Result;
+				var currentState = events.Aggregate(new SubmitApplicationState(), StreamStateFolder.Fold);
+				events = Commands.SubmitApplicationV1(currentState, "xxx");
+				OptimisticEventWriter.WriteEventsAsync(ConflictResolutionStrategy.IgnoreConflictingChanges, eventStore, streamName, -1, events).Wait();
+
+				Task.Delay(TimeSpan.FromSeconds(1)).Wait();
             }
         }
 

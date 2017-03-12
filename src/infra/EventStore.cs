@@ -13,8 +13,8 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber = 0);
-		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IEvent, IDictionary<string, object>> beforeSavingEvent = null);
+		Task<IReadOnlyCollection<object>> ReadEventsForwardAsync(string streamName, int fromEventNumber = 0);
+		Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null);
 	}
 
 	public class EventStore : IEventStore
@@ -29,7 +29,7 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IReadOnlyCollection<IEvent>> ReadEventsForwardAsync(string streamName, int fromEventNumber)
+		public async Task<IReadOnlyCollection<object>> ReadEventsForwardAsync(string streamName, int fromEventNumber)
 		{
             var resolvedEvents = await ReadResolvedEventsAsync(streamName, fromEventNumber)
                 .ConfigureAwait(false);
@@ -39,7 +39,7 @@ namespace infra
 				.ToArray();
 		}
 
-        public Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<IEvent> events, Action<IEvent, IDictionary<string, object>> beforeSavingEvent = null)
+        public Task<WriteResult> WriteEventsAsync(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null)
 		{
             var eventsData = events
                 .Select(@event =>
@@ -50,7 +50,7 @@ namespace infra
                         { _eventClrTypeHeader, eventType.AssemblyQualifiedName },
                         { "topics", eventType.GetEventTopics() }
                     };
-                    beforeSavingEvent?.Invoke(@event, eventHeader);
+                    beforeSavingEvent?.Invoke(eventHeader);
                     return ConvertToEventData(@event, eventHeader);
                 });
             return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData);
@@ -80,7 +80,7 @@ namespace infra
 			return resolvedEvents;
 		}
 
-        private static EventData ConvertToEventData(IEvent @event, IDictionary<string, object> eventHeader)
+        private static EventData ConvertToEventData(object @event, IDictionary<string, object> eventHeader)
         {
             var eventType = @event.GetType();
             var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, _serializerSettings));
@@ -88,12 +88,12 @@ namespace infra
             return new EventData(Guid.NewGuid(), eventType.Name.ToLower(), true, eventData, eventMetadata);
         }
 
-        private static IEvent DeserializeEvent(ResolvedEvent resolvedEvent)
+        private static object DeserializeEvent(ResolvedEvent resolvedEvent)
 		{
 			var recordedEvent = resolvedEvent.Event;
 			var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
 			var eventClrTypeName = (string)eventMetadata.Property(_eventClrTypeHeader).Value;
-			return (IEvent)JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
+			return JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
 		}
 
 	}

@@ -7,7 +7,7 @@ using EventStore.ClientAPI;
 
 namespace infra
 {
-    public class CatchUpSubscription : ISubscription
+    public class CatchUpSubscription
     {
         private readonly Func<IEventStoreConnection> _createConnection;
         private readonly string _streamName;
@@ -29,7 +29,7 @@ namespace infra
             _getCheckpoint = getCheckpoint;
         }
 
-        public async Task StartAsync()
+        public async Task Start()
         {
             while (true)
             {
@@ -60,7 +60,7 @@ namespace infra
             return async (subscription, reason, exception) =>
             {
 				connection.Dispose();
-                await StartAsync();
+                await Start();
             };
         }
 

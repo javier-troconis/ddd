@@ -64,7 +64,7 @@ namespace infra
 							handle(resolvedEvent => HandleEvent(subscriber, resolvedEvent)),
 							1000,
 							getCheckpoint)
-							.StartAsync();
+							.Start();
 					}
 				}));
 		}
@@ -82,7 +82,7 @@ namespace infra
 			return resolvedEvent;
 		}
 
-		internal static Task HandleEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent) where TRecordedEvent : IRecordedEvent<IEvent>
+		internal static Task HandleEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent)
 		{
 			var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
 			return handler.Handle(recordedEvent);

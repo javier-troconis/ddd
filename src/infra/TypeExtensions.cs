@@ -31,11 +31,8 @@ namespace infra
 
         public static IEnumerable<string> GetEventTopics(this Type eventType)
         {
-            var baseEventType = typeof(IEvent);
 	        return eventType
 		        .GetInterfaces()
-		        .Where(x => x != baseEventType 
-					&& baseEventType.IsAssignableFrom(x))
 		        .Select(x => x.GetEventStoreName());
         }
     }

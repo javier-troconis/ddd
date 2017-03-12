@@ -8,7 +8,7 @@ using EventStore.ClientAPI;
 
 namespace infra
 {
-    public class PersistentSubscription : ISubscription
+    public class PersistentSubscription
     {
         private readonly string _consumerGroupName;
         private readonly Func<IEventStoreConnection> _createConnection;
@@ -30,7 +30,7 @@ namespace infra
             _reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
         }
 
-        public async Task StartAsync()
+        public async Task Start()
         {
             while(true)
             {
@@ -69,7 +69,7 @@ namespace infra
             return async (subscription, reason, exception) =>
             {
                 connection.Dispose();
-                await StartAsync();
+                await Start();
             };
         }
     }

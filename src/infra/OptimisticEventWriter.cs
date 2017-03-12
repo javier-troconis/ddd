@@ -8,11 +8,11 @@ using shared;
 
 namespace infra
 {
-    public delegate bool TryResolveConflict(IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges);
+    public delegate bool TryResolveConflict(IEnumerable<object> newChanges, IEnumerable<object> conflictingChanges, out IEnumerable<object> mergedChanges);
 
     public static class ConflictResolutionStrategy
     {
-        public static readonly TryResolveConflict IgnoreConflictingChanges = delegate (IEnumerable<IEvent> newChanges, IEnumerable<IEvent> conflictingChanges, out IEnumerable<IEvent> mergedChanges)
+        public static readonly TryResolveConflict IgnoreConflictingChanges = delegate (IEnumerable<object> newChanges, IEnumerable<object> conflictingChanges, out IEnumerable<object> mergedChanges)
         {
             mergedChanges = newChanges;
             return true;
@@ -22,7 +22,7 @@ namespace infra
     public static class OptimisticEventWriter
     {
         public static async Task<WriteResult> WriteEventsAsync(TryResolveConflict tryResolveConflict, IEventStore eventStore, string streamName, int streamExpectedVersion, 
-            IEnumerable<IEvent> events, Action<IEvent, IDictionary<string, object>> beforeSavingEvent = null)
+            IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null)
         {
             while (true)
             {

@@ -8,7 +8,7 @@ namespace infra
 {
     public static class StreamStateFolder
     {
-        public static TState Fold<TState>(TState state, IEvent @event)
+        public static TState Fold<TState>(TState state, object @event)
         {
             return Fold(state, (dynamic)@event);
         }
