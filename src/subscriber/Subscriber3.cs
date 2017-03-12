@@ -10,25 +10,25 @@ using shared;
 namespace subscriber
 {
     public class Subscriber3 : 
-		IMessageHandler<IApplicationStartedV3, Task>, 
-		IMessageHandler<IApplicationStartedV2, Task>, 
-		IMessageHandler<IApplicationStartedV1, Task>
+		IMessageHandler<IRecordedEvent<IApplicationStartedV3>, Task>, 
+		IMessageHandler<IRecordedEvent<IApplicationStartedV2>, Task>, 
+		IMessageHandler<IRecordedEvent<IApplicationStartedV1>, Task>
 	{
-		public Task Handle(IApplicationStartedV3 message)
+		public Task Handle(IRecordedEvent<IApplicationStartedV3> message)
 		{
-			Console.WriteLine(nameof(Subscriber3) + " " + typeof(IApplicationStartedV3));
+			Console.WriteLine(nameof(Subscriber3) + " " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 
-	    public Task Handle(IApplicationStartedV2 message)
+	    public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 	    {
-			Console.WriteLine(nameof(Subscriber3) + " " + typeof(IApplicationStartedV2));
+			Console.WriteLine(nameof(Subscriber3) + " " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 
-	    public Task Handle(IApplicationStartedV1 message)
+	    public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
 	    {
-			Console.WriteLine(nameof(Subscriber3) + " " + typeof(IApplicationStartedV1));
+			Console.WriteLine(nameof(Subscriber3) + " " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 	}

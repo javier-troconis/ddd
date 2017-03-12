@@ -77,27 +77,34 @@ namespace infra
 
 		internal static async Task<ResolvedEvent> HandleEvent(object subscriber, ResolvedEvent resolvedEvent)
 		{
-			var @event = DeserializeEvent(subscriber.GetType(), resolvedEvent);
-			await HandleEvent(subscriber, (dynamic)@event);
+			var recordedEvent = DeserializeEvent(subscriber.GetType(), resolvedEvent);
+			await HandleEvent(subscriber, (dynamic)recordedEvent);
 			return resolvedEvent;
 		}
 
-		internal static Task HandleEvent<TEvent>(object subscriber, TEvent @event) where TEvent : IEvent
+		internal static Task HandleEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent) where TRecordedEvent : IRecordedEvent<IEvent>
 		{
-			var handler = (IMessageHandler<TEvent, Task>)subscriber;
-			return handler.Handle(@event);
+			var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
+			return handler.Handle(recordedEvent);
 		}
 
-		internal static IEvent DeserializeEvent(Type subscriberType, ResolvedEvent resolvedEvent)
+		internal static object DeserializeEvent(Type subscriberType, ResolvedEvent resolvedEvent)
 		{
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 			var topics = ((JArray)eventMetadata["topics"]).ToObject<string[]>();
-			var candidateEventTypes = subscriberType
+			var recordedEventMessageHandlingTypes = subscriberType
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0]);
-			var eventType = topics.Join(candidateEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).First();
-			dynamic eventData = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data));
-			return Impromptu.CoerceConvert(eventData, eventType);
+			var recordedEventTypes = topics.Join(recordedEventMessageHandlingTypes, x => x, x => x.GetGenericArguments()[0].GetEventStoreName(), (x, y) => y);
+			var recordedEventType = recordedEventTypes.First();
+			var recordedEvent = new
+			{
+				resolvedEvent.Event.EventNumber,
+				resolvedEvent.Event.EventId,
+				resolvedEvent.Event.Created,
+				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
+			};
+			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}
 
 		internal static Task RegisterByEventTopicProjectionAsync(ProjectionManager projectionManager, UserCredentials userCredentials)
@@ -154,7 +161,7 @@ fromStream('topics')
 			var subscriberType = typeof(TSubscriber);
 			var toStream = subscriberType.GetEventStoreName();
 			var projectionName = subscriberType.GetEventStoreName();
-			var eventTypes = subscriberType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0]);
+			var eventTypes = subscriberType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
 			var fromTopics = eventTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
 			var projectionDefinition = string.Format(projectionDefinitionTemplate, string.Join(",\n", fromTopics), toStream);
 			return projectionManager.CreateOrUpdateProjectionAsync(projectionName, projectionDefinition, userCredentials, int.MaxValue);
