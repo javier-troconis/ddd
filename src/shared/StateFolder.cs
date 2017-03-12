@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using shared;
-
-namespace infra
+﻿namespace shared
 {
-    public static class StreamStateFolder
+	// fold over recorded events
+    public static class StateFolder
     {
         public static TState Fold<TState>(TState state, object @event)
         {

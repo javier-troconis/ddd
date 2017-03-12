@@ -83,7 +83,7 @@ namespace host
 				var readEventsForwardTask = eventStore.ReadEventsForwardAsync(streamName, 0);
 	            readEventsForwardTask.Wait();
 	            events = readEventsForwardTask.Result;
-				var currentState = events.Aggregate(new SubmitApplicationState(), StreamStateFolder.Fold);
+				var currentState = events.Aggregate(new SubmitApplicationState(), StateFolder.Fold);
 				events = Commands.SubmitApplicationV1(currentState, "xxx");
 				OptimisticEventWriter.WriteEventsAsync(ConflictResolutionStrategy.IgnoreConflictingChanges, eventStore, streamName, -1, events).Wait();
 
