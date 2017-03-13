@@ -92,17 +92,17 @@ namespace infra
 		{
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 			var topics = ((JArray)eventMetadata["topics"]).ToObject<object[]>();
-			var recordedEventMessageHandlingTypes = subscriberType
+			var recordedEventHandlingTypes = subscriberType
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0]);
-			var recordedEventTypes = topics.Join(recordedEventMessageHandlingTypes, x => x, x => x.GetGenericArguments()[0].GetEventStoreName(), (x, y) => y);
+			var recordedEventTypes = topics.Join(recordedEventHandlingTypes, x => x, x => x.GetGenericArguments()[0].GetEventStoreName(), (x, y) => y);
 			var recordedEventType = recordedEventTypes.First();
 			var recordedEvent = new
 			{
 				resolvedEvent.Event.EventNumber,
 				resolvedEvent.Event.EventId,
 				resolvedEvent.Event.Created,
-				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
+				Event = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 			};
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}
