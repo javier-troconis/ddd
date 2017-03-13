@@ -91,7 +91,7 @@ namespace infra
 		internal static object DeserializeEvent(Type subscriberType, ResolvedEvent resolvedEvent)
 		{
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-			var topics = ((JArray)eventMetadata["topics"]).ToObject<string[]>();
+			var topics = ((JArray)eventMetadata["topics"]).ToObject<object[]>();
 			var recordedEventMessageHandlingTypes = subscriberType
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0]);

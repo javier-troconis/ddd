@@ -42,7 +42,7 @@ namespace infra
                     {
                         throw new StreamConflictException();
                     }
-                    streamExpectedVersion += eventsSinceLastWrite.Count;
+                    streamExpectedVersion += eventsSinceLastWrite.Count();
                 } 
             }
         }
