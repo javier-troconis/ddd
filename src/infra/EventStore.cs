@@ -13,8 +13,8 @@ namespace infra
 {
 	public interface IEventStore
 	{
-		Task<IEnumerable<object>> ReadEventsForward(string streamName, int fromEventNumber = 0);
-		Task<WriteResult> WriteEvents(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null);
+		Task<object[]> ReadEventsForward(string streamName, int fromEventNumber = 0);
+		Task<WriteResult> WriteEvents(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<object, IDictionary<string, object>> configureEventHeader = null);
 	}
 
 	public class EventStore : IEventStore
@@ -29,13 +29,13 @@ namespace infra
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public async Task<IEnumerable<object>> ReadEventsForward(string streamName, int fromEventNumber)
+		public async Task<object[]> ReadEventsForward(string streamName, int fromEventNumber)
 		{
             var resolvedEvents = await ReadResolvedEvents(streamName, fromEventNumber).ConfigureAwait(false);
-			return resolvedEvents.Select(DeserializeEvent);
+			return resolvedEvents.Select(DeserializeEvent).ToArray();
 		}
 
-        public Task<WriteResult> WriteEvents(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<IDictionary<string, object>> beforeSavingEvent = null)
+        public Task<WriteResult> WriteEvents(string streamName, int streamExpectedVersion, IEnumerable<object> events, Action<object, IDictionary<string, object>> configureEventHeader = null)
 		{
             var eventsData = events
                 .Select(@event =>
@@ -46,7 +46,7 @@ namespace infra
                         { _eventClrTypeHeader, eventType.AssemblyQualifiedName },
                         { "topics", eventType.GetEventTopics() }
                     };
-                    beforeSavingEvent?.Invoke(eventHeader);
+                    configureEventHeader?.Invoke(@event, eventHeader);
                     return ConvertToEventData(@event, eventHeader);
                 });
             return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData);
