@@ -16,8 +16,6 @@ namespace infra
         private readonly ILogger _logger;
         private readonly IPEndPoint[] _httpEndPoints;
 
- 
-
         public ProjectionManager(ILogger logger, string clusterDns, int externalHttpPort)
         {
 	        _logger = logger;
@@ -27,8 +25,9 @@ namespace infra
                 .ToArray();
         }
 
-	    public async Task CreateOrUpdateProjectionAsync(string projectionName, string projectionDefinition, UserCredentials userCredentials,  int maxAttempts)
+	    public async Task CreateOrUpdateProjection(string projectionName, string projectionDefinition, UserCredentials userCredentials,  int maxAttempts)
         {
+			
             for (var attempt = 1; maxAttempts >= attempt; ++attempt)
             {
                 for(int i = 0, j = _httpEndPoints.Length; j > i; ++i)

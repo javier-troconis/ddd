@@ -7,6 +7,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 
 using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
@@ -53,7 +54,7 @@ namespace infra
 				{
 					async () =>
 					{
-						await RegisterSubscriptionStreamAsync<TSubscriber>(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
+						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
 						await new CatchUpSubscription(
 							new EventStoreConnectionFactory(x => x
 								.SetDefaultUserCredentials(new UserCredentials(_username, _password))
@@ -63,15 +64,38 @@ namespace infra
 							typeof(TSubscriber).GetEventStoreName(),
 							handle,
 							1000,
-							getCheckpoint)
-                            .Start();
+							getCheckpoint).Start();
 					}
 				}));
 		}
 
-		public async Task Start()
+		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
-			await RegisterByEventTopicProjectionAsync(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
+			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
+			return new EventBus(_clusterDns, _username, _password, _externalHttpPort, _logger,
+				_subscriberRegistrations.Concat(new List<Func<Task>>
+				{
+					async () =>
+					{
+						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
+						await RegisterConsumerGroup<TSubscriber>(_username, _password);
+						await new PersistentSubscription(
+							new EventStoreConnectionFactory(x => x
+								.SetDefaultUserCredentials(new UserCredentials(_username, _password))
+								.UseConsoleLogger()
+								.KeepReconnecting())
+								.CreateConnection,
+							typeof(TSubscriber).GetEventStoreName(),
+							typeof(TSubscriber).GetEventStoreName(),
+							handle,
+							1000).Start();
+					}
+				}));
+		}
+
+	    public async Task Start()
+		{
+			await RegisterByEventTopicProjection(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
 			await Task.WhenAll(_subscriberRegistrations.Select(x => x()));
 		}
 
@@ -107,7 +131,7 @@ namespace infra
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}
 
-		internal static Task RegisterByEventTopicProjectionAsync(ProjectionManager projectionManager, UserCredentials userCredentials)
+		internal static Task RegisterByEventTopicProjection(ProjectionManager projectionManager, UserCredentials userCredentials)
 		{
 			const string projectionDefinitionTemplate =
 				@"function emitTopic(e) {
@@ -127,10 +151,10 @@ fromAll()
             topics.forEach(emitTopic(e));
         }
     });";
-			return projectionManager.CreateOrUpdateProjectionAsync("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
+			return projectionManager.CreateOrUpdateProjection("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
 		}
 
-		internal static Task RegisterSubscriptionStreamAsync<TSubscriber>(ProjectionManager projectionManager, UserCredentials userCredentials)
+		internal static Task RegisterSubscriptionStream<TSubscriber>(ProjectionManager projectionManager, UserCredentials userCredentials)
 		{
 			const string projectionDefinitionTemplate =
 				@"var topics = [{0}];
@@ -164,7 +188,17 @@ fromStream('topics')
 			var eventTypes = subscriberType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
 			var fromTopics = eventTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
 			var projectionDefinition = string.Format(projectionDefinitionTemplate, string.Join(",\n", fromTopics), toStream);
-			return projectionManager.CreateOrUpdateProjectionAsync(projectionName, projectionDefinition, userCredentials, int.MaxValue);
+			return projectionManager.CreateOrUpdateProjection(projectionName, projectionDefinition, userCredentials, int.MaxValue);
+		}
+
+		internal static Task RegisterConsumerGroup<TSubscriber>(string username, string password)
+		{
+			return new ConsumerGroupManager(new EventStoreConnectionFactory(x => x
+				.SetDefaultUserCredentials(new UserCredentials(username, password))
+				.UseConsoleLogger()
+				.KeepReconnecting())
+				.CreateConnection)
+				.CreateConsumerGroup(new UserCredentials(username, password), typeof(TSubscriber).GetEventStoreName(), typeof(TSubscriber).GetEventStoreName());
 		}
 	}
 }

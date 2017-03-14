@@ -10,20 +10,23 @@ namespace infra
 {
     public class ConsumerGroupManager
     {
-        private readonly IEventStoreConnectionFactory _connectionFactory;
+        private readonly Func<IEventStoreConnection> _createConnection;
 
-        public ConsumerGroupManager(IEventStoreConnectionFactory connectionFactory)
+        public ConsumerGroupManager(Func<IEventStoreConnection> createConnection)
         {
-            _connectionFactory = connectionFactory;
+			_createConnection = createConnection;
         }
 
-        public async Task EnsureConsumerAsync(UserCredentials userCredentials, string streamName, string consumerGroupName)
+        public async Task CreateConsumerGroup(UserCredentials userCredentials, string streamName, string consumerGroupName)
         {
             var subscriptionSettings = PersistentSubscriptionSettings.Create()
                 .ResolveLinkTos()
-                .StartFromCurrent().MinimumCheckPointCountOf(0).MaximumCheckPointCountOf(1).CheckPointAfter(TimeSpan.FromSeconds(1))
+                .StartFromCurrent()
+				.MinimumCheckPointCountOf(0)
+				.MaximumCheckPointCountOf(1)
+				.CheckPointAfter(TimeSpan.FromSeconds(1))
                 .WithExtraStatistics();
-            using (var connection = _connectionFactory.CreateConnection())
+            using (var connection = _createConnection())
             {
                 await connection.ConnectAsync();
                 try
