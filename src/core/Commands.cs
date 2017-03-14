@@ -32,10 +32,6 @@ namespace core
 			{
 				throw new Exception("application has not been started");
 			}
-			if (state.ApplicationHasBeenSubmitted)
-			{
-				throw new Exception("application has already been submitted");
-			}
 
 			yield return new ApplicationSubmittedV1(submitter);
 		}

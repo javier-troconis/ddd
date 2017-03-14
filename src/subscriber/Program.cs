@@ -98,7 +98,7 @@ namespace subscriber
 				.RegisterCatchupSubscriber(
 					new Subscriber3(),
 					() => Task.FromResult(default(int?)),
-					handle => Enqueue(queue, "x", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
+					handle => Enqueue(queue, "queue1", handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.Start()
 				.Wait();
 

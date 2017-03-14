@@ -3,7 +3,6 @@ using System.Linq;
 
 namespace shared
 {
-	// fold over recorded events
     public static class StateFolder
     {
 	    public static TState FoldOver<TState>(this IEnumerable<object> events, TState state)

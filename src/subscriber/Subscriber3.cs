@@ -17,26 +17,26 @@ namespace subscriber
     {
 		public Task Handle(IRecordedEvent<IApplicationStartedV3> message)
 		{
-			Console.WriteLine(message.EventId + " - " + message.EventNumber);
+			Console.WriteLine(nameof(IApplicationStartedV3) + " - " + message.EventId + " - " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 
 	    public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 	    {
-			Console.WriteLine(message.EventId + " - " + message.EventNumber);
+			Console.WriteLine(nameof(IApplicationStartedV2) + " - " + message.EventId + " - " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 
 	    public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
 	    {
-			Console.WriteLine(message.EventId + " - " + message.EventNumber);
+			Console.WriteLine(nameof(IApplicationStartedV1) + " - " + message.EventId + " - " + message.EventNumber);
 			return Task.CompletedTask;
 		}
 
 	    public Task Handle(IRecordedEvent<IApplicationSubmittedV1> message)
 	    {
 		    var data = message.Event;
-			Console.WriteLine(message.EventId + " - " + message.EventNumber + " - " + data.SubmittedBy);
+			Console.WriteLine(nameof(IApplicationSubmittedV1) + " - " + message.EventId + " - " + message.EventNumber + " - " + data.SubmittedBy);
 			return Task.CompletedTask;
 		}
     }
