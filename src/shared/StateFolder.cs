@@ -8,7 +8,7 @@ namespace shared
     {
 	    public static TState FoldOver<TState>(this IEnumerable<object> events, TState state)
 	    {
-			return events.Aggregate(state, (x, y) => Handle(state, (dynamic)y));
+			return events.Aggregate(state, (x, y) => Handle(x, (dynamic)y));
 		}
 
         private static TState Handle<TState, TEvent>(TState state, TEvent @event)

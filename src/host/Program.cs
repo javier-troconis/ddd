@@ -45,7 +45,7 @@ namespace host
 
 				events = Commands.SubmitApplicationV1(events.FoldOver(new SubmitApplicationState()), "xxx");
 
-				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, -1, events).Wait();
+				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, events).Wait();
 
 				Task.Delay(TimeSpan.FromSeconds(1)).Wait();
             }

@@ -28,11 +28,11 @@ namespace core
 
 		public static IEnumerable<object> SubmitApplicationV1(SubmitApplicationState state, string submitter)
 		{
-			if (!state.HasBeenStarted)
+			if (!state.ApplicationHasBeenStarted)
 			{
 				throw new Exception("application has not been started");
 			}
-			if (state.HasBeenSubmitted)
+			if (state.ApplicationHasBeenSubmitted)
 			{
 				throw new Exception("application has already been submitted");
 			}

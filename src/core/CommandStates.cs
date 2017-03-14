@@ -13,23 +13,23 @@ namespace core
 		 IMessageHandler<ApplicationStartedV1, SubmitApplicationState>,
 		 IMessageHandler<ApplicationSubmittedV1, SubmitApplicationState>
 	{
-		public readonly bool HasBeenStarted;
-		public readonly bool HasBeenSubmitted;
+		public readonly bool ApplicationHasBeenStarted;
+		public readonly bool ApplicationHasBeenSubmitted;
 
-		public SubmitApplicationState(bool hasBeenStarted, bool hasBeenSubmitted)
+		public SubmitApplicationState(bool applicationHasBeenStarted, bool applicationHasBeenSubmitted)
 		{
-			HasBeenStarted = hasBeenStarted;
-			HasBeenSubmitted = hasBeenSubmitted;
+			ApplicationHasBeenStarted = applicationHasBeenStarted;
+			ApplicationHasBeenSubmitted = applicationHasBeenSubmitted;
 		}
 
 		public SubmitApplicationState Handle(ApplicationSubmittedV1 message)
 		{
-			return new SubmitApplicationState(HasBeenStarted, true);
+			return new SubmitApplicationState(ApplicationHasBeenStarted, true);
 		}
 
 		public SubmitApplicationState Handle(ApplicationStartedV1 message)
 		{
-			return new SubmitApplicationState(true, HasBeenSubmitted);
+			return new SubmitApplicationState(true, ApplicationHasBeenSubmitted);
 		}
 	}
 }
