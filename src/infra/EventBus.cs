@@ -20,8 +20,6 @@ using shared;
 
 namespace infra
 {
-    public delegate Task<ResolvedEvent> HandleResolvedEvent(ResolvedEvent resolvedEvent);
-
     public sealed class EventBus
 	{
 		private readonly IEnumerable<Func<Task>> _subscriberRegistrations;
@@ -47,7 +45,7 @@ namespace infra
 			_subscriberRegistrations = subscriberRegistrations;
 		}
 
-		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<int?>> getCheckpoint, Func<HandleResolvedEvent, HandleResolvedEvent> processHandle = null)
+		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<int?>> getCheckpoint, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
             var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			return new EventBus(_clusterDns, _username, _password, _externalHttpPort, _logger,
@@ -63,7 +61,7 @@ namespace infra
 								.KeepReconnecting())
 								.CreateConnection,
 							typeof(TSubscriber).GetEventStoreName(),
-							handle.Invoke,
+							handle,
 							1000,
 							getCheckpoint)
                             .Start();

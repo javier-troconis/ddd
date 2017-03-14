@@ -10,8 +10,8 @@ using shared;
 namespace core
 {
 	public struct SubmitApplicationState :
-		 IMessageHandler<IApplicationStartedV1, SubmitApplicationState>,
-		 IMessageHandler<IApplicationSubmittedV1, SubmitApplicationState>
+		 IMessageHandler<ApplicationStartedV1, SubmitApplicationState>,
+		 IMessageHandler<ApplicationSubmittedV1, SubmitApplicationState>
 	{
 		public readonly bool HasBeenStarted;
 		public readonly bool HasBeenSubmitted;
@@ -22,12 +22,12 @@ namespace core
 			HasBeenSubmitted = hasBeenSubmitted;
 		}
 
-		public SubmitApplicationState Handle(IApplicationSubmittedV1 message)
+		public SubmitApplicationState Handle(ApplicationSubmittedV1 message)
 		{
 			return new SubmitApplicationState(HasBeenStarted, true);
 		}
 
-		public SubmitApplicationState Handle(IApplicationStartedV1 message)
+		public SubmitApplicationState Handle(ApplicationStartedV1 message)
 		{
 			return new SubmitApplicationState(true, HasBeenSubmitted);
 		}
