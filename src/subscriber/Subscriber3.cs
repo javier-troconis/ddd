@@ -24,7 +24,7 @@ namespace subscriber
 	    public Task Handle(IRecordedEvent<IApplicationSubmittedV1> message)
 	    {
 		    var @event = message.Event;
-			Console.WriteLine($"{nameof(IApplicationStartedV1)} - {message.EventId} - {message.EventNumber} - {@event.SubmittedBy}");
+			Console.WriteLine($"{nameof(IApplicationSubmittedV1)} - {message.EventId} - {message.EventNumber} - {@event.SubmittedBy}");
 			return Task.CompletedTask;
 		}
     }

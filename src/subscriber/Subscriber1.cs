@@ -9,6 +9,7 @@ using shared;
 
 namespace subscriber
 {
+	// this shouldn't do the work, should only ack the message and schedule the work
     public class Subscriber1 : 
 	
 		IMessageHandler<IRecordedEvent<IApplicationSubmittedV1>, Task>

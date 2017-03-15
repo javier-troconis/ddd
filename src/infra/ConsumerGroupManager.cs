@@ -25,7 +25,7 @@ namespace infra
 				.MinimumCheckPointCountOf(0)
 				.MaximumCheckPointCountOf(1)
 				.CheckPointAfter(TimeSpan.FromSeconds(1))
-                .WithExtraStatistics();
+				.WithExtraStatistics();
             using (var connection = _createConnection())
             {
                 await connection.ConnectAsync();

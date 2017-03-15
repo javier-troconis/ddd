@@ -33,16 +33,19 @@ namespace host
             while (true)
             {
 				var streamName = "application-" + NamingConvention.Stream(Guid.NewGuid());
+				
+				// start application
 				eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV1()).Wait();
 
+				// submit application
 				var readEventsForwardTask = eventStore.ReadEventsForward(streamName);
 	            readEventsForwardTask.Wait();
 	            var events = readEventsForwardTask.Result;
 	            var state = events.FoldOver(new SubmitApplicationState());
-				var newEvents = Commands.SubmitApplicationV1(state, "xxx");
+				var newEvents = Commands.SubmitApplicationV1(state, streamName);
 				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, newEvents).Wait();
 
-				Task.Delay(TimeSpan.FromSeconds(1)).Wait();
+				Task.Delay(TimeSpan.FromSeconds(5)).Wait();
             }
         }
 

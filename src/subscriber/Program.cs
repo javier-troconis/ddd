@@ -44,7 +44,7 @@ namespace subscriber
 			};
 		}
 
-		private static Func<ResolvedEvent, Task<ResolvedEvent>> EnsureIdempotency(ConcurrentDictionary<Guid, ResolvedEvent> handledMessages, Func<ResolvedEvent, Task<ResolvedEvent>> handle)
+		private static Func<ResolvedEvent, Task<ResolvedEvent>> MakeIdempotent(ConcurrentDictionary<Guid, ResolvedEvent> handledMessages, Func<ResolvedEvent, Task<ResolvedEvent>> handle)
 		{
 			return resolvedEvent => handledMessages.TryAdd(resolvedEvent.Event.EventId, resolvedEvent) ? handle(resolvedEvent) : Task.FromResult(resolvedEvent);
 		}
@@ -63,10 +63,9 @@ namespace subscriber
 				.RegisterCatchupSubscriber(
 					new Subscriber3(),
 					() => Task.FromResult(default(int?)),
-					//handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
-					_writeCheckpoint.ToAsyncInput().ComposeBackward)
+					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.RegisterPersistentSubscriber(new Subscriber1(new EmailService().SendEmail), 
-					handle => EnsureIdempotency(handledMessages, handle))
+					handle => MakeIdempotent(handledMessages, handle))
 				.Start()
 				.Wait();
 
