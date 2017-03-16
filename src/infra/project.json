@@ -10,7 +10,7 @@
       "target": "project"
     },
     "Newtonsoft.Json": "9.0.1",
-    "EventStore.Client": "3.9.2"
+    "EventStore.Client": "4.0.0-rc2"
   },
   "frameworks": {
     "net46": {
