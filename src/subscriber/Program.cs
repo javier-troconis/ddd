@@ -62,7 +62,7 @@ namespace subscriber
 				new ConsoleLogger())
 				.RegisterCatchupSubscriber(
 					new Subscriber3(),
-					() => Task.FromResult(default(int?)),
+					() => Task.FromResult(default(long?)),
 					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.RegisterPersistentSubscriber(new Subscriber1(new EmailService().SendEmail), 
 					handle => MakeIdempotent(handledMessages, handle))

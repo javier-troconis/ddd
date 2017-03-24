@@ -7,63 +7,62 @@ using EventStore.ClientAPI;
 
 namespace infra
 {
-    public class CatchUpSubscription
-    {
-        private readonly Func<IEventStoreConnection> _createConnection;
-        private readonly string _streamName;
-        private readonly int _reconnectDelayInMilliseconds;
-        private readonly Func<ResolvedEvent, Task> _handleEvent;
-        private readonly Func<Task<int?>> _getCheckpoint;
+	public class CatchUpSubscription
+	{
+		private readonly Func<IEventStoreConnection> _createConnection;
+		private readonly string _streamName;
+		private readonly int _reconnectDelayInMilliseconds;
+		private readonly Func<ResolvedEvent, Task> _handleEvent;
+		private readonly Func<Task<long?>> _getCheckpoint;
 
-        public CatchUpSubscription(
+		public CatchUpSubscription(
 			Func<IEventStoreConnection> createConnection,
-            string streamName,
-            Func<ResolvedEvent, Task> handleEvent,
-            int reconnectDelayInMilliseconds,
-            Func<Task<int?>> getCheckpoint)
-        {
+			string streamName,
+			Func<ResolvedEvent, Task> handleEvent,
+			int reconnectDelayInMilliseconds,
+			Func<Task<long?>> getCheckpoint)
+		{
 			_createConnection = createConnection;
-            _streamName = streamName;
-            _handleEvent = handleEvent;
-            _reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
-            _getCheckpoint = getCheckpoint;
-        }
+			_streamName = streamName;
+			_handleEvent = handleEvent;
+			_reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
+			_getCheckpoint = getCheckpoint;
+		}
 
-        public async Task Start()
-        {
-            while (true)
-            {
-                var connection = _createConnection();
-                await connection.ConnectAsync();
-                var lastCheckpoint = await _getCheckpoint();
-                try
-                {
-                    connection.SubscribeToStreamFrom(_streamName, lastCheckpoint, CatchUpSubscriptionSettings.Default, OnEventReceived, subscriptionDropped: OnSubscriptionDropped(connection));
-                    return;
-                }
-                catch
-                {
-                    
-                }
-                connection.Dispose();
-                await Task.Delay(_reconnectDelayInMilliseconds);
-            }
-        }
+		public async Task Start()
+		{
+			while (true)
+			{
+				var connection = _createConnection();
+				var checkpoint = await _getCheckpoint();
+				try
+				{
+					await connection.ConnectAsync();
+					connection.SubscribeToStreamFrom(_streamName, checkpoint, CatchUpSubscriptionSettings.Default, OnEventReceived, subscriptionDropped: OnSubscriptionDropped(connection));
+					return;
+				}
+				catch
+				{
+					connection.Dispose();
+				}
+				await Task.Delay(_reconnectDelayInMilliseconds);
+			}
+		}
 
-        private void OnEventReceived(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
-        {
-            _handleEvent(resolvedEvent);
-        }
+		private void OnEventReceived(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
+		{
+			_handleEvent(resolvedEvent);
+		}
 
-        private Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
-        {
-            return async (subscription, reason, exception) =>
-            {
+		private Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
+		{
+			return async (subscription, reason, exception) =>
+			{
 				connection.Dispose();
-                await Start();
-            };
-        }
+				await Start();
+			};
+		}
 
-    }
+	}
 
 }
