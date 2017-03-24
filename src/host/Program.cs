@@ -30,8 +30,8 @@ namespace host
             connection.ConnectAsync().Wait();
             IEventStore eventStore = new infra.EventStore(connection);
 
-            while (true)
-            {
+            //while (true)
+            //{
 				var streamName = "application-" + NamingConvention.Stream(Guid.NewGuid());
 				
 				// start application
@@ -46,7 +46,7 @@ namespace host
 				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, newEvents).Wait();
 
 				Task.Delay(TimeSpan.FromSeconds(5)).Wait();
-            }
+            //}
         }
 
 	    

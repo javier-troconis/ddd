@@ -9,10 +9,10 @@ namespace subscriber
 
     public class EmailService
 	{
-	    public async Task SendEmail(string from, string to)
+	    public Task SendEmail(string from, string to)
 	    {
 		    Console.WriteLine($"email sent from {from} to {to}");
-		    await Task.Delay(2000);
+		    return Task.Delay(2000);
 	    }
     }
 }

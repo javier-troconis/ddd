@@ -22,9 +22,9 @@ namespace infra
             var subscriptionSettings = PersistentSubscriptionSettings.Create()
                 .ResolveLinkTos()
                 .StartFromCurrent()
-				.MinimumCheckPointCountOf(0)
-				.MaximumCheckPointCountOf(1)
-				.CheckPointAfter(TimeSpan.FromSeconds(1))
+				//.MinimumCheckPointCountOf(0)
+				//.MaximumCheckPointCountOf(1)
+				//.CheckPointAfter(TimeSpan.FromSeconds(1))
 				.WithExtraStatistics();
             using (var connection = _createConnection())
             {
