@@ -17,7 +17,6 @@ namespace infra
 		private readonly int _externalHttpPort;
 		private readonly ILogger _logger;
 
-
 		public ProjectionManager(string clusterDns, int externalHttpPort, ILogger logger)
 		{
 			_clusterDns = clusterDns;
@@ -25,41 +24,59 @@ namespace infra
 			_logger = logger;
 		}
 
-		public  Task CreateOrUpdateProjection(string projectionName, string projectionDefinition, UserCredentials userCredentials, int maxAttempts)
+		public Task CreateProjection(string projectionName, string projectionDefinition, UserCredentials userCredentials, int maxAttempts)
 		{
 			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
+			{
+				try
 				{
-					try
+					await manager.CreateContinuousAsync(projectionName, projectionDefinition, userCredentials);
+				}
+				catch (Exception ex)
+				{
+					_logger.Info("Creating projection {0} attempt {1}/{2} failed. {3}", projectionName, attempt, maxAttempts, ex.Message);
+					throw;
+				}
+				_logger.Info("Projection {0} created.", projectionName);
+			});
+		}
+
+		public Task UpdateProjection(string projectionName, string projectionDefinition, UserCredentials userCredentials, int maxAttempts)
+		{
+			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
+			{
+				try
+				{
+					var storedProjectionDefinition = await manager.GetQueryAsync(projectionName, userCredentials);
+					if (string.Equals(storedProjectionDefinition, projectionDefinition))
 					{
-						await manager.CreateContinuousAsync(projectionName, projectionDefinition, userCredentials);
+						return;
 					}
-					catch (ProjectionCommandFailedException ex) when (ex.HttpStatusCode == (int)HttpStatusCode.Conflict)
-					{
-						var storedProjectionDefinition = await manager.GetQueryAsync(projectionName, userCredentials);
-						if (!string.Equals(storedProjectionDefinition, projectionDefinition))
-						{
-							await manager.UpdateQueryAsync(projectionName, projectionDefinition, userCredentials);
-						}
-					}
-					catch(Exception ex)
-					{
-						_logger.Info("Creating or updating projection {0} attempt {1}/{2} failed. {3}", projectionName, attempt, maxAttempts, ex.Message);
-						throw;
-					}
-				});
+					await manager.UpdateQueryAsync(projectionName, projectionDefinition, userCredentials);
+				}
+				catch (Exception ex)
+				{
+					_logger.Info("Updating projection {0} attempt {1}/{2} failed. {3}", projectionName, attempt, maxAttempts, ex.Message);
+					throw;
+				}
+				_logger.Info("Projection {0} updated.", projectionName);
+			});
 		}
 
 		private static async Task Execute(string clusterDns, int externalHttpPort, ILogger logger, int maxAttempts, Func<ProjectionsManager, int, Task> operation)
 		{
 			var httpEndpoints = Dns.GetHostEntry(clusterDns)
 				.AddressList
-				.Select(x => new IPEndPoint(x, externalHttpPort))
+				.Select(x => 
+					new IPEndPoint(x, externalHttpPort));
+			var managers = httpEndpoints
+				.Select(httpEndpoint => 
+					new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromMilliseconds(5000)))
 				.ToArray();
 			for (var attempt = 1; maxAttempts >= attempt; ++attempt)
 			{
-				for (int i = 0, j = httpEndpoints.Length; j > i; ++i)
+				foreach (var manager in managers)
 				{
-					var manager = new ProjectionsManager(logger, httpEndpoints[i], TimeSpan.FromMilliseconds(5000));
 					try
 					{
 						await operation(manager, attempt);

@@ -151,7 +151,7 @@ fromAll()
             topics.forEach(emitTopic(e));
         }
     });";
-			return projectionManager.CreateOrUpdateProjection("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
+			return projectionManager.CreateProjection("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
 		}
 
 		internal static Task RegisterSubscriptionStream<TSubscriber>(ProjectionManager projectionManager, UserCredentials userCredentials)
@@ -188,7 +188,7 @@ fromStream('topics')
 			var eventTypes = subscriberType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
 			var fromTopics = eventTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
 			var projectionDefinition = string.Format(projectionDefinitionTemplate, string.Join(",\n", fromTopics), toStream);
-			return projectionManager.CreateOrUpdateProjection(projectionName, projectionDefinition, userCredentials, int.MaxValue);
+			return projectionManager.CreateProjection(projectionName, projectionDefinition, userCredentials, int.MaxValue);
 		}
 
 		internal static Task RegisterConsumerGroup<TSubscriber>(string username, string password)

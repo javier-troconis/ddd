@@ -54,7 +54,13 @@ namespace subscriber
 			var queue = new TaskQueue();
 			var handledMessages = new ConcurrentDictionary<Guid, ResolvedEvent>();
 
-			new EventBus(
+
+
+
+
+			Task.WhenAll(Enumerable.Range(0, 1).Select(x =>
+			{
+				return new EventBus(
 				EventStoreSettings.ClusterDns,
 				EventStoreSettings.Username,
 				EventStoreSettings.Password,
@@ -64,15 +70,19 @@ namespace subscriber
 					new Subscriber3(),
 					() => Task.FromResult(default(long?)),
 					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
-				.RegisterPersistentSubscriber(new Subscriber1(new EmailService().SendEmail), 
-					handle => MakeIdempotent(handledMessages, handle))
-				.Start()
-				.Wait();
+				//.RegisterPersistentSubscriber(new Subscriber1(new EmailService().SendEmail), 
+				//	handle => MakeIdempotent(handledMessages, handle))
+				.Start();
+			})).Wait();
+
+			
 
 			while (true)
 			{
 			}
 		}
+
+
 
 		private static readonly Func<ResolvedEvent, Task<ResolvedEvent>> _writeCheckpoint = resolvedEvent =>
 		{
