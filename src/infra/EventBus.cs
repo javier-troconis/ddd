@@ -54,7 +54,7 @@ namespace infra
 				{
 					async () =>
 					{
-						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
+						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_clusterDns, _externalHttpPort, _logger), new UserCredentials(_username, _password));
 						await new CatchUpSubscription(
 							new EventStoreConnectionFactory(x => x
 								.SetDefaultUserCredentials(new UserCredentials(_username, _password))
@@ -77,7 +77,7 @@ namespace infra
 				{
 					async () =>
 					{
-						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
+						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_clusterDns, _externalHttpPort, _logger), new UserCredentials(_username, _password));
 						await RegisterConsumerGroup<TSubscriber>(_username, _password);
 						await new PersistentSubscription(
 							new EventStoreConnectionFactory(x => x
@@ -95,7 +95,7 @@ namespace infra
 
 	    public async Task Start()
 		{
-			await RegisterByEventTopicProjection(new ProjectionManager(_logger, _clusterDns, _externalHttpPort), new UserCredentials(_username, _password));
+			await RegisterByEventTopicProjection(new ProjectionManager(_clusterDns, _externalHttpPort, _logger), new UserCredentials(_username, _password));
 			await Task.WhenAll(_subscriberRegistrations.Select(x => x()));
 		}
 

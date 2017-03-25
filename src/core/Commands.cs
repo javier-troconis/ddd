@@ -26,14 +26,14 @@ namespace core
 			yield return new ApplicationStartedV3();
 		}
 
-		public static IEnumerable<object> SubmitApplicationV1(SubmitApplicationState state, string submitter)
+		public static IEnumerable<object> SubmitApplicationV1(SubmitApplicationState state, string submittedBy)
 		{
 			if (!state.ApplicationHasBeenStarted)
 			{
 				throw new Exception("application has not been started");
 			}
 
-			yield return new ApplicationSubmittedV1(submitter);
+			yield return new ApplicationSubmittedV1(submittedBy);
 		}
 	}
 }
