@@ -8,16 +8,20 @@ using EventStore.ClientAPI.SystemData;
 
 namespace infra
 {
-    public class ConsumerGroupManager
+    public class PersistentSubscriptionManager
     {
         private readonly Func<IEventStoreConnection> _createConnection;
+	    private readonly string _username;
+	    private readonly string _password;
 
-        public ConsumerGroupManager(Func<IEventStoreConnection> createConnection)
-        {
-			_createConnection = createConnection;
-        }
+	    public PersistentSubscriptionManager(Func<IEventStoreConnection> createConnection, string username, string password)
+	    {
+		    _createConnection = createConnection;
+		    _username = username;
+		    _password = password;
+	    }
 
-        public async Task CreateConsumerGroup(UserCredentials userCredentials, string streamName, string consumerGroupName)
+	    public async Task CreatePersistentSubscription(string streamName, string groupName)
         {
             var subscriptionSettings = PersistentSubscriptionSettings.Create()
                 .ResolveLinkTos()
@@ -29,14 +33,7 @@ namespace infra
             using (var connection = _createConnection())
             {
                 await connection.ConnectAsync();
-                try
-                {
-                    await connection.CreatePersistentSubscriptionAsync(streamName, consumerGroupName, subscriptionSettings, userCredentials);
-                }
-                catch (InvalidOperationException)
-                {
-
-                }
+                await connection.CreatePersistentSubscriptionAsync(streamName, groupName, subscriptionSettings, new UserCredentials(_username, _password));
             }
         }
     }

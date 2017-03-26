@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading.Tasks;
-
+using shared;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 using EventStore.ClientAPI.Projections;
@@ -15,77 +15,75 @@ namespace infra
 	{
 		private readonly string _clusterDns;
 		private readonly int _externalHttpPort;
+		private readonly string _username;
+		private readonly string _password;
 		private readonly ILogger _logger;
 
-		public ProjectionManager(string clusterDns, int externalHttpPort, ILogger logger)
+		public ProjectionManager(string clusterDns, int externalHttpPort, string username, string password, ILogger logger)
 		{
 			_clusterDns = clusterDns;
 			_externalHttpPort = externalHttpPort;
+			_username = username;
+			_password = password;
 			_logger = logger;
 		}
 
-		public Task CreateProjection(string projectionName, string projectionDefinition, UserCredentials userCredentials, int maxAttempts)
+		public Task CreateContinuousProjection(string name, string query, int maxAttempts)
 		{
 			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
 			{
 				try
 				{
-					await manager.CreateContinuousAsync(projectionName, projectionDefinition, userCredentials);
+					await manager.CreateContinuousAsync(name, query, new UserCredentials(_username, _password));
 				}
 				catch (Exception ex)
 				{
-					_logger.Info("Creating projection {0} attempt {1}/{2} failed. {3}", projectionName, attempt, maxAttempts, ex.Message);
-					throw;
+					_logger.Info("Creating projection {0} attempt {1}/{2} failed. {3}", name, attempt, maxAttempts, ex.Message);
+					return false;
 				}
-				_logger.Info("Projection {0} created.", projectionName);
+				_logger.Info("Projection {0} created.", name);
+				return true;
 			});
 		}
 
-		public Task UpdateProjection(string projectionName, string projectionDefinition, UserCredentials userCredentials, int maxAttempts)
+		public Task UpdateProjectionQuery(string name, string query, int maxAttempts)
 		{
 			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
 			{
 				try
 				{
-					var storedProjectionDefinition = await manager.GetQueryAsync(projectionName, userCredentials);
-					if (string.Equals(storedProjectionDefinition, projectionDefinition))
-					{
-						return;
-					}
-					await manager.UpdateQueryAsync(projectionName, projectionDefinition, userCredentials);
+					await manager.UpdateQueryAsync(name, query, new UserCredentials(_username, _password));
 				}
 				catch (Exception ex)
 				{
-					_logger.Info("Updating projection {0} attempt {1}/{2} failed. {3}", projectionName, attempt, maxAttempts, ex.Message);
-					throw;
+					_logger.Info("Updating projection {0} attempt {1}/{2} failed. {3}", name, attempt, maxAttempts, ex.Message);
+					return false;
 				}
-				_logger.Info("Projection {0} updated.", projectionName);
+				_logger.Info("Projection {0} updated.", name);
+				return true;
 			});
 		}
 
-		private static async Task Execute(string clusterDns, int externalHttpPort, ILogger logger, int maxAttempts, Func<ProjectionsManager, int, Task> operation)
+		private static async Task Execute(string clusterDns, int externalHttpPort, ILogger logger, int maxAttempts, Func<ProjectionsManager, int, Task<bool>> operation)
 		{
 			var httpEndpoints = Dns.GetHostEntry(clusterDns)
 				.AddressList
-				.Select(x => 
-					new IPEndPoint(x, externalHttpPort));
+				.Select(ipAddress => 
+					new IPEndPoint(ipAddress, externalHttpPort));
 			var managers = httpEndpoints
-				.Select(httpEndpoint => 
+				.Select(httpEndpoint =>
 					new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromMilliseconds(5000)))
 				.ToArray();
 			for (var attempt = 1; maxAttempts >= attempt; ++attempt)
 			{
-				foreach (var manager in managers)
+				var succeeded = await managers.AnyAsync(x => operation(x, attempt));
+				if (succeeded)
 				{
-					try
-					{
-						await operation(manager, attempt);
-						return;
-					}
-					catch when (maxAttempts > attempt)
-					{
-						await Task.Delay(500);
-					}
+					break;
+				}
+				if (maxAttempts > attempt)
+				{
+					await Task.Delay(500);
 				}
 			}
 		}

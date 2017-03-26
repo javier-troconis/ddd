@@ -7,11 +7,11 @@ using EventStore.ClientAPI;
 
 namespace infra
 {
-	public class CatchUpSubscription
+	public class CatchUpSubscription : ISubscription
 	{
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
-		private readonly int _reconnectDelayInMilliseconds;
+		private readonly TimeSpan _reconnectDelay;
 		private readonly Func<ResolvedEvent, Task> _handleEvent;
 		private readonly Func<Task<long?>> _getCheckpoint;
 
@@ -19,13 +19,13 @@ namespace infra
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
 			Func<ResolvedEvent, Task> handleEvent,
-			int reconnectDelayInMilliseconds,
+			TimeSpan reconnectDelay,
 			Func<Task<long?>> getCheckpoint)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
 			_handleEvent = handleEvent;
-			_reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
+			_reconnectDelay = reconnectDelay;
 			_getCheckpoint = getCheckpoint;
 		}
 
@@ -45,7 +45,7 @@ namespace infra
 				{
 					connection.Dispose();
 				}
-				await Task.Delay(_reconnectDelayInMilliseconds);
+				await Task.Delay(_reconnectDelay);
 			}
 		}
 

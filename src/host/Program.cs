@@ -25,14 +25,17 @@ namespace host
     {
         public static void Main(string[] args)
         {
-			var connection = new EventStoreConnectionFactory(x => x
-                .KeepReconnecting().SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))).CreateConnection();
-            connection.ConnectAsync().Wait();
-            IEventStore eventStore = new infra.EventStore(connection);
+	        var connection = EventStoreConnection.Create(ConnectionSettings.Create()
+				.SetClusterDns(EventStoreSettings.ClusterDns)
+				.SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
+				.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))
+				.KeepReconnecting());
+	        connection.ConnectAsync().Wait();
+			IEventStore eventStore = new infra.EventStore(connection);
 
             //while (true)
             //{
-				var streamName = "application-" + NamingConvention.Stream(Guid.NewGuid());
+				var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
 				
 				// start application
 				eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV1()).Wait();

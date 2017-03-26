@@ -44,28 +44,19 @@ namespace subscriber
 			};
 		}
 
-		private static Func<ResolvedEvent, Task<ResolvedEvent>> MakeIdempotent(ConcurrentDictionary<Guid, ResolvedEvent> handledMessages, Func<ResolvedEvent, Task<ResolvedEvent>> handle)
-		{
-			return resolvedEvent => handledMessages.TryAdd(resolvedEvent.Event.EventId, resolvedEvent) ? handle(resolvedEvent) : Task.FromResult(resolvedEvent);
-		}
+		
 
 		public static void Main(string[] args)
 		{
+		
 			var queue = new TaskQueue();
-			var handledMessages = new ConcurrentDictionary<Guid, ResolvedEvent>();
-
-
-
-
-
+			
 			Task.WhenAll(Enumerable.Range(0, 1).Select(x =>
 			{
-				return new EventBus(
-				EventStoreSettings.ClusterDns,
-				EventStoreSettings.Username,
-				EventStoreSettings.Password,
-				EventStoreSettings.ExternalHttpPort,
-				new ConsoleLogger())
+				return new EventBus(() => EventStoreConnection.Create(ConnectionSettings.Create()
+					.SetClusterDns(EventStoreSettings.ClusterDns)
+					.SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
+					.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))))
 				.RegisterCatchupSubscriber(
 					new Subscriber3(),
 					() => Task.FromResult(default(long?)),

@@ -21,82 +21,55 @@ using shared;
 
 namespace infra
 {
-    public sealed class EventBus
+	public sealed class EventBus
 	{
-		private readonly IEnumerable<Func<Task>> _subscriberRegistrations;
-		private readonly string _clusterDns;
-		private readonly string _username;
-		private readonly string _password;
-		private readonly int _externalHttpPort;
-		private readonly ILogger _logger;
+		private readonly IEnumerable<ISubscription> _subscriptions;
+		private readonly Func<IEventStoreConnection> _createConnection;
 
-		public EventBus(string clusterDns, string username, string password, int externalHttpPort, ILogger logger)
-			: this(clusterDns, username, password, externalHttpPort, logger, Enumerable.Empty<Func<Task>>())
+		public EventBus(Func<IEventStoreConnection> createConnection)
+			: this(createConnection, Enumerable.Empty<ISubscription>())
 		{
-			
 		}
 
-		private EventBus(string clusterDns, string username, string password, int externalHttpPort, ILogger logger, IEnumerable<Func<Task>> subscriberRegistrations)
+		private EventBus(Func<IEventStoreConnection> createConnection, IEnumerable<ISubscription> subscriptions)
 		{
-			_clusterDns = clusterDns;
-			_username = username;
-			_password = password;
-			_externalHttpPort = externalHttpPort;
-			_logger = logger;
-			_subscriberRegistrations = subscriberRegistrations;
+			_createConnection = createConnection;
+			_subscriptions = subscriptions;
 		}
 
 		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
-            var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
-			return new EventBus(_clusterDns, _username, _password, _externalHttpPort, _logger,
-				_subscriberRegistrations.Concat(new List<Func<Task>>
+			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
+			return new EventBus(_createConnection,
+				_subscriptions.Concat(new List<ISubscription>
 				{
-					async () =>
-					{
-						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_clusterDns, _externalHttpPort, _logger), new UserCredentials(_username, _password));
-						await new CatchUpSubscription(
-							new EventStoreConnectionFactory(x => x
-								.SetDefaultUserCredentials(new UserCredentials(_username, _password))
-								.UseConsoleLogger()
-								.KeepReconnecting())
-								.CreateConnection,
-							typeof(TSubscriber).GetEventStoreName(),
-							handle,
-							1000,
-							getCheckpoint).Start();
-					}
+					new CatchUpSubscription(
+						_createConnection,
+						typeof(TSubscriber).GetEventStoreName(),
+						handle,
+						TimeSpan.FromSeconds(1),
+						getCheckpoint)
 				}));
 		}
 
 		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
-			return new EventBus(_clusterDns, _username, _password, _externalHttpPort, _logger,
-				_subscriberRegistrations.Concat(new List<Func<Task>>
+			return new EventBus(_createConnection,
+				_subscriptions.Concat(new List<ISubscription>
 				{
-					async () =>
-					{
-						await RegisterSubscriptionStream<TSubscriber>(new ProjectionManager(_clusterDns, _externalHttpPort, _logger), new UserCredentials(_username, _password));
-						await RegisterConsumerGroup<TSubscriber>(_username, _password);
-						await new PersistentSubscription(
-							new EventStoreConnectionFactory(x => x
-								.SetDefaultUserCredentials(new UserCredentials(_username, _password))
-								.UseConsoleLogger()
-								.KeepReconnecting())
-								.CreateConnection,
-							typeof(TSubscriber).GetEventStoreName(),
-							typeof(TSubscriber).GetEventStoreName(),
-							handle,
-							1000).Start();
-					}
+					new PersistentSubscription(
+						_createConnection,
+						typeof(TSubscriber).GetEventStoreName(),
+						typeof(TSubscriber).GetEventStoreName(),
+						handle,
+						TimeSpan.FromSeconds(1))
 				}));
 		}
 
-	    public async Task Start()
+		public Task Start()
 		{
-			await RegisterByEventTopicProjection(new ProjectionManager(_clusterDns, _externalHttpPort, _logger), new UserCredentials(_username, _password));
-			await Task.WhenAll(_subscriberRegistrations.Select(x => x()));
+			return Task.WhenAll(_subscriptions.Select(subscription => subscription.Start()));
 		}
 
 		internal static async Task<ResolvedEvent> HandleEvent(object subscriber, ResolvedEvent resolvedEvent)
@@ -131,74 +104,6 @@ namespace infra
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}
 
-		internal static Task RegisterByEventTopicProjection(ProjectionManager projectionManager, UserCredentials userCredentials)
-		{
-			const string projectionDefinitionTemplate =
-				@"function emitTopic(e) {
-    return function(topic) {
-           var message = { streamId: 'topics', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false };
-           eventProcessor.emit(message);
-    };
-}
-
-fromAll()
-    .when({
-        $any: function(s, e) {
-            var topics;
-            if (e.streamId === 'topics' || !e.metadata || !(topics = e.metadata.topics)) {
-                return;
-            }
-            topics.forEach(emitTopic(e));
-        }
-    });";
-			return projectionManager.CreateProjection("topics", projectionDefinitionTemplate, userCredentials, int.MaxValue);
-		}
-
-		internal static Task RegisterSubscriptionStream<TSubscriber>(ProjectionManager projectionManager, UserCredentials userCredentials)
-		{
-			const string projectionDefinitionTemplate =
-				@"var topics = [{0}];
-
-function handle(s, e) {{
-    var event = e.bodyRaw;
-    if(event !== s.lastEvent) {{ 
-        var message = {{ streamId: '{1}', eventName: '$>', body: event, isJson: false }};
-        eventProcessor.emit(message);
-    }}
-	s.lastEvent = event;
-}}
-
-var handlers = topics.reduce(
-    function(x, y) {{
-        x[y] = handle;
-        return x;
-    }}, 
-	{{
-		$init: function(){{
-			return {{ lastEvent: ''}};
-		}}
-	}});
-
-fromStream('topics')
-    .when(handlers);";
-
-			var subscriberType = typeof(TSubscriber);
-			var toStream = subscriberType.GetEventStoreName();
-			var projectionName = subscriberType.GetEventStoreName();
-			var eventTypes = subscriberType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-			var fromTopics = eventTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
-			var projectionDefinition = string.Format(projectionDefinitionTemplate, string.Join(",\n", fromTopics), toStream);
-			return projectionManager.CreateProjection(projectionName, projectionDefinition, userCredentials, int.MaxValue);
-		}
-
-		internal static Task RegisterConsumerGroup<TSubscriber>(string username, string password)
-		{
-			return new ConsumerGroupManager(new EventStoreConnectionFactory(x => x
-				.SetDefaultUserCredentials(new UserCredentials(username, password))
-				.UseConsoleLogger()
-				.KeepReconnecting())
-				.CreateConnection)
-				.CreateConsumerGroup(new UserCredentials(username, password), typeof(TSubscriber).GetEventStoreName(), typeof(TSubscriber).GetEventStoreName());
-		}
+		
 	}
 }

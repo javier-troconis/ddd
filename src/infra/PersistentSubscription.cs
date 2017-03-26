@@ -8,26 +8,26 @@ using EventStore.ClientAPI;
 
 namespace infra
 {
-	public class PersistentSubscription
+	public class PersistentSubscription : ISubscription
 	{
 		private readonly string _consumerGroupName;
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
 		private readonly Func<ResolvedEvent, Task> _handleEvent;
-		private readonly int _reconnectDelayInMilliseconds;
+		private readonly TimeSpan _reconnectDelay;
 
 		public PersistentSubscription(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
 			string consumerGroupName,
 			Func<ResolvedEvent, Task> handleEvent,
-			int reconnectDelayInMilliseconds)
+			TimeSpan reconnectDelay)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
 			_consumerGroupName = consumerGroupName;
 			_handleEvent = handleEvent;
-			_reconnectDelayInMilliseconds = reconnectDelayInMilliseconds;
+			_reconnectDelay = reconnectDelay;
 		}
 
 		public async Task Start()
@@ -45,7 +45,7 @@ namespace infra
 				{
 					connection.Dispose();
 				}
-				await Task.Delay(_reconnectDelayInMilliseconds);
+				await Task.Delay(_reconnectDelay);
 			}
 		}
 
