@@ -27,6 +27,7 @@ namespace host
         {
 	        var connection = EventStoreConnection.Create(ConnectionSettings.Create()
 				.SetClusterDns(EventStoreSettings.ClusterDns)
+				.SetMaxDiscoverAttempts(int.MaxValue)
 				.SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
 				.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))
 				.KeepReconnecting());

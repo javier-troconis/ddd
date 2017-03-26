@@ -8,8 +8,7 @@
   },
 
   "dependencies": {
-    "System.Threading.Tasks.Dataflow": "4.6.0",
-    "ImpromptuInterface": "6.2.2",
+    
    
     "shared": {
       "version": "1.0.*",

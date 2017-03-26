@@ -34,7 +34,11 @@ namespace infra
 			{
 				try
 				{
-					await manager.CreateContinuousAsync(name, query, new UserCredentials(_username, _password));
+					await manager.CreateContinuousAsync(name, query, true, new UserCredentials(_username, _password));
+				}
+				catch (ProjectionCommandConflictException)
+				{
+					throw;
 				}
 				catch (Exception ex)
 				{
@@ -53,6 +57,10 @@ namespace infra
 				try
 				{
 					await manager.UpdateQueryAsync(name, query, new UserCredentials(_username, _password));
+				}
+				catch (ProjectionCommandConflictException)
+				{
+					throw;
 				}
 				catch (Exception ex)
 				{

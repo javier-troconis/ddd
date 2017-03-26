@@ -44,17 +44,18 @@ namespace subscriber
 			};
 		}
 
-		
-
 		public static void Main(string[] args)
 		{
-		
+
+			
+
 			var queue = new TaskQueue();
 			
 			Task.WhenAll(Enumerable.Range(0, 1).Select(x =>
 			{
 				return new EventBus(() => EventStoreConnection.Create(ConnectionSettings.Create()
 					.SetClusterDns(EventStoreSettings.ClusterDns)
+					.SetMaxDiscoverAttempts(int.MaxValue)
 					.SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
 					.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))))
 				.RegisterCatchupSubscriber(
@@ -66,13 +67,11 @@ namespace subscriber
 				.Start();
 			})).Wait();
 
-			
-
 			while (true)
 			{
+
 			}
 		}
-
 
 
 		private static readonly Func<ResolvedEvent, Task<ResolvedEvent>> _writeCheckpoint = resolvedEvent =>

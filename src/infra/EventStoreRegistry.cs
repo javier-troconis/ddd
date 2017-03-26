@@ -9,7 +9,7 @@ namespace infra
 {
     public static class EventStoreRegistry
     {
-		public static Task RegisterTopicsProjection(ProjectionManager manager)
+		public static Task CreateTopicsProjection(ProjectionManager manager)
 		{
 			const string query =
 				@"function emitTopic(e) {
@@ -33,7 +33,7 @@ fromAll()
 			return manager.CreateContinuousProjection("topics", query, int.MaxValue);
 		}
 
-		public static Task RegisterSubscriptionStream<TSubscription>(ProjectionManager manager)
+		public static Task CreateSubscriptionProjection<TSubscription>(ProjectionManager manager)
 		{
 			const string queryTemplate =
 				@"var topics = [{0}];
@@ -70,11 +70,13 @@ fromStream('topics')
 			return manager.CreateContinuousProjection(projectionName, query, int.MaxValue);
 		}
 
-		public static Task RegisterConsumerGroup<TSubscriber>(PersistentSubscriptionManager manager)
+		public static Task CreatePersistentSubscription<TSubscriber>(PersistentSubscriptionManager manager)
 		{
 			var streamName = typeof(TSubscriber).GetEventStoreName();
 			var consumerGroupName = typeof(TSubscriber).GetEventStoreName();
 			return manager.CreatePersistentSubscription(streamName, consumerGroupName);
 		}
+
+	    
 	}
 }
