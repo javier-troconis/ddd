@@ -25,12 +25,15 @@ namespace host
     {
         public static void Main(string[] args)
         {
-	        var connection = EventStoreConnection.Create(ConnectionSettings.Create()
-				.SetClusterDns(EventStoreSettings.ClusterDns)
-				.SetMaxDiscoverAttempts(int.MaxValue)
-				.SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
-				.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))
-				.KeepReconnecting());
+	        var connection = EventStoreConnection.Create(
+				ConnectionSettings.Create()
+					.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))
+					.KeepReconnecting(), 
+				ClusterSettings.Create()
+					.DiscoverClusterViaDns()
+					.SetMaxDiscoverAttempts(int.MaxValue)
+					.SetClusterDns(EventStoreSettings.ClusterDns)
+					.SetClusterGossipPort(EventStoreSettings.InternalHttpPort));
 	        connection.ConnectAsync().Wait();
 			IEventStore eventStore = new infra.EventStore(connection);
 

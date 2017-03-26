@@ -12,19 +12,19 @@ namespace infra
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
 		private readonly TimeSpan _reconnectDelay;
-		private readonly Func<ResolvedEvent, Task> _handleEvent;
+		private readonly Func<ResolvedEvent, Task> _handleResolvedEvent;
 		private readonly Func<Task<long?>> _getCheckpoint;
 
 		public CatchUpSubscription(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
-			Func<ResolvedEvent, Task> handleEvent,
+			Func<ResolvedEvent, Task> handleResolvedEvent,
 			TimeSpan reconnectDelay,
 			Func<Task<long?>> getCheckpoint)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
-			_handleEvent = handleEvent;
+			_handleResolvedEvent = handleResolvedEvent;
 			_reconnectDelay = reconnectDelay;
 			_getCheckpoint = getCheckpoint;
 		}
@@ -51,7 +51,7 @@ namespace infra
 
 		private void OnEventReceived(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
 		{
-			_handleEvent(resolvedEvent);
+			_handleResolvedEvent(resolvedEvent);
 		}
 
 		private Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)

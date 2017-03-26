@@ -13,20 +13,20 @@ namespace infra
 		private readonly string _consumerGroupName;
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
-		private readonly Func<ResolvedEvent, Task> _handleEvent;
+		private readonly Func<ResolvedEvent, Task> _handleResolvedEvent;
 		private readonly TimeSpan _reconnectDelay;
 
 		public PersistentSubscription(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
 			string consumerGroupName,
-			Func<ResolvedEvent, Task> handleEvent,
+			Func<ResolvedEvent, Task> handleResolvedEvent,
 			TimeSpan reconnectDelay)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
 			_consumerGroupName = consumerGroupName;
-			_handleEvent = handleEvent;
+			_handleResolvedEvent = handleResolvedEvent;
 			_reconnectDelay = reconnectDelay;
 		}
 
@@ -53,7 +53,7 @@ namespace infra
 		{
 			try
 			{
-				await _handleEvent(resolvedEvent);
+				await _handleResolvedEvent(resolvedEvent);
 			}
 			catch (Exception ex)
 			{

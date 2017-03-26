@@ -51,9 +51,8 @@ namespace subscriber
 
 			var queue = new TaskQueue();
 			
-			Task.WhenAll(Enumerable.Range(0, 1).Select(x =>
-			{
-				return new EventBus(() => EventStoreConnection.Create(ConnectionSettings.Create()
+			
+				 new EventBus(() => EventStoreConnection.Create(ConnectionSettings.Create()
 					.SetClusterDns(EventStoreSettings.ClusterDns)
 					.SetMaxDiscoverAttempts(int.MaxValue)
 					.SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
@@ -64,8 +63,8 @@ namespace subscriber
 					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				//.RegisterPersistentSubscriber(new Subscriber1(new EmailService().SendEmail), 
 				//	handle => MakeIdempotent(handledMessages, handle))
-				.Start();
-			})).Wait();
+				.Start().Wait();
+		
 
 			while (true)
 			{

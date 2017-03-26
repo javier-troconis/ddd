@@ -82,17 +82,15 @@ namespace infra
 				.Select(httpEndpoint =>
 					new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromMilliseconds(5000)))
 				.ToArray();
-			for (var attempt = 1; maxAttempts >= attempt; ++attempt)
+			var attempt = 1;
+			while(true)
 			{
-				var succeeded = await managers.AnyAsync(x => operation(x, attempt));
-				if (succeeded)
+				var succeeded = await managers.AnyAsync(manager => operation(manager, attempt++));
+				if (succeeded || maxAttempts < attempt)
 				{
 					break;
 				}
-				if (maxAttempts > attempt)
-				{
-					await Task.Delay(500);
-				}
+				await Task.Delay(500);
 			}
 		}
 	}
