@@ -50,13 +50,13 @@ namespace infra
 			});
 		}
 
-		public Task UpdateProjectionQuery(string name, string query, int maxAttempts)
+		public Task UpdateProjection(string name, string newQuery, int maxAttempts)
 		{
 			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
 			{
 				try
 				{
-					await manager.UpdateQueryAsync(name, query, new UserCredentials(_username, _password));
+					await manager.UpdateQueryAsync(name, newQuery, new UserCredentials(_username, _password));
 				}
 				catch (ProjectionCommandConflictException)
 				{
