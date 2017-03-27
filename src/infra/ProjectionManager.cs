@@ -36,7 +36,7 @@ namespace infra
 				{
 					await manager.CreateContinuousAsync(name, query, true, new UserCredentials(_username, _password));
 				}
-				catch (ProjectionCommandConflictException)
+				catch (ProjectionCommandFailedException)
 				{
 					throw;
 				}
@@ -58,7 +58,7 @@ namespace infra
 				{
 					await manager.UpdateQueryAsync(name, newQuery, new UserCredentials(_username, _password));
 				}
-				catch (ProjectionCommandConflictException)
+				catch (ProjectionCommandFailedException)
 				{
 					throw;
 				}
@@ -72,6 +72,8 @@ namespace infra
 			});
 		}
 
+		
+
 		private static async Task Execute(string clusterDns, int externalHttpPort, ILogger logger, int maxAttempts, Func<ProjectionsManager, int, Task<bool>> operation)
 		{
 			var httpEndpoints = Dns.GetHostEntry(clusterDns)
@@ -80,9 +82,9 @@ namespace infra
 					new IPEndPoint(ipAddress, externalHttpPort));
 			var managers = httpEndpoints
 				.Select(httpEndpoint =>
-					new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromMilliseconds(5000)))
+					new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromSeconds(5)))
 				.ToArray();
-			var attempt = 1;
+			int attempt = 1;
 			while(true)
 			{
 				var succeeded = await managers.AnyAsync(manager => operation(manager, attempt++));
@@ -93,5 +95,7 @@ namespace infra
 				await Task.Delay(500);
 			}
 		}
+
+		
 	}
 }

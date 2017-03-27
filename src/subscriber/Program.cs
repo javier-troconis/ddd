@@ -14,8 +14,6 @@ using System.Threading.Tasks;
 
 using contracts;
 
-
-
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 using EventStore.ClientAPI.Exceptions;
@@ -23,8 +21,6 @@ using EventStore.ClientAPI.Projections;
 using EventStore.ClientAPI.SystemData;
 
 using ImpromptuInterface;
-
-
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
@@ -47,16 +43,11 @@ namespace subscriber
 		public static void Main(string[] args)
 		{
 
-			
 
+
+			var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
 			var queue = new TaskQueue();
-			
-			
-				 new EventBus(() => EventStoreConnection.Create(ConnectionSettings.Create()
-					.SetClusterDns(EventStoreSettings.ClusterDns)
-					.SetMaxDiscoverAttempts(int.MaxValue)
-					.SetClusterGossipPort(EventStoreSettings.InternalHttpPort)
-					.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))))
+			new EventBus(connectionFactory.CreateConnection)
 				.RegisterCatchupSubscriber(
 					new Subscriber3(),
 					() => Task.FromResult(default(long?)),
@@ -64,14 +55,11 @@ namespace subscriber
 				//.RegisterPersistentSubscriber(new Subscriber1(new EmailService().SendEmail), 
 				//	handle => MakeIdempotent(handledMessages, handle))
 				.Start().Wait();
-		
 
 			while (true)
 			{
-
 			}
 		}
-
 
 		private static readonly Func<ResolvedEvent, Task<ResolvedEvent>> _writeCheckpoint = resolvedEvent =>
 		{

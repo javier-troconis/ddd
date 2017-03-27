@@ -25,16 +25,9 @@ namespace host
     {
         public static void Main(string[] args)
         {
-	        var connection = EventStoreConnection.Create(
-				ConnectionSettings.Create()
-					.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))
-					.KeepReconnecting(), 
-				ClusterSettings.Create()
-					.DiscoverClusterViaDns()
-					.SetMaxDiscoverAttempts(int.MaxValue)
-					.SetClusterDns(EventStoreSettings.ClusterDns)
-					.SetClusterGossipPort(EventStoreSettings.InternalHttpPort));
-	        connection.ConnectAsync().Wait();
+	        var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort, x => x.KeepReconnecting());
+	        var connection = connectionFactory.CreateConnection();
+			connection.ConnectAsync().Wait();
 			IEventStore eventStore = new infra.EventStore(connection);
 
             //while (true)
@@ -52,7 +45,7 @@ namespace host
 				var newEvents = Commands.SubmitApplicationV1(state, streamName);
 				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, newEvents).Wait();
 
-				Task.Delay(TimeSpan.FromSeconds(5)).Wait();
+				
             //}
         }
 

@@ -1,40 +1,18 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
-using EventStore.ClientAPI.SystemData;
+using EventStore.ClientAPI.Exceptions;
 
 namespace infra
 {
     public static class EventStoreRegistry
     {
-		public static Task CreateTopicsProjection(ProjectionManager manager)
-		{
-			const string query =
-				@"function emitTopic(e) {
-    return function(topic) {
-           var message = { streamId: 'topics', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false };
-           eventProcessor.emit(message);
-    };
-}
-
-fromAll()
-    .when({
-        $any: function(s, e) {
-            var topics;
-            if (e.streamId === 'topics' || !e.metadata || !(topics = e.metadata.topics)) {
-                return;
-            }
-            topics.forEach(emitTopic(e));
-        }
-    });";
-
-			return manager.CreateContinuousProjection("topics", query, int.MaxValue);
-		}
-
-		public static Task CreateSubscriptionProjection<TSubscription>(ProjectionManager manager)
-		{
+	    public static async Task RegisterSubscriptionStream<TSubscription>(ProjectionManager projectionManager)
+	    {
 			const string queryTemplate =
 				@"var topics = [{0}];
 
@@ -62,21 +40,49 @@ fromStream('topics')
     .when(handlers);";
 
 			var subscriptionType = typeof(TSubscription);
-			var subscriptionStream = subscriptionType.GetEventStoreName();
-			var projectionName = subscriptionType.GetEventStoreName();
-			var eventHandlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-			var topics = eventHandlingTypes.Select(eventType => $"'{eventType.GetEventStoreName()}'");
-			var query = string.Format(queryTemplate, string.Join(",\n", topics), subscriptionStream);
-			return manager.CreateContinuousProjection(projectionName, query, int.MaxValue);
-		}
+			var subscriptionName = subscriptionType.GetEventStoreName();
+			var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
+			var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
+			var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName);
+			try
+			{
+				await projectionManager.CreateContinuousProjection(subscriptionName, query, int.MaxValue);
+			}
+			catch (ProjectionCommandConflictException)
+			{
+				await projectionManager.UpdateProjection(subscriptionName, query, int.MaxValue);
+			}
+	    }
 
-		public static Task CreatePersistentSubscription<TSubscriber>(PersistentSubscriptionManager manager)
+		public static async Task RegisterTopicsStream(ProjectionManager manager)
 		{
-			var streamName = typeof(TSubscriber).GetEventStoreName();
-			var consumerGroupName = typeof(TSubscriber).GetEventStoreName();
-			return manager.CreatePersistentSubscription(streamName, consumerGroupName);
+			const string query =
+				@"function emitTopic(e) {
+    return function(topic) {
+           var message = { streamId: 'topics', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false };
+           eventProcessor.emit(message);
+    };
+}
+
+fromAll()
+    .when({
+        $any: function(s, e) {
+            var topics;
+            if (e.streamId === 'topics' || !e.metadata || !(topics = e.metadata.topics)) {
+                return;
+            }
+            topics.forEach(emitTopic(e));
+        }
+    });";
+			try
+			{
+				await manager.CreateContinuousProjection("topics", query, int.MaxValue);
+			}
+			catch (ProjectionCommandConflictException)
+			{
+				await manager.UpdateProjection("topics", query, int.MaxValue);
+			}
 		}
 
-	    
 	}
 }
