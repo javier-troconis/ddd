@@ -38,7 +38,7 @@ namespace infra
 				try
 				{
 					await connection.ConnectAsync();
-					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventReceived, OnSubscriptionDropped(connection), autoAck: false);
+					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventAppeared, OnSubscriptionDropped(connection), autoAck: false);
 					return;
 				}
 				catch
@@ -49,7 +49,7 @@ namespace infra
 			}
 		}
 
-		private async void OnEventReceived(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent)
+		private async void OnEventAppeared(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent)
 		{
 			try
 			{

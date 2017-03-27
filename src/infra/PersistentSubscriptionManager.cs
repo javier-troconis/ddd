@@ -21,19 +21,20 @@ namespace infra
 		    _password = password;
 	    }
 
-	    public async Task CreatePersistentSubscription(string streamName, string groupName)
-        {
-            var subscriptionSettings = PersistentSubscriptionSettings.Create()
-                .ResolveLinkTos()
-                .StartFromCurrent()
-				.MinimumCheckPointCountOf(1)
-				.MaximumCheckPointCountOf(1)
-				.CheckPointAfter(TimeSpan.FromSeconds(1))
-				.WithExtraStatistics();
+	    public async Task CreatePersistentSubscription(string streamName, string groupName, Action<PersistentSubscriptionSettingsBuilder> configure = null)
+	    {
+		    var settings = PersistentSubscriptionSettings.Create()
+			    .ResolveLinkTos()
+			    .StartFromCurrent()
+			    .MinimumCheckPointCountOf(1)
+			    .MaximumCheckPointCountOf(1)
+			    .CheckPointAfter(TimeSpan.FromSeconds(1))
+			    .WithExtraStatistics();
+			configure?.Invoke(settings);
             using (var connection = _createConnection())
             {
                 await connection.ConnectAsync();
-                await connection.CreatePersistentSubscriptionAsync(streamName, groupName, subscriptionSettings, new UserCredentials(_username, _password));
+		        await connection.CreatePersistentSubscriptionAsync(streamName, groupName, settings, new UserCredentials(_username, _password));
             }
         }
     }

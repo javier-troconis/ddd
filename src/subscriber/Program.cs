@@ -27,6 +27,8 @@ using Newtonsoft.Json.Linq;
 
 using shared;
 
+using subscriber.contracts;
+
 namespace subscriber
 {
 	public class Program
@@ -42,22 +44,20 @@ namespace subscriber
 
 		public static void Main(string[] args)
 		{
-
-
-
 			var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
 			var queue = new TaskQueue();
 			new EventBus(connectionFactory.CreateConnection)
-				.RegisterCatchupSubscriber(
-					new Subscriber3(),
-					() => Task.FromResult(default(long?)),
-					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
-				//.RegisterPersistentSubscriber(new Subscriber1(new EmailService().SendEmail), 
-				//	handle => MakeIdempotent(handledMessages, handle))
-				.Start().Wait();
+				//.RegisterCatchupSubscriber(
+				//	new Subscriber3(),
+				//	() => Task.FromResult(default(long?)),
+				//	handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
+				.RegisterPersistentSubscriber<IRegisterSubscriptionsHandler>(new RegisterSubscriptionsHandler())
+				.Start()
+				.Wait();
 
 			while (true)
 			{
+
 			}
 		}
 

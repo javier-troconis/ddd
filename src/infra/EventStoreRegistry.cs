@@ -9,7 +9,10 @@ using EventStore.ClientAPI.Exceptions;
 
 namespace infra
 {
-    public static class EventStoreRegistry
+
+	
+
+	public static class EventStoreRegistry
     {
 	    public static async Task RegisterSubscriptionStream<TSubscription>(ProjectionManager projectionManager)
 	    {
@@ -53,6 +56,14 @@ fromStream('topics')
 				await projectionManager.UpdateProjection(subscriptionName, query, int.MaxValue);
 			}
 	    }
+
+		public static async Task RegisterPersistentSubscription<TSubscription>(ProjectionManager projectionManager, PersistentSubscriptionManager persistentSubscriptionManager)
+		{
+			await RegisterSubscriptionStream<TSubscription>(projectionManager);
+			string streamName = typeof(TSubscription).GetEventStoreName();
+			string groupName = typeof(TSubscription).GetEventStoreName();
+			await persistentSubscriptionManager.CreatePersistentSubscription(streamName, groupName);
+		}
 
 		public static async Task RegisterTopicsStream(ProjectionManager manager)
 		{

@@ -8,8 +8,11 @@
   },
 
 	"dependencies": {
-	
 
+		"subscriber.contracts": {
+			"version": "1.0.*",
+			"target": "project"
+		},
 		"shared": {
 			"version": "1.0.*",
 			"target": "project"

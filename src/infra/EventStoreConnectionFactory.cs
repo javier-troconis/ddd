@@ -12,18 +12,20 @@ namespace infra
 	{
 		private readonly string _clusterDns;
 		private readonly int _internalHttpPort;
-		private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configure;
 
-		public EventStoreConnectionFactory(string clusterDns, int internalHttpPort, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configure = null)
+
+		
+		public EventStoreConnectionFactory(string clusterDns, int internalHttpPort)
 		{
 			_clusterDns = clusterDns;
 			_internalHttpPort = internalHttpPort;
-			_configure = configure;
 		}
 
 		public IEventStoreConnection CreateConnection()
 		{
-			var connectionSettings = _configure?.Invoke(ConnectionSettings.Create())
+			var connectionSettings = ConnectionSettings
+				.Create()
+				.KeepReconnecting()
 				.Build();
 			var clusterSettings = ClusterSettings
 				.Create()

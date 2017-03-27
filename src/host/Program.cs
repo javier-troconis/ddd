@@ -25,7 +25,7 @@ namespace host
     {
         public static void Main(string[] args)
         {
-	        var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort, x => x.KeepReconnecting());
+	        var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
 	        var connection = connectionFactory.CreateConnection();
 			connection.ConnectAsync().Wait();
 			IEventStore eventStore = new infra.EventStore(connection);
