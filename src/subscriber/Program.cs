@@ -47,10 +47,10 @@ namespace subscriber
 			var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
 			var queue = new TaskQueue();
 			new EventBus(connectionFactory.CreateConnection)
-				//.RegisterCatchupSubscriber(
-				//	new Subscriber3(),
-				//	() => Task.FromResult(default(long?)),
-				//	handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
+				.RegisterCatchupSubscriber(
+					new Subscriber3(),
+					() => Task.FromResult(default(long?)),
+					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
 				.RegisterPersistentSubscriber<IRegisterSubscriptionsHandler>(new RegisterSubscriptionsHandler())
 				.Start()
 				.Wait();
