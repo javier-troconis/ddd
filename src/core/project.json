@@ -1,18 +1,18 @@
 ﻿{
   "version": "1.0.0",
-  "description": "core Class Library",
+  "description": "core",
   "authors": [ "jtroconis" ],
 
-  "dependencies": {
-    "shared": {
-      "version": "1.0.*",
-      "target": "project"
-    },
-    "contracts": {
-      "version": "1.0.*",
-      "target": "project"
-    }
-  },
+	"dependencies": {
+		"shared": {
+			"version": "1.0.*",
+			"target": "project"
+		},
+		"core.contracts": {
+			"version": "1.0.*",
+			"target": "project"
+		}
+	},
 	"frameworks": {
     "net46": {
       "dependencies": {

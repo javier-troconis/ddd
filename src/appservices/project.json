@@ -8,7 +8,7 @@
       "version": "1.0.*",
       "target": "project"
     },
-    "infra": {
+    "eventstore": {
       "version": "1.0.*",
       "target": "project"
     },

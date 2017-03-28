@@ -1,0 +1,19 @@
+﻿{
+  "version": "1.0.0",
+  "description": "core.contracts",
+  "authors": [ "jtroconis" ],
+
+  "dependencies": {
+    "shared": {
+      "version": "1.0.*",
+      "target": "project"
+    }
+  },
+  "frameworks": {
+    "net46": {
+      "dependencies": {
+
+      }
+    }
+  }
+}

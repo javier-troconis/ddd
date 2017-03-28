@@ -9,9 +9,11 @@ using System.Threading;
 using System.Threading.Tasks;
 
 using core;
+
+using eventstore;
+
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
-using infra;
 
 using Newtonsoft.Json;
 
@@ -28,7 +30,7 @@ namespace host
 	        var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
 	        var connection = connectionFactory.CreateConnection();
 			connection.ConnectAsync().Wait();
-			IEventStore eventStore = new infra.EventStore(connection);
+			IEventStore eventStore = new eventstore.EventStore(connection);
 
             //while (true)
             //{

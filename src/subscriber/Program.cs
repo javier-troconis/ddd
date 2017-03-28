@@ -1,6 +1,4 @@
-﻿using infra;
-
-using System;
+﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -12,7 +10,9 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-using contracts;
+
+
+using eventstore;
 
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
@@ -27,7 +27,6 @@ using Newtonsoft.Json.Linq;
 
 using shared;
 
-using subscriber.contracts;
 
 namespace subscriber
 {
@@ -51,7 +50,7 @@ namespace subscriber
 					new Subscriber3(),
 					() => Task.FromResult(default(long?)),
 					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
-				.RegisterPersistentSubscriber<IRegisterSubscriptionsHandler>(new RegisterSubscriptionsHandler())
+				.RegisterPersistentSubscriber(new RegisterSubscriptionHandler())
 				.Start()
 				.Wait();
 

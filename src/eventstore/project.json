@@ -1,0 +1,22 @@
+{
+	"version": "1.0.0",
+	"description": "eventstore",
+	"authors": [ "jtroconis" ],
+
+	"dependencies": {
+		"ImpromptuInterface": "6.2.2",
+		"shared": {
+			"version": "1.0.*",
+			"target": "project"
+		},
+		"Newtonsoft.Json": "9.0.1",
+		"EventStore.Client": "4.0.0"
+	},
+	"frameworks": {
+		"net46": {
+			"dependencies": {
+
+			}
+		}
+	}
+}

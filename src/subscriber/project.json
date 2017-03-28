@@ -1,6 +1,6 @@
 ﻿{
   "version": "1.0.0",
-  "description": "subscriber Console Application",
+  "description": "subscriber",
   "authors": [ "jtroconis" ],
  
   "compilationOptions": {
@@ -8,20 +8,19 @@
   },
 
 	"dependencies": {
-		"subscriber.contracts": {
+		"management.contracts": {
 			"version": "1.0.*",
 			"target": "project"
 		},
-
 		"shared": {
 			"version": "1.0.*",
 			"target": "project"
 		},
-		"core": {
+		"core.contracts": {
 			"version": "1.0.*",
 			"target": "project"
 		},
-		"infra": {
+		"eventstore": {
 			"version": "1.0.*",
 			"target": "project"
 		}
