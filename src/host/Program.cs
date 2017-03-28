@@ -37,7 +37,7 @@ namespace host
 				var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
 				
 				// start application
-				eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV1()).Wait();
+				eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV2()).Wait();
 				Console.WriteLine("application started: " + streamName);
 
 

@@ -8,7 +8,8 @@ using shared;
 namespace core
 {
 	public struct SubmitApplicationState :
-		 IMessageHandler<ApplicationStartedV1, SubmitApplicationState>
+		 IMessageHandler<ApplicationStartedV1, SubmitApplicationState>,
+		 IMessageHandler<ApplicationStartedV2, SubmitApplicationState>
 	{
 		public readonly bool ApplicationHasBeenStarted;
 
@@ -18,6 +19,11 @@ namespace core
 		}
 
 		public SubmitApplicationState Handle(ApplicationStartedV1 message)
+		{
+			return new SubmitApplicationState(true);
+		}
+
+		public SubmitApplicationState Handle(ApplicationStartedV2 message)
 		{
 			return new SubmitApplicationState(true);
 		}
