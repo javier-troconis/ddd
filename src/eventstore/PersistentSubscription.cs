@@ -7,7 +7,7 @@ namespace eventstore
 {
 	public class PersistentSubscription : ISubscription
 	{
-		private readonly string _consumerGroupName;
+		private readonly string _groupName;
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
 		private readonly Func<ResolvedEvent, Task> _handleResolvedEvent;
@@ -16,13 +16,13 @@ namespace eventstore
 		public PersistentSubscription(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
-			string consumerGroupName,
+			string groupName,
 			Func<ResolvedEvent, Task> handleResolvedEvent,
 			TimeSpan reconnectDelay)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
-			_consumerGroupName = consumerGroupName;
+			_groupName = groupName;
 			_handleResolvedEvent = handleResolvedEvent;
 			_reconnectDelay = reconnectDelay;
 		}
@@ -35,7 +35,7 @@ namespace eventstore
 				try
 				{
 					await connection.ConnectAsync();
-					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _consumerGroupName, OnEventAppeared, OnSubscriptionDropped(connection), autoAck: false);
+					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _groupName, OnEventAppeared, OnSubscriptionDropped(connection), autoAck: false);
 					return;
 				}
 				catch

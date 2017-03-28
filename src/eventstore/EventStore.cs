@@ -44,7 +44,7 @@ namespace eventstore
                     var eventHeader = new Dictionary<string, object>
                     {
                         { _eventClrTypeHeader, eventType.AssemblyQualifiedName },
-                        { "topics", eventType.GetEventTopics() }
+                        { EventHeaderKey.Topics, eventType.GetEventTopics() }
                     };
                     configureEventHeader?.Invoke(@event, eventHeader);
                     return ConvertToEventData(@event, eventHeader);

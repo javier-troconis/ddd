@@ -49,13 +49,15 @@ namespace eventstore
 		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
+			var streamName = typeof(TSubscriber).GetEventStoreName();
+			var groupName = subscriber.GetType().GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new List<ISubscription>
 				{
 					new PersistentSubscription(
 						_createConnection,
-						typeof(TSubscriber).GetEventStoreName(),
-						typeof(TSubscriber).GetEventStoreName(),
+						streamName,
+						groupName,
 						handle,
 						TimeSpan.FromSeconds(1))
 				}));
@@ -82,12 +84,12 @@ namespace eventstore
 		internal static object DeserializeEvent(Type subscriberType, ResolvedEvent resolvedEvent)
 		{
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-			var topics = ((JArray)eventMetadata["topics"]).ToObject<object[]>();
+			var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
 			var recordedEventHandlingTypes = subscriberType
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0]);
 			var recordedEventTypes = topics.Join(recordedEventHandlingTypes, x => x, x => x.GetGenericArguments()[0].GetEventStoreName(), (x, y) => y);
-			var recordedEventType = recordedEventTypes.First();
+			var recordedEventType = recordedEventTypes.FirstOrDefault();
 			var recordedEvent = new
 			{
 				resolvedEvent.Event.EventNumber,

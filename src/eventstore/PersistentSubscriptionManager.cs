@@ -19,9 +19,8 @@ namespace eventstore
 		    _password = password;
 	    }
 
-	    public async Task CreatePersistentSubscription(string streamName, string groupName, Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null)
+	    public async Task CreatePersistentSubscription(string streamName, string groupName, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null)
 	    {
-			configurePersistentSubscription = configurePersistentSubscription ?? (x => x);
 			var persistentSubscriptionSettings = PersistentSubscriptionSettings
 				.Create()
 			    .ResolveLinkTos()
@@ -30,10 +29,11 @@ namespace eventstore
 			    .MaximumCheckPointCountOf(1)
 			    .CheckPointAfter(TimeSpan.FromSeconds(1))
 			    .WithExtraStatistics();
-            using (var connection = _createConnection())
+			configurePersistentSubscription?.Invoke(persistentSubscriptionSettings);
+			using (var connection = _createConnection())
             {
                 await connection.ConnectAsync();
-		        await connection.CreatePersistentSubscriptionAsync(streamName, groupName, configurePersistentSubscription(persistentSubscriptionSettings), new UserCredentials(_username, _password));
+		        await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, new UserCredentials(_username, _password));
             }
         }
     }

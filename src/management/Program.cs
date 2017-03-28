@@ -7,6 +7,8 @@ using eventstore;
 
 using EventStore.ClientAPI.Common.Log;
 
+using management.contracts;
+
 namespace management
 {
     public class Program
@@ -25,10 +27,12 @@ namespace management
 			IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
 			connection.ConnectAsync().Wait();
 
-			Console.WriteLine("1 - register topics stream");
-			Console.WriteLine("2 - request subscription registration");
+		
 			while (true)
 	        {
+				Console.WriteLine("1 - register topics stream");
+				Console.WriteLine("2 - register subscription registration handler subscription stream");
+				Console.WriteLine("3 - publish subscription registration requested");
 		        var key = Console.ReadKey();
 		        switch (key.KeyChar)
 		        {
@@ -36,12 +40,16 @@ namespace management
 						EventStoreRegistry.RegisterTopicsStream(projectionManager).Wait();
 						break;
 					case '2':
+						EventStoreRegistry.RegisterSubscriptionStream<ISubscriptionRegistrationRequestedHandler>(projectionManager).Wait();
+						break;
+					case '3':
 				        eventPublisher.PublishEvent(new SubscriptionRegistrationRequested("*", "*")).Wait();
 				        break;
 					default:
 				        return;
 		        }
-	        }
+				Console.WriteLine();
+			}
         }
     }
 }

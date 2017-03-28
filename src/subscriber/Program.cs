@@ -10,8 +10,6 @@ using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
 
-
-
 using eventstore;
 
 using EventStore.ClientAPI;
@@ -22,41 +20,37 @@ using EventStore.ClientAPI.SystemData;
 
 using ImpromptuInterface;
 
+using management.contracts;
+
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 
 using shared;
 
-
 namespace subscriber
 {
 	public class Program
 	{
-		private static Func<ResolvedEvent, Task<ResolvedEvent>> Enqueue(TaskQueue queue, Func<ResolvedEvent, Task<ResolvedEvent>> handle)
-		{
-			return async resolvedEvent =>
-			{
-				await queue.SendToChannelAsync(resolvedEvent.OriginalStreamId, () => handle(resolvedEvent));
-				return resolvedEvent;
-			};
-		}
-
 		public static void Main(string[] args)
 		{
 			var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
-			var queue = new TaskQueue();
-			new EventBus(connectionFactory.CreateConnection)
-				.RegisterCatchupSubscriber(
-					new Subscriber3(),
-					() => Task.FromResult(default(long?)),
-					handle => Enqueue(queue, handle.ComposeForward(_writeCheckpoint.ToAsyncInput())))
-				.RegisterPersistentSubscriber(new RegisterSubscriptionHandler())
-				.Start()
-				.Wait();
+
+			Parallel.For(0, 9, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x =>
+			{
+				await EventStoreRegistry.RegisterPersistentSubscription<ISubscriptionRegistrationRequestedHandler, SubscriptionRegistrationRequestedHandler>(
+					new PersistentSubscriptionManager(connectionFactory.CreateConnection, EventStoreSettings.Username, EventStoreSettings.Password));
+
+				await new EventBus(connectionFactory.CreateConnection)
+					.RegisterCatchupSubscriber(
+						new Subscriber2(),
+						() => Task.FromResult(default(long?)),
+						_writeCheckpoint.ToAsyncInput().ComposeBackward)
+					.RegisterPersistentSubscriber<ISubscriptionRegistrationRequestedHandler>(new SubscriptionRegistrationRequestedHandler("*"))
+					.Start();
+			});
 
 			while (true)
 			{
-
 			}
 		}
 

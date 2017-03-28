@@ -1,6 +1,9 @@
-﻿using System.Linq;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 
+using EventStore.ClientAPI;
 using EventStore.ClientAPI.Exceptions;
 
 namespace eventstore
@@ -35,14 +38,14 @@ var handlers = topics.reduce(
 		}}
 	}});
 
-fromStream('topics')
+fromStream('{2}')
     .when(handlers);";
 
 			var subscriptionType = typeof(TSubscription);
 			var subscriptionName = subscriptionType.GetEventStoreName();
 			var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
 			var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
-			var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName);
+			var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName, StreamName.Topics);
 			try
 			{
 				await projectionManager.CreateContinuousProjection(subscriptionName, query, int.MaxValue);
@@ -51,42 +54,50 @@ fromStream('topics')
 			{
 				await projectionManager.UpdateProjection(subscriptionName, query, int.MaxValue);
 			}
-	    }
+		}
 
-		public static Task RegisterPersistentSubscription<TSubscription>(PersistentSubscriptionManager persistentSubscriptionManager)
+		public static async Task RegisterPersistentSubscription<TStream, TGroup>(PersistentSubscriptionManager persistentSubscriptionManager, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null)
 		{
-			string streamName = typeof(TSubscription).GetEventStoreName();
-			string groupName = typeof(TSubscription).GetEventStoreName();
-			return persistentSubscriptionManager.CreatePersistentSubscription(streamName, groupName);
+			string streamName = typeof(TStream).GetEventStoreName();
+			string groupName = typeof(TGroup).GetEventStoreName();
+			try
+			{
+				await persistentSubscriptionManager.CreatePersistentSubscription(streamName, groupName, configurePersistentSubscription);
+			}
+			catch (InvalidOperationException)
+			{
+				
+			}
 		}
 
 		public static async Task RegisterTopicsStream(ProjectionManager manager)
 		{
-			const string query =
-				@"function emitTopic(e) {
-    return function(topic) {
-           var message = { streamId: 'topics', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false };
+			const string queryTemplate =
+				@"function emitTopic(e) {{
+    return function(topic) {{
+           var message = {{ streamId: '{0}', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false }};
            eventProcessor.emit(message);
-    };
-}
+    }};
+}}
 
 fromAll()
-    .when({
-        $any: function(s, e) {
+    .when({{
+        $any: function(s, e) {{
             var topics;
-            if (e.streamId === 'topics' || !e.metadata || !(topics = e.metadata.topics)) {
+            if (e.streamId === '{0}' || !e.metadata || !(topics = e.metadata.topics)) {{
                 return;
-            }
+            }}
             topics.forEach(emitTopic(e));
-        }
-    });";
+        }}
+    }});";
+			var query = string.Format(queryTemplate, StreamName.Topics);
 			try
 			{
-				await manager.CreateContinuousProjection("topics", query, int.MaxValue);
+				await manager.CreateContinuousProjection(StreamName.Topics, query, int.MaxValue);
 			}
 			catch (ProjectionCommandConflictException)
 			{
-				await manager.UpdateProjection("topics", query, int.MaxValue);
+				await manager.UpdateProjection(StreamName.Topics, query, int.MaxValue);
 			}
 		}
 
