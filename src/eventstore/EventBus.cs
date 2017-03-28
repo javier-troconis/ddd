@@ -92,6 +92,7 @@ namespace eventstore
 			var recordedEventType = recordedEventTypes.FirstOrDefault();
 			var recordedEvent = new
 			{
+				resolvedEvent.Event.EventStreamId,
 				resolvedEvent.Event.EventNumber,
 				resolvedEvent.Event.EventId,
 				resolvedEvent.Event.Created,

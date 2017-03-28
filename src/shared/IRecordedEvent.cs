@@ -7,7 +7,8 @@ namespace shared
 {
     public interface IRecordedEvent<out TEvent>
     {
-		int EventNumber { get; }
+	    string EventStreamId { get; }
+	    int EventNumber { get; }
 	    Guid EventId { get; }
 	    DateTime Created { get; }
 	    TEvent Event { get; }

@@ -5,6 +5,8 @@ using System.Threading.Tasks;
 
 using eventstore;
 
+using EventStore.ClientAPI.Common.Log;
+
 using management.contracts;
 
 using shared;
@@ -23,11 +25,15 @@ namespace subscriber
 
 		public Task Handle(IRecordedEvent<ISubscriptionRegistrationRequested> message)
 		{
-			if (string.Equals(_serviceName, message.Event.ServiceName))
+			if (!string.Equals(_serviceName, message.Event.ServiceName))
 			{
-				Console.WriteLine("registering subscriptions");
+				return Task.CompletedTask;
 			}
-			return Task.CompletedTask;
+			var projectionManager = 
+				new ProjectionManager(EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort, EventStoreSettings.Username, EventStoreSettings.Password, new ConsoleLogger());
+			return Task.WhenAll(
+				EventStoreRegistry.RegisterSubscriptionStream<Subscriber1>(projectionManager), 
+				EventStoreRegistry.RegisterSubscriptionStream<Subscriber2>(projectionManager));
 		}
 
 	}

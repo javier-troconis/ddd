@@ -35,16 +35,20 @@ namespace subscriber
 		{
 			var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
 
-			Parallel.For(0, 9, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x =>
+			Parallel.For(1, 2, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x =>
 			{
 				await EventStoreRegistry.RegisterPersistentSubscription<ISubscriptionRegistrationRequestedHandler, SubscriptionRegistrationRequestedHandler>(
-					new PersistentSubscriptionManager(connectionFactory.CreateConnection, EventStoreSettings.Username, EventStoreSettings.Password));
+					new PersistentSubscriptionManager(connectionFactory.CreateConnection, EventStoreSettings.Username, EventStoreSettings.Password), z => z.WithMessageTimeoutOf(TimeSpan.FromSeconds(5)));
 
 				await new EventBus(connectionFactory.CreateConnection)
 					.RegisterCatchupSubscriber(
 						new Subscriber2(),
-						() => Task.FromResult(default(long?)),
-						_writeCheckpoint.ToAsyncInput().ComposeBackward)
+							() => Task.FromResult(default(long?)),
+							_writeCheckpoint.ToAsyncInput().ComposeBackward)
+						.RegisterCatchupSubscriber(
+						new Subscriber1(),
+							() => Task.FromResult(default(long?)),
+							_writeCheckpoint.ToAsyncInput().ComposeBackward)
 					.RegisterPersistentSubscriber<ISubscriptionRegistrationRequestedHandler>(new SubscriptionRegistrationRequestedHandler("*"))
 					.Start();
 			});

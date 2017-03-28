@@ -31,7 +31,7 @@ namespace management
 			while (true)
 	        {
 				Console.WriteLine("1 - register topics stream");
-				Console.WriteLine("2 - register subscription registration handler subscription stream");
+				Console.WriteLine("2 - register subscription registration requested handler stream");
 				Console.WriteLine("3 - publish subscription registration requested");
 		        var key = Console.ReadKey();
 		        switch (key.KeyChar)

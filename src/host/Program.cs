@@ -32,12 +32,14 @@ namespace host
 			connection.ConnectAsync().Wait();
 			IEventStore eventStore = new eventstore.EventStore(connection);
 
-            //while (true)
-            //{
+			while (true)
+			{
 				var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
 				
 				// start application
 				eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV1()).Wait();
+				Console.WriteLine("application started: " + streamName);
+
 
 				// submit application
 				var readEventsForwardTask = eventStore.ReadEventsForward(streamName);
@@ -46,9 +48,11 @@ namespace host
 	            var state = events.FoldOver(new SubmitApplicationState());
 				var newEvents = Commands.SubmitApplicationV1(state, streamName);
 				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, newEvents).Wait();
+				Console.WriteLine("application submitted: " + streamName);
 
-				
-            //}
+				Task.Delay(2000).Wait();
+
+			}
         }
 
 	    
