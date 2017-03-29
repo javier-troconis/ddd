@@ -34,16 +34,16 @@ namespace eventstore
 		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
-			return new EventBus(_createConnection,
-				_subscriptions.Concat(new List<Func<Task>>
+            var streamName = typeof(TSubscriber).GetEventStoreName();
+            return new EventBus(_createConnection,
+				_subscriptions.Concat(new Func<Task>[]
 				{
-                    () =>
 					new CatchUpSubscription(
 						_createConnection,
-						typeof(TSubscriber).GetEventStoreName(),
+                        streamName,
 						handle,
 						TimeSpan.FromSeconds(1),
-						getCheckpoint).Start()
+						getCheckpoint).Start
 				}));
 		}
 
@@ -53,40 +53,15 @@ namespace eventstore
 			var streamName = typeof(TSubscriber).GetEventStoreName();
 			var groupName = subscriber.GetType().GetEventStoreName();
 			return new EventBus(_createConnection,
-				_subscriptions.Concat(new List<Func<Task>>
+				_subscriptions.Concat(new Func<Task>[]
 				{
-                    // remove the persistent subscription creation from here
-                    async () =>
-                    {
-                        var persistentSubscriptionSettings = PersistentSubscriptionSettings
-                            .Create()
-                            .ResolveLinkTos()
-                            .StartFromCurrent()
-                            .MinimumCheckPointCountOf(5)
-                            .MaximumCheckPointCountOf(10)
-                            .CheckPointAfter(TimeSpan.FromSeconds(1))
-                            .WithExtraStatistics();
-                        configurePersistentSubscription?.Invoke(persistentSubscriptionSettings);
-                        using (var connection = _createConnection())
-                        {
-                            await connection.ConnectAsync();
-                            try
-                            {
-                                await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
-                            }
-                            catch(InvalidOperationException)
-                            {
-
-                            }
-                        }
-                        await new PersistentSubscription(
-                            _createConnection,
-                            streamName,
-                            groupName,
-                            handle,
-                            TimeSpan.FromSeconds(1)).Start();
-                    }
-				}));
+                    new PersistentSubscription(
+                        _createConnection,
+                        streamName,
+                        groupName,
+                        handle,
+                        TimeSpan.FromSeconds(1)).Start
+                }));
 		}
 
 		public Task Start()
