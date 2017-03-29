@@ -16,10 +16,12 @@ namespace subscriber
     public class RegisterSubscriptionProjectionHandler : IRegisterSubscriptionProjectionHandler
 	{
 		private readonly string _serviceName;
+	    private readonly ISubscriptionProjectionRegistry _subscriptionProjectionRegistry;
 
-	    public RegisterSubscriptionProjectionHandler(string serviceName)
+	    public RegisterSubscriptionProjectionHandler(string serviceName, ISubscriptionProjectionRegistry subscriptionProjectionRegistry)
 	    {
 		    _serviceName = serviceName;
+		    _subscriptionProjectionRegistry = subscriptionProjectionRegistry;
 	    }
 
 	    public Task Handle(IRecordedEvent<IRegisterSubscriptionProjection> message)
@@ -28,11 +30,11 @@ namespace subscriber
 			{
 				return Task.CompletedTask;
 			}
-			var projectionManager =
-				new ProjectionManager(EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort, EventStoreSettings.Username, EventStoreSettings.Password, new ConsoleLogger());
+
 			return Task.WhenAll(
-				ProjectionRegistry.RegisterSubscriptionProjection<Subscriber1>(projectionManager),
-				ProjectionRegistry.RegisterSubscriptionProjection<Subscriber2>(projectionManager)
+				_subscriptionProjectionRegistry.RegisterSubscriptionProjection<Subscriber1>(),
+				_subscriptionProjectionRegistry.RegisterSubscriptionProjection<Subscriber2>(),
+				_subscriptionProjectionRegistry.RegisterSubscriptionProjection<Subscriber3>()
 				);
 		}
     }

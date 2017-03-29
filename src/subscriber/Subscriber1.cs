@@ -15,13 +15,13 @@ namespace subscriber
     {
 	    public Task Handle(IRecordedEvent<IApplicationSubmittedV1> message)
 	    {
-			Console.WriteLine(typeof(IApplicationSubmittedV1).Name + " " + message.EventStreamId);
+			Console.WriteLine($"{nameof(Subscriber1)} {nameof(IApplicationSubmittedV1)} {message.EventStreamId}");
 			return Task.CompletedTask;
 		}
 
 	    public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 	    {
-			Console.WriteLine(typeof(IApplicationStartedV2).Name + " " + message.EventStreamId);
+			Console.WriteLine($"{nameof(Subscriber1)} {nameof(IApplicationStartedV2)} {message.EventStreamId}");
 			return Task.CompletedTask;
 		}
     }

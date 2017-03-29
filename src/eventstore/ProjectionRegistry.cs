@@ -8,10 +8,51 @@ using EventStore.ClientAPI.Exceptions;
 
 namespace eventstore
 {
-	public static class ProjectionRegistry
-    {
-	    public static async Task RegisterSubscriptionProjection<TSubscription>(ProjectionManager projectionManager)
-	    {
+	public interface ITopicsProjectionRegistry
+	{
+		Task RegisterTopicsProjection();
+	}
+
+	public interface ISubscriptionProjectionRegistry
+	{
+		Task RegisterSubscriptionProjection<TSubscription>();
+	}
+
+	public class ProjectionRegistry : ITopicsProjectionRegistry, ISubscriptionProjectionRegistry
+	{
+		private readonly IProjectionManager _projectionManager;
+
+		public ProjectionRegistry(IProjectionManager projectionManager)
+		{
+			_projectionManager = projectionManager;
+		}
+
+		public Task RegisterTopicsProjection()
+		{
+			const string queryTemplate =
+				@"function emitTopic(e) {{
+    return function(topic) {{
+           var message = {{ streamId: '{0}', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false }};
+           eventProcessor.emit(message);
+    }};
+}}
+
+fromAll()
+    .when({{
+        $any: function(s, e) {{
+            var topics;
+            if (e.streamId === '{0}' || !e.metadata || !(topics = e.metadata.topics)) {{
+                return;
+            }}
+            topics.forEach(emitTopic(e));
+        }}
+    }});";
+			var query = string.Format(queryTemplate, StreamName.Topics);
+			return _projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, query);
+		}
+
+		public Task RegisterSubscriptionProjection<TSubscription>()
+		{
 			const string queryTemplate =
 				@"var topics = [{0}];
 
@@ -43,47 +84,7 @@ fromStream('{2}')
 			var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
 			var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
 			var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName, StreamName.Topics);
-			try
-			{
-				await projectionManager.CreateContinuousProjection(subscriptionName, query, int.MaxValue);
-			}
-			catch (ProjectionCommandConflictException)
-			{
-				await projectionManager.UpdateProjection(subscriptionName, query, int.MaxValue);
-			}
-		}	
-
-        // see if we can partition by topic - perfomance when replaying subscription projections
-		public static async Task RegisterTopicsProjection(ProjectionManager manager)
-		{
-			const string queryTemplate =
-				@"function emitTopic(e) {{
-    return function(topic) {{
-           var message = {{ streamId: '{0}', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false }};
-           eventProcessor.emit(message);
-    }};
-}}
-
-fromAll()
-    .when({{
-        $any: function(s, e) {{
-            var topics;
-            if (e.streamId === '{0}' || !e.metadata || !(topics = e.metadata.topics)) {{
-                return;
-            }}
-            topics.forEach(emitTopic(e));
-        }}
-    }});";
-			var query = string.Format(queryTemplate, StreamName.Topics);
-			try
-			{
-				await manager.CreateContinuousProjection(StreamName.Topics, query, int.MaxValue);
-			}
-			catch (ProjectionCommandConflictException)
-			{
-				await manager.UpdateProjection(StreamName.Topics, query, int.MaxValue);
-			}
+			return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionName, query);
 		}
-
 	}
 }

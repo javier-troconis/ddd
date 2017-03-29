@@ -28,9 +28,12 @@ namespace management
                 EventStoreSettings.Username,
                 EventStoreSettings.Password);
 
-            var connection = connectionFactory.CreateConnection();
+			ITopicsProjectionRegistry topicsProjectionRegistry = new ProjectionRegistry(projectionManager);
+			ISubscriptionProjectionRegistry subscriptionProjectionRegistry = new ProjectionRegistry(projectionManager);
+
+			var connection = connectionFactory.CreateConnection();
             IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
-            connection.ConnectAsync().Wait();
+            connection.ConnectAsync();
 
             while (true)
             {
@@ -39,23 +42,22 @@ namespace management
 				Console.WriteLine("3 - register subscription projection handler projection");
 				Console.WriteLine("4 - register persistent subscription");
 				Console.WriteLine("5 - register subscription projection");
-				var key = Console.ReadKey();
-                switch (key.KeyChar)
+                switch (Console.ReadKey().KeyChar)
                 {
                     case '1':
-                        ProjectionRegistry.RegisterTopicsProjection(projectionManager).Wait();
+						topicsProjectionRegistry.RegisterTopicsProjection();
                         break;
                     case '2':
-                        ProjectionRegistry.RegisterSubscriptionProjection<IRegisterPersistentSubscriptionHandler>(projectionManager).Wait();
+						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IRegisterPersistentSubscriptionHandler>();
                         break;
 					case '3':
-						ProjectionRegistry.RegisterSubscriptionProjection<IRegisterSubscriptionProjectionHandler>(projectionManager).Wait();
+						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IRegisterSubscriptionProjectionHandler>();
 						break;
 					case '4':
-                        eventPublisher.PublishEvent(new RegisterPersistentSubscription("*", "*")).Wait();
+                        eventPublisher.PublishEvent(new RegisterPersistentSubscription("subscriber", "*"));
                         break;
 					case '5':
-						eventPublisher.PublishEvent(new RegisterSubscriptionProjection("*", "*")).Wait();
+						eventPublisher.PublishEvent(new RegisterSubscriptionProjection("subscriber", "*"));
 						break;
 					default:
                         return;

@@ -9,12 +9,12 @@ using shared;
 
 namespace subscriber
 {
-    public class Subscriber2 : 
+    public class Subscriber3 : 
 		IMessageHandler<IRecordedEvent<IApplicationStartedV1>, Task>
     {
 	    public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
 	    {
-			Console.WriteLine($"{nameof(Subscriber2)} {nameof(IApplicationStartedV1)} {message.EventStreamId}");
+			Console.WriteLine($"{nameof(Subscriber3)} {nameof(IApplicationStartedV1)} {message.EventStreamId}");
 			return Task.CompletedTask;
 		}
 

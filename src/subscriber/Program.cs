@@ -33,13 +33,26 @@ namespace subscriber
 	{
 		public static void Main(string[] args)
 		{
+			var projectionManager = new ProjectionManager(
+				EventStoreSettings.ClusterDns,
+				EventStoreSettings.ExternalHttpPort,
+				EventStoreSettings.Username,
+				EventStoreSettings.Password,
+				new ConsoleLogger());
+
+			ISubscriptionProjectionRegistry subscriptionProjectionRegistry = new ProjectionRegistry(projectionManager);
+
 			var connectionFactory = new EventStoreConnectionFactory(
                 EventStoreSettings.ClusterDns, 
                 EventStoreSettings.InternalHttpPort, 
                 EventStoreSettings.Username, 
                 EventStoreSettings.Password);
 
-			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },  x =>
+			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
+			var persistentSubscriptionRegistry = new PersistentSubscriptionRegistry(persistentSubscriptionManager);
+
+
+			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x =>
 				 new EventBus(connectionFactory.CreateConnection)
 					.RegisterCatchupSubscriber(
 						new Subscriber2(),
@@ -49,8 +62,9 @@ namespace subscriber
 						new Subscriber1(),
 							() => Task.FromResult(default(long?)),
 							_writeCheckpoint.ToAsyncInput().ComposeBackward)
-					.RegisterPersistentSubscriber<IRegisterSubscriptionProjectionHandler>(new RegisterSubscriptionProjectionHandler(typeof(Program).FullName))
-					.RegisterVolatileSubscriber<IRegisterPersistentSubscriptionHandler>(new RegisterPersistentSubscriptionHandler(typeof(Program).FullName))
+					.RegisterPersistentSubscriber(new Subscriber3())
+					.RegisterPersistentSubscriber<IRegisterSubscriptionProjectionHandler>(new RegisterSubscriptionProjectionHandler("subscriber", subscriptionProjectionRegistry))
+					.RegisterVolatileSubscriber<IRegisterPersistentSubscriptionHandler>(new RegisterPersistentSubscriptionHandler("subscriber", persistentSubscriptionRegistry))
 					.Start()
 			);
 

@@ -12,7 +12,12 @@ using shared;
 
 namespace eventstore
 {
-	public class ProjectionManager
+	public interface IProjectionManager
+	{
+		Task CreateOrUpdateContinuousProjection(string name, string query);
+	}
+
+	public class ProjectionManager : IProjectionManager
 	{
 		private readonly string _clusterDns;
 		private readonly int _externalHttpPort;
@@ -30,7 +35,19 @@ namespace eventstore
 			_logger = logger;
 		}
 
-		public Task CreateContinuousProjection(string name, string query, int maxAttempts)
+		public async Task CreateOrUpdateContinuousProjection(string name, string query)
+		{
+			try
+			{
+				await CreateContinuousProjection(name, query, 1);
+			}
+			catch (ProjectionCommandConflictException)
+			{
+				await UpdateProjection(name, query, 1);
+			}
+		}
+
+		private Task CreateContinuousProjection(string name, string query, int maxAttempts)
 		{
 			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
 			{
@@ -52,7 +69,7 @@ namespace eventstore
 			});
 		}
 
-		public Task UpdateProjection(string name, string newQuery, int maxAttempts)
+		private Task UpdateProjection(string name, string newQuery, int maxAttempts)
 		{
 			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
 			{
