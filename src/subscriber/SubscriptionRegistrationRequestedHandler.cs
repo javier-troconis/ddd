@@ -25,15 +25,15 @@ namespace subscriber
 
 		public Task Handle(IRecordedEvent<ISubscriptionRegistrationRequested> message)
 		{
-			if (!string.Equals(_serviceName, message.Event.ServiceName))
+			if (!string.Equals(_serviceName, message.Data.ServiceName))
 			{
 				return Task.CompletedTask;
 			}
 			var projectionManager = 
 				new ProjectionManager(EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort, EventStoreSettings.Username, EventStoreSettings.Password, new ConsoleLogger());
 			return Task.WhenAll(
-				ProjectionRegistry.CreateOrUpdateSubscriptionProjection<Subscriber1>(projectionManager), 
-				ProjectionRegistry.CreateOrUpdateSubscriptionProjection<Subscriber2>(projectionManager)
+				ProjectionRegistry.RegisterSubscriptionProjection<Subscriber1>(projectionManager), 
+				ProjectionRegistry.RegisterSubscriptionProjection<Subscriber2>(projectionManager)
 				);
 		}
 

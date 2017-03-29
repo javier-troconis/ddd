@@ -44,7 +44,7 @@ namespace management
                         ProjectionRegistry.RegisterTopicsProjection(projectionManager).Wait();
                         break;
                     case '2':
-                        ProjectionRegistry.CreateOrUpdateSubscriptionProjection<ISubscriptionRegistrationRequestedHandler>(projectionManager).Wait();
+                        ProjectionRegistry.RegisterSubscriptionProjection<ISubscriptionRegistrationRequestedHandler>(projectionManager).Wait();
                         break;
                     case '3':
                         eventPublisher.PublishEvent(new SubscriptionRegistrationRequested("*", "*")).Wait();
