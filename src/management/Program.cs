@@ -54,10 +54,10 @@ namespace management
 						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IRegisterSubscriptionProjectionHandler>();
 						break;
 					case '4':
-                        eventPublisher.PublishEvent(new RegisterPersistentSubscription("subscriber", "*"));
+                        eventPublisher.PublishEvent(new RegisterPersistentSubscription("*", "*"));
                         break;
 					case '5':
-						eventPublisher.PublishEvent(new RegisterSubscriptionProjection("subscriber", "*"));
+						eventPublisher.PublishEvent(new RegisterSubscriptionProjection("*", "*"));
 						break;
 					default:
                         return;

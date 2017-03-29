@@ -52,8 +52,8 @@ namespace subscriber
 			var persistentSubscriptionRegistry = new PersistentSubscriptionRegistry(persistentSubscriptionManager);
 
 
-			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x =>
-				 new EventBus(connectionFactory.CreateConnection)
+			Parallel.For(1, 2, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x =>
+				  new EventBus(connectionFactory.CreateConnection)
 					.RegisterCatchupSubscriber(
 						new Subscriber2(),
 							() => Task.FromResult(default(long?)),
@@ -63,8 +63,8 @@ namespace subscriber
 							() => Task.FromResult(default(long?)),
 							_writeCheckpoint.ToAsyncInput().ComposeBackward)
 					.RegisterPersistentSubscriber(new Subscriber3())
-					.RegisterPersistentSubscriber<IRegisterSubscriptionProjectionHandler>(new RegisterSubscriptionProjectionHandler("subscriber", subscriptionProjectionRegistry))
-					.RegisterVolatileSubscriber<IRegisterPersistentSubscriptionHandler>(new RegisterPersistentSubscriptionHandler("subscriber", persistentSubscriptionRegistry))
+					.RegisterPersistentSubscriber<IRegisterSubscriptionProjectionHandler>(new RegisterSubscriptionProjectionHandler("*", subscriptionProjectionRegistry))
+					.RegisterVolatileSubscriber<IRegisterPersistentSubscriptionHandler>(new RegisterPersistentSubscriptionHandler("*", persistentSubscriptionRegistry))
 					.Start()
 			);
 

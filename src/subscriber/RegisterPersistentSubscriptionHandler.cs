@@ -33,7 +33,7 @@ namespace subscriber
 			}
 
 			return Task.WhenAll(
-				_persistentSubscriptionRegistry.RegisterPersistentSubscription<IRegisterSubscriptionProjectionHandler, RegisterPersistentSubscriptionHandler>(),
+				_persistentSubscriptionRegistry.RegisterPersistentSubscription<IRegisterSubscriptionProjectionHandler, RegisterSubscriptionProjectionHandler>(),
 				_persistentSubscriptionRegistry.RegisterPersistentSubscription<Subscriber3, Subscriber3>()
 			);
 		}

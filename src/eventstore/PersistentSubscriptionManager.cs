@@ -39,7 +39,7 @@ namespace eventstore
 				{
 					await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
 				}
-				catch (InvalidOperationException)
+				catch (InvalidOperationException ex)
 				{
 					await connection.UpdatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
 				}
