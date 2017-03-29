@@ -47,7 +47,7 @@ namespace eventstore
 				}));
 		}
 
-		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null, Func < Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
+		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null, Func <Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			var streamName = typeof(TSubscriber).GetEventStoreName();
@@ -90,7 +90,7 @@ namespace eventstore
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0]);
 			var recordedEventTypes = topics.Join(recordedEventHandlingTypes, x => x, x => x.GetGenericArguments()[0].GetEventStoreName(), (x, y) => y);
-			var recordedEventType = recordedEventTypes.FirstOrDefault();
+			var recordedEventType = recordedEventTypes.First();
 			var recordedEvent = new
 			{
 				resolvedEvent.Event.EventStreamId,
