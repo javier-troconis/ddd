@@ -39,10 +39,9 @@ namespace subscriber
                 EventStoreSettings.Username, 
                 EventStoreSettings.Password);
 
-			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x =>
-			{
-			
-				await new EventBus(connectionFactory.CreateConnection)
+			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },  x =>
+
+				 new EventBus(connectionFactory.CreateConnection)
 					//.RegisterCatchupSubscriber(
 					//	new Subscriber2(),
 					//		() => Task.FromResult(default(long?)),
@@ -52,8 +51,8 @@ namespace subscriber
 					//		() => Task.FromResult(default(long?)),
 					//		_writeCheckpoint.ToAsyncInput().ComposeBackward)
 					.RegisterPersistentSubscriber<ISubscriptionRegistrationRequestedHandler>(new SubscriptionRegistrationRequestedHandler("*"))
-					.Start();
-			});
+					.Start()
+			);
 
 			while (true)
 			{
