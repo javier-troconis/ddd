@@ -32,8 +32,9 @@ namespace management
 			ISubscriptionProjectionRegistry subscriptionProjectionRegistry = new ProjectionRegistry(projectionManager);
 
 			var connection = connectionFactory.CreateConnection();
+			connection.ConnectAsync().Wait();
             IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
-            connection.ConnectAsync();
+            
 
             while (true)
             {

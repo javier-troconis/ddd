@@ -22,27 +22,26 @@ namespace command
 			connection.ConnectAsync().Wait();
 			IEventStore eventStore = new eventstore.EventStore(connection);
 
-			while (true)
-			{
-				var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
-				
-				// start application
-				eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV2()).Wait();
-				Console.WriteLine("application started: " + streamName);
+	        while (true)
+		        Task.Run(async () =>
+		        {
+					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
+
+					// start application
+					await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV2());
+					Console.WriteLine("application started: " + streamName);
+
+					// submit application
+					var state = (await eventStore.ReadEventsForward(streamName)).FoldOver(new SubmitApplicationState());
+					var events = Commands.SubmitApplicationV1(state, streamName);
+					await OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, events);
+					Console.WriteLine("application submitted: " + streamName);
+
+					await Task.Delay(2000);
+		        }).Wait();
 
 
-				// submit application
-				var readEventsForwardTask = eventStore.ReadEventsForward(streamName);
-	            readEventsForwardTask.Wait();
-	            var events = readEventsForwardTask.Result;
-	            var state = events.FoldOver(new SubmitApplicationState());
-				var newEvents = Commands.SubmitApplicationV1(state, streamName);
-				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, newEvents).Wait();
-				Console.WriteLine("application submitted: " + streamName);
 
-				Task.Delay(2000).Wait();
-
-			}
         }
 
 	    
