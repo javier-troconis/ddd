@@ -8,7 +8,7 @@ using EventStore.ClientAPI.Exceptions;
 
 namespace eventstore
 {
-	public static class EventStoreRegistry
+	public static class ProjectionRegistry
     {
 	    public static async Task RegisterSubscriptionProjection<TSubscription>(ProjectionManager projectionManager)
 	    {
@@ -53,6 +53,7 @@ fromStream('{2}')
 			}
 		}	
 
+        // see if we can partition by topic - perfomance when replaying subscription projections
 		public static async Task RegisterTopicsProjection(ProjectionManager manager)
 		{
 			const string queryTemplate =

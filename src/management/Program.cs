@@ -41,10 +41,10 @@ namespace management
                 switch (key.KeyChar)
                 {
                     case '1':
-                        EventStoreRegistry.RegisterTopicsProjection(projectionManager).Wait();
+                        ProjectionRegistry.RegisterTopicsProjection(projectionManager).Wait();
                         break;
                     case '2':
-                        EventStoreRegistry.RegisterSubscriptionProjection<ISubscriptionRegistrationRequestedHandler>(projectionManager).Wait();
+                        ProjectionRegistry.CreateOrUpdateSubscriptionProjection<ISubscriptionRegistrationRequestedHandler>(projectionManager).Wait();
                         break;
                     case '3':
                         eventPublisher.PublishEvent(new SubscriptionRegistrationRequested("*", "*")).Wait();
