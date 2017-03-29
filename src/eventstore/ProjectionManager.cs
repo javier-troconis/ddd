@@ -20,6 +20,7 @@ namespace eventstore
 		private readonly string _password;
 		private readonly ILogger _logger;
 
+        // do we need credentials ???
 		public ProjectionManager(string clusterDns, int externalHttpPort, string username, string password, ILogger logger)
 		{
 			_clusterDns = clusterDns;
