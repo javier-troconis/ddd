@@ -36,8 +36,8 @@ namespace host
 			connection.ConnectAsync().Wait();
 			IEventStore eventStore = new eventstore.EventStore(connection);
 
-			//while (true)
-			//{
+			while (true)
+			{
 				var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
 				
 				// start application
@@ -54,9 +54,9 @@ namespace host
 				OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, newEvents).Wait();
 				Console.WriteLine("application submitted: " + streamName);
 
-				//Task.Delay(2000).Wait();
+				Task.Delay(2000).Wait();
 
-			//}
+			}
         }
 
 	    

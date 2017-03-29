@@ -5,7 +5,7 @@ using EventStore.ClientAPI;
 
 namespace eventstore
 {
-	public class PersistentSubscription : ISubscription
+	public sealed class PersistentSubscription
 	{
 		private readonly string _groupName;
 		private readonly Func<IEventStoreConnection> _createConnection;

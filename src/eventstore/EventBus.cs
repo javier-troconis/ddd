@@ -17,15 +17,15 @@ namespace eventstore
 {
 	public sealed class EventBus
 	{
-		private readonly IEnumerable<ISubscription> _subscriptions;
+		private readonly IEnumerable<Func<Task>> _subscriptions;
 		private readonly Func<IEventStoreConnection> _createConnection;
 
 		public EventBus(Func<IEventStoreConnection> createConnection)
-			: this(createConnection, Enumerable.Empty<ISubscription>())
+			: this(createConnection, Enumerable.Empty<Func<Task>>())
 		{
 		}
 
-		private EventBus(Func<IEventStoreConnection> createConnection, IEnumerable<ISubscription> subscriptions)
+		private EventBus(Func<IEventStoreConnection> createConnection, IEnumerable<Func<Task>> subscriptions)
 		{
 			_createConnection = createConnection;
 			_subscriptions = subscriptions;
@@ -35,37 +35,63 @@ namespace eventstore
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			return new EventBus(_createConnection,
-				_subscriptions.Concat(new List<ISubscription>
+				_subscriptions.Concat(new List<Func<Task>>
 				{
+                    () =>
 					new CatchUpSubscription(
 						_createConnection,
 						typeof(TSubscriber).GetEventStoreName(),
 						handle,
 						TimeSpan.FromSeconds(1),
-						getCheckpoint)
+						getCheckpoint).Start()
 				}));
 		}
 
-		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
+		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null, Func < Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			var streamName = typeof(TSubscriber).GetEventStoreName();
 			var groupName = subscriber.GetType().GetEventStoreName();
 			return new EventBus(_createConnection,
-				_subscriptions.Concat(new List<ISubscription>
+				_subscriptions.Concat(new List<Func<Task>>
 				{
-					new PersistentSubscription(
-						_createConnection,
-						streamName,
-						groupName,
-						handle,
-						TimeSpan.FromSeconds(1))
+                    // remove the persistent subscription creation from here
+                    async () =>
+                    {
+                        var persistentSubscriptionSettings = PersistentSubscriptionSettings
+                            .Create()
+                            .ResolveLinkTos()
+                            .StartFromCurrent()
+                            .MinimumCheckPointCountOf(5)
+                            .MaximumCheckPointCountOf(10)
+                            .CheckPointAfter(TimeSpan.FromSeconds(1))
+                            .WithExtraStatistics();
+                        configurePersistentSubscription?.Invoke(persistentSubscriptionSettings);
+                        using (var connection = _createConnection())
+                        {
+                            await connection.ConnectAsync();
+                            try
+                            {
+                                await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
+                            }
+                            catch(InvalidOperationException)
+                            {
+
+                            }
+                        }
+                        await new PersistentSubscription(
+                            _createConnection,
+                            streamName,
+                            groupName,
+                            handle,
+                            TimeSpan.FromSeconds(1)).Start();
+                    }
 				}));
 		}
 
 		public Task Start()
 		{
-			return Task.WhenAll(_subscriptions.Select(subscription => subscription.Start()));
+			return Task.WhenAll(_subscriptions.Select(start => start()));
 		}
 
 		internal static async Task<ResolvedEvent> HandleEvent(object subscriber, ResolvedEvent resolvedEvent)

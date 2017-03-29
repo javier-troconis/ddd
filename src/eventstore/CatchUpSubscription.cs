@@ -5,7 +5,7 @@ using EventStore.ClientAPI;
 
 namespace eventstore
 {
-	public class CatchUpSubscription : ISubscription
+	public sealed class CatchUpSubscription
 	{
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;

@@ -8,12 +8,9 @@ using EventStore.ClientAPI.Exceptions;
 
 namespace eventstore
 {
-
-	
-
 	public static class EventStoreRegistry
     {
-	    public static async Task RegisterSubscriptionStream<TSubscription>(ProjectionManager projectionManager)
+	    public static async Task RegisterSubscriptionProjection<TSubscription>(ProjectionManager projectionManager)
 	    {
 			const string queryTemplate =
 				@"var topics = [{0}];
@@ -54,23 +51,9 @@ fromStream('{2}')
 			{
 				await projectionManager.UpdateProjection(subscriptionName, query, int.MaxValue);
 			}
-		}
+		}	
 
-		public static async Task RegisterPersistentSubscription<TStream, TGroup>(PersistentSubscriptionManager persistentSubscriptionManager, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null)
-		{
-			string streamName = typeof(TStream).GetEventStoreName();
-			string groupName = typeof(TGroup).GetEventStoreName();
-			try
-			{
-				await persistentSubscriptionManager.CreatePersistentSubscription(streamName, groupName, configurePersistentSubscription);
-			}
-			catch (InvalidOperationException)
-			{
-				
-			}
-		}
-
-		public static async Task RegisterTopicsStream(ProjectionManager manager)
+		public static async Task RegisterTopicsProjection(ProjectionManager manager)
 		{
 			const string queryTemplate =
 				@"function emitTopic(e) {{

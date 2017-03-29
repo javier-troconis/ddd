@@ -32,8 +32,8 @@ namespace subscriber
 			var projectionManager = 
 				new ProjectionManager(EventStoreSettings.ClusterDns, EventStoreSettings.ExternalHttpPort, EventStoreSettings.Username, EventStoreSettings.Password, new ConsoleLogger());
 			return Task.WhenAll(
-				EventStoreRegistry.RegisterSubscriptionStream<Subscriber1>(projectionManager), 
-				EventStoreRegistry.RegisterSubscriptionStream<Subscriber2>(projectionManager)
+				EventStoreRegistry.RegisterSubscriptionProjection<Subscriber1>(projectionManager), 
+				EventStoreRegistry.RegisterSubscriptionProjection<Subscriber2>(projectionManager)
 				);
 		}
 

@@ -41,18 +41,16 @@ namespace subscriber
 
 			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x =>
 			{
-				await EventStoreRegistry.RegisterPersistentSubscription<ISubscriptionRegistrationRequestedHandler, SubscriptionRegistrationRequestedHandler>(
-					new PersistentSubscriptionManager(connectionFactory.CreateConnection), z => z.WithMessageTimeoutOf(TimeSpan.FromSeconds(5)));
-
+			
 				await new EventBus(connectionFactory.CreateConnection)
-					.RegisterCatchupSubscriber(
-						new Subscriber2(),
-							() => Task.FromResult(default(long?)),
-							_writeCheckpoint.ToAsyncInput().ComposeBackward)
-					.RegisterCatchupSubscriber(
-						new Subscriber1(),
-							() => Task.FromResult(default(long?)),
-							_writeCheckpoint.ToAsyncInput().ComposeBackward)
+					//.RegisterCatchupSubscriber(
+					//	new Subscriber2(),
+					//		() => Task.FromResult(default(long?)),
+					//		_writeCheckpoint.ToAsyncInput().ComposeBackward)
+					//.RegisterCatchupSubscriber(
+					//	new Subscriber1(),
+					//		() => Task.FromResult(default(long?)),
+					//		_writeCheckpoint.ToAsyncInput().ComposeBackward)
 					.RegisterPersistentSubscriber<ISubscriptionRegistrationRequestedHandler>(new SubscriptionRegistrationRequestedHandler("*"))
 					.Start();
 			});
