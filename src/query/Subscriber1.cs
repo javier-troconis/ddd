@@ -1,13 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Threading.Tasks;
 
-using core.contracts;
+using command.contracts;
 
 using shared;
 
-namespace subscriber
+namespace query
 {
     public class Subscriber1 : 
 		IMessageHandler<IRecordedEvent<IApplicationSubmittedV1>, Task>, 

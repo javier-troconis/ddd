@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using shared;
 
-using shared;
-
-namespace core
+namespace command
 {
 	public struct SubmitApplicationState :
 		 IMessageHandler<ApplicationStartedV1, SubmitApplicationState>,

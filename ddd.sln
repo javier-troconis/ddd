@@ -14,15 +14,13 @@ Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "eventstore", "src\eventstor
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "shared", "src\shared\shared.xproj", "{50FAFF47-4899-43B5-8FAE-029A0F772E4F}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "core", "src\core\core.xproj", "{46808272-B98E-4F48-8EB2-C5483BE0C742}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "command", "src\command\command.xproj", "{46808272-B98E-4F48-8EB2-C5483BE0C742}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "host", "src\host\host.xproj", "{741DF7BC-534D-4619-8AF3-226C81589958}"
-EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "subscriber", "src\subscriber\subscriber.xproj", "{072C8220-379D-4622-A752-D39B1A07AD3B}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "query", "src\query\query.xproj", "{072C8220-379D-4622-A752-D39B1A07AD3B}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "tests", "src\tests\tests.xproj", "{CCEBC213-E769-4839-94FD-494042C16D88}"
 EndProject
-Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "core.contracts", "src\core.contracts\core.contracts.xproj", "{7998700B-DBC6-4F0F-8661-629ACAC1A846}"
+Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "command.contracts", "src\command.contracts\command.contracts.xproj", "{7998700B-DBC6-4F0F-8661-629ACAC1A846}"
 EndProject
 Project("{8BB2217D-0F2D-49D1-97BC-3654ED321F3B}") = "management", "src\management\management.xproj", "{318850F5-7C27-471D-A7BC-1930FFBA7B11}"
 EndProject

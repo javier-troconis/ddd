@@ -1,33 +1,16 @@
 ﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Security.Authentication.ExtendedProtection;
-using System.Security.Cryptography.X509Certificates;
-using System.Text;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 
 using eventstore;
 
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
-using EventStore.ClientAPI.Exceptions;
-using EventStore.ClientAPI.Projections;
-using EventStore.ClientAPI.SystemData;
-
-using ImpromptuInterface;
 
 using management.contracts;
 
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-
 using shared;
 
-namespace subscriber
+namespace query
 {
 	public class Program
 	{

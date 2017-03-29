@@ -1,37 +1,37 @@
 ﻿{
   "version": "1.0.0",
-  "description": "host Console Application",
+  "description": "query",
   "authors": [ "jtroconis" ],
+ 
   "compilationOptions": {
     "emitEntryPoint": true
   },
 
 	"dependencies": {
+		"management.contracts": {
+			"version": "1.0.*",
+			"target": "project"
+		},
 		"shared": {
 			"version": "1.0.*",
 			"target": "project"
 		},
-		"core": {
+		"command.contracts": {
 			"version": "1.0.*",
 			"target": "project"
 		},
 		"eventstore": {
 			"version": "1.0.*",
 			"target": "project"
-		},
-		"appservices": {
-			"version": "1.0.*",
-			"target": "project"
 		}
 	},
-
   "buildOptions": {
     "emitEntryPoint": true
   },
   "frameworks": {
     "net46": {
       "dependencies": {
-
+        
       }
     }
   }

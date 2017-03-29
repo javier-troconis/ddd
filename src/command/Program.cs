@@ -1,25 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Net;
-using System.Net.Sockets;
-using System.Text.RegularExpressions;
-using System.Threading;
 using System.Threading.Tasks;
 
-using core;
-
-using eventstore;
-
 using EventStore.ClientAPI;
-using EventStore.ClientAPI.SystemData;
-
-using Newtonsoft.Json;
-
+using eventstore;
 using shared;
 
-namespace host
+namespace command
 {
     
 

@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using command.contracts;
 
-using core.contracts;
-
-namespace core
+namespace command
 {
 	public struct ApplicationStartedV1 : IApplicationStartedV1
 	{

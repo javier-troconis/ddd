@@ -1,17 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 using eventstore;
-
-using EventStore.ClientAPI.Common.Log;
 
 using management.contracts;
 
 using shared;
 
-namespace subscriber
+namespace query
 {
     public class ProjectionsRequestedHandler : IProjectionsRequestedHandler
 	{
