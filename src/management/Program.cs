@@ -37,11 +37,11 @@ namespace management
 
             while (true)
             {
-                Console.WriteLine("1 - register topics projection");
-                Console.WriteLine("2 - register persistent subscription handler projection");
-				Console.WriteLine("3 - register subscription projection handler projection");
-				Console.WriteLine("4 - register persistent subscription");
-				Console.WriteLine("5 - register subscription projection");
+                Console.WriteLine("1 - create topics projection");
+                Console.WriteLine("2 - create setup persistent subscriptions command projection");
+				Console.WriteLine("3 - create setup subscription projections command projection");
+				Console.WriteLine("4 - send setup persistent subscriptions command");
+				Console.WriteLine("5 - send setup subscription projections command");
                 switch (Console.ReadKey().KeyChar)
                 {
                     case '1':
