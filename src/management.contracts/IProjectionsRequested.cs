@@ -5,9 +5,9 @@ using System.Threading.Tasks;
 
 namespace management.contracts
 {
-    public interface IRegisterSubscriptionProjection
+    public interface IProjectionsRequested
     {
 		string ServiceName { get; }
-		string SubscriptionName { get; }
+		string ProjectionName { get; }
 	}
 }

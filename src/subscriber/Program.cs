@@ -63,8 +63,8 @@ namespace subscriber
 							() => Task.FromResult(default(long?)),
 							_writeCheckpoint.ToAsyncInput().ComposeBackward)
 					.RegisterPersistentSubscriber(new Subscriber3())
-					.RegisterPersistentSubscriber<IRegisterSubscriptionProjectionHandler>(new RegisterSubscriptionProjectionHandler("*", subscriptionProjectionRegistry))
-					.RegisterVolatileSubscriber<IRegisterPersistentSubscriptionHandler>(new RegisterPersistentSubscriptionHandler("*", persistentSubscriptionRegistry))
+					.RegisterPersistentSubscriber<IProjectionsRequestedHandler>(new ProjectionsRequestedHandler("*", subscriptionProjectionRegistry))
+					.RegisterVolatileSubscriber<IPersistentSubscriptionsRequestedHandler>(new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionRegistry))
 					.Start()
 			);
 

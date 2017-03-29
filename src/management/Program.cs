@@ -37,27 +37,27 @@ namespace management
 
             while (true)
             {
-                Console.WriteLine("1 - create topics projection");
-                Console.WriteLine("2 - create setup persistent subscriptions command projection");
-				Console.WriteLine("3 - create setup subscription projections command projection");
-				Console.WriteLine("4 - send setup persistent subscriptions command");
-				Console.WriteLine("5 - send setup subscription projections command");
+                Console.WriteLine("1 - register topics projection");
+                Console.WriteLine("2 - register persistent subscriptions requested projection");
+				Console.WriteLine("3 - register projections requested projection");
+				Console.WriteLine("4 - publish persistent subscriptions requested");
+				Console.WriteLine("5 - publish projections requested");
                 switch (Console.ReadKey().KeyChar)
                 {
                     case '1':
 						topicsProjectionRegistry.RegisterTopicsProjection();
                         break;
                     case '2':
-						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IRegisterPersistentSubscriptionHandler>();
+						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IPersistentSubscriptionsRequestedHandler>();
                         break;
 					case '3':
-						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IRegisterSubscriptionProjectionHandler>();
+						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IProjectionsRequestedHandler>();
 						break;
 					case '4':
-                        eventPublisher.PublishEvent(new RegisterPersistentSubscription("*", "*"));
+                        eventPublisher.PublishEvent(new PersistentSubscriptionsRequested("*", "*"));
                         break;
 					case '5':
-						eventPublisher.PublishEvent(new RegisterSubscriptionProjection("*", "*"));
+						eventPublisher.PublishEvent(new ProjectionsRequested("*", "*"));
 						break;
 					default:
                         return;
