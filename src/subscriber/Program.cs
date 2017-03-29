@@ -33,7 +33,11 @@ namespace subscriber
 	{
 		public static void Main(string[] args)
 		{
-			var connectionFactory = new EventStoreConnectionFactory(EventStoreSettings.ClusterDns, EventStoreSettings.InternalHttpPort);
+			var connectionFactory = new EventStoreConnectionFactory(
+                EventStoreSettings.ClusterDns, 
+                EventStoreSettings.InternalHttpPort, 
+                EventStoreSettings.Username, 
+                EventStoreSettings.Password);
 
 			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x =>
 			{

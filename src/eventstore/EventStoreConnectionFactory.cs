@@ -1,4 +1,5 @@
 ﻿using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 
 namespace eventstore
 {
@@ -6,13 +7,15 @@ namespace eventstore
 	{
 		private readonly string _clusterDns;
 		private readonly int _internalHttpPort;
-
-
+        private readonly string _username;
+        private readonly string _password;
 		
-		public EventStoreConnectionFactory(string clusterDns, int internalHttpPort)
+		public EventStoreConnectionFactory(string clusterDns, int internalHttpPort, string username, string password)
 		{
 			_clusterDns = clusterDns;
 			_internalHttpPort = internalHttpPort;
+            _username = username;
+            _password = password;
 		}
 
 		public IEventStoreConnection CreateConnection()
@@ -20,6 +23,7 @@ namespace eventstore
 			var connectionSettings = ConnectionSettings
 				.Create()
 				.KeepReconnecting()
+                .SetDefaultUserCredentials(new UserCredentials(_username, _password))
 				.Build();
 			var clusterSettings = ClusterSettings
 				.Create()

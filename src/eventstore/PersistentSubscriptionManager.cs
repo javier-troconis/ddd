@@ -21,8 +21,8 @@ namespace eventstore
 				.Create()
 			    .ResolveLinkTos()
 			    .StartFromCurrent()
-			    .MinimumCheckPointCountOf(1)
-			    .MaximumCheckPointCountOf(1)
+			    .MinimumCheckPointCountOf(5)
+			    .MaximumCheckPointCountOf(10)
 			    .CheckPointAfter(TimeSpan.FromSeconds(1))
 			    .WithExtraStatistics();
 			configurePersistentSubscription?.Invoke(persistentSubscriptionSettings);
