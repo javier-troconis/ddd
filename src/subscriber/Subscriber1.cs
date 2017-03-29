@@ -10,8 +10,8 @@ using shared;
 namespace subscriber
 {
     public class Subscriber1 : 
-		IMessageHandler<IRecordedEvent<IApplicationSubmittedV1>, Task>
-		,IMessageHandler<IRecordedEvent<IApplicationStartedV2>, Task>
+		IMessageHandler<IRecordedEvent<IApplicationSubmittedV1>, Task>, 
+		IMessageHandler<IRecordedEvent<IApplicationStartedV2>, Task>
     {
 	    public Task Handle(IRecordedEvent<IApplicationSubmittedV1> message)
 	    {

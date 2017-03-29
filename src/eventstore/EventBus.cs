@@ -34,20 +34,35 @@ namespace eventstore
 		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
-            var streamName = typeof(TSubscriber).GetEventStoreName();
-            return new EventBus(_createConnection,
+			var streamName = typeof(TSubscriber).GetEventStoreName();
+			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
 				{
 					new CatchUpSubscription(
 						_createConnection,
-                        streamName,
+						streamName,
 						handle,
 						TimeSpan.FromSeconds(1),
 						getCheckpoint).Start
 				}));
 		}
 
-		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null, Func <Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
+		public EventBus RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
+		{
+			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
+			var streamName = typeof(TSubscriber).GetEventStoreName();
+			return new EventBus(_createConnection,
+				_subscriptions.Concat(new Func<Task>[]
+				{
+					new VolatileSubscription(
+						_createConnection,
+						streamName,
+						handle,
+						TimeSpan.FromSeconds(1)).Start
+				}));
+		}
+
+		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
 		{
 			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			var streamName = typeof(TSubscriber).GetEventStoreName();
@@ -55,13 +70,13 @@ namespace eventstore
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
 				{
-                    new PersistentSubscription(
-                        _createConnection,
-                        streamName,
-                        groupName,
-                        handle,
-                        TimeSpan.FromSeconds(1)).Start
-                }));
+					new PersistentSubscription(
+						_createConnection,
+						streamName,
+						groupName,
+						handle,
+						TimeSpan.FromSeconds(1)).Start
+				}));
 		}
 
 		public Task Start()
@@ -101,7 +116,5 @@ namespace eventstore
 			};
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}
-
-		
 	}
 }

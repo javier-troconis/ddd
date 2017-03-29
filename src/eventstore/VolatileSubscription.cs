@@ -5,26 +5,23 @@ using EventStore.ClientAPI;
 
 namespace eventstore
 {
-	public sealed class CatchUpSubscription
+	public sealed class VolatileSubscription
 	{
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
 		private readonly TimeSpan _reconnectDelay;
 		private readonly Func<ResolvedEvent, Task> _handleResolvedEvent;
-		private readonly Func<Task<long?>> _getCheckpoint;
 
-		public CatchUpSubscription(
+		public VolatileSubscription(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
 			Func<ResolvedEvent, Task> handleResolvedEvent,
-			TimeSpan reconnectDelay,
-			Func<Task<long?>> getCheckpoint)
+			TimeSpan reconnectDelay)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
 			_handleResolvedEvent = handleResolvedEvent;
 			_reconnectDelay = reconnectDelay;
-			_getCheckpoint = getCheckpoint;
 		}
 
 		public async Task Start()
@@ -32,11 +29,10 @@ namespace eventstore
 			while (true)
 			{
 				var connection = _createConnection();
-				var checkpoint = await _getCheckpoint();
 				try
 				{
 					await connection.ConnectAsync();
-					connection.SubscribeToStreamFrom(_streamName, checkpoint, CatchUpSubscriptionSettings.Default, OnEventAppeared, subscriptionDropped: OnSubscriptionDropped(connection));
+					await connection.SubscribeToStreamAsync(_streamName, true, OnEventAppeared, OnSubscriptionDropped(connection));
 					return;
 				}
 				catch
@@ -47,12 +43,12 @@ namespace eventstore
 			}
 		}
 
-		private void OnEventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
+		private void OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
 		{
 			_handleResolvedEvent(resolvedEvent);
 		}
 
-		private Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
+		private Action<EventStoreSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
 		{
 			return async (subscription, reason, exception) =>
 			{
