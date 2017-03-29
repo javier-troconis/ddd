@@ -40,22 +40,23 @@ namespace subscriber
                 EventStoreSettings.Password);
 
 			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount },  x =>
-
 				 new EventBus(connectionFactory.CreateConnection)
-					//.RegisterCatchupSubscriber(
-					//	new Subscriber2(),
-					//		() => Task.FromResult(default(long?)),
-					//		_writeCheckpoint.ToAsyncInput().ComposeBackward)
-					//.RegisterCatchupSubscriber(
-					//	new Subscriber1(),
-					//		() => Task.FromResult(default(long?)),
-					//		_writeCheckpoint.ToAsyncInput().ComposeBackward)
-					.RegisterPersistentSubscriber<ISubscriptionRegistrationRequestedHandler>(new SubscriptionRegistrationRequestedHandler("*"))
+					.RegisterCatchupSubscriber(
+						new Subscriber2(),
+							() => Task.FromResult(default(long?)),
+							_writeCheckpoint.ToAsyncInput().ComposeBackward)
+					.RegisterCatchupSubscriber(
+						new Subscriber1(),
+							() => Task.FromResult(default(long?)),
+							_writeCheckpoint.ToAsyncInput().ComposeBackward)
+					.RegisterPersistentSubscriber<IRegisterSubscriptionProjectionHandler>(new RegisterSubscriptionProjectionHandler(typeof(Program).FullName))
+					.RegisterVolatileSubscriber<IRegisterPersistentSubscriptionHandler>(new RegisterPersistentSubscriptionHandler(typeof(Program).FullName))
 					.Start()
 			);
 
 			while (true)
 			{
+
 			}
 		}
 

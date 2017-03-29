@@ -7,10 +7,9 @@ using management.contracts;
 
 namespace management
 {
-    // register subscription projections - persistent subscriber
-    public class SubscriptionRegistrationRequested : ISubscriptionRegistrationRequested
+    public struct RegisterPersistentSubscription : IRegisterPersistentSubscription
 	{
-		public SubscriptionRegistrationRequested(string serviceName, string subscriptionName)
+		public RegisterPersistentSubscription(string serviceName, string subscriptionName)
 		{
 			ServiceName = serviceName;
 			SubscriptionName = subscriptionName;
@@ -19,6 +18,4 @@ namespace management
 		public string ServiceName { get; }
 		public string SubscriptionName { get; }
 	}
-
-    // register persistent subscriptions - volatile subscriber
 }
