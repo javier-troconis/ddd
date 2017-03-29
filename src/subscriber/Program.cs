@@ -38,7 +38,7 @@ namespace subscriber
 			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x =>
 			{
 				await EventStoreRegistry.RegisterPersistentSubscription<ISubscriptionRegistrationRequestedHandler, SubscriptionRegistrationRequestedHandler>(
-					new PersistentSubscriptionManager(connectionFactory.CreateConnection, EventStoreSettings.Username, EventStoreSettings.Password), z => z.WithMessageTimeoutOf(TimeSpan.FromSeconds(5)));
+					new PersistentSubscriptionManager(connectionFactory.CreateConnection), z => z.WithMessageTimeoutOf(TimeSpan.FromSeconds(5)));
 
 				await new EventBus(connectionFactory.CreateConnection)
 					.RegisterCatchupSubscriber(

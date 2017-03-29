@@ -9,14 +9,10 @@ namespace eventstore
     public class PersistentSubscriptionManager
     {
         private readonly Func<IEventStoreConnection> _createConnection;
-	    private readonly string _username;
-	    private readonly string _password;
 
-	    public PersistentSubscriptionManager(Func<IEventStoreConnection> createConnection, string username, string password)
+	    public PersistentSubscriptionManager(Func<IEventStoreConnection> createConnection)
 	    {
 		    _createConnection = createConnection;
-		    _username = username;
-		    _password = password;
 	    }
 
 	    public async Task CreatePersistentSubscription(string streamName, string groupName, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null)
@@ -33,7 +29,7 @@ namespace eventstore
 			using (var connection = _createConnection())
             {
                 await connection.ConnectAsync();
-		        await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, new UserCredentials(_username, _password));
+		        await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
             }
         }
     }
