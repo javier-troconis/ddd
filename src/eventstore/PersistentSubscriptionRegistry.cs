@@ -25,7 +25,16 @@ namespace eventstore
 	    {
 		    var streamName = typeof(TStreamName).GetEventStoreName();
 		    var groupName = typeof(TGroupName).GetEventStoreName();
-		    return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, groupName, configurePersistentSubscription);
+            var persistentSubscriptionSettings = PersistentSubscriptionSettings
+                .Create()
+                .ResolveLinkTos()
+                .StartFromCurrent()
+                .MinimumCheckPointCountOf(5)
+                .MaximumCheckPointCountOf(10)
+                .CheckPointAfter(TimeSpan.FromSeconds(1))
+                .WithExtraStatistics();
+            configurePersistentSubscription?.Invoke(persistentSubscriptionSettings);
+            return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, groupName, persistentSubscriptionSettings);
 	    }
 	}
 }

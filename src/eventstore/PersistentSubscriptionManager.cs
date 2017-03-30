@@ -9,7 +9,7 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionManager
 	{
-		Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null);
+		Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, PersistentSubscriptionSettingsBuilder persistentSubscriptionSettings);
 	}
 
 	public class PersistentSubscriptionManager : IPersistentSubscriptionManager
@@ -21,17 +21,8 @@ namespace eventstore
 			_createConnection = createConnection;
 		}
 
-		public async Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null)
+		public async Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, PersistentSubscriptionSettingsBuilder persistentSubscriptionSettings)
 		{
-			var persistentSubscriptionSettings = PersistentSubscriptionSettings
-				.Create()
-				.ResolveLinkTos()
-				.StartFromCurrent()
-				.MinimumCheckPointCountOf(5)
-				.MaximumCheckPointCountOf(10)
-				.CheckPointAfter(TimeSpan.FromSeconds(1))
-				.WithExtraStatistics();
-			configurePersistentSubscription?.Invoke(persistentSubscriptionSettings);
 			using (var connection = _createConnection())
 			{
 				await connection.ConnectAsync();
@@ -39,7 +30,7 @@ namespace eventstore
 				{
 					await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
 				}
-				catch (InvalidOperationException ex)
+				catch (InvalidOperationException)
 				{
 					await connection.UpdatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
 				}
