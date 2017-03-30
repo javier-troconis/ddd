@@ -15,6 +15,8 @@ using shared;
 
 namespace eventstore
 {
+	public delegate Func<ResolvedEvent, Task<ResolvedEvent>> ConfigureSubscriberHandle(Func<ResolvedEvent, Task<ResolvedEvent>> subscriberHandle);
+
 	public sealed class EventBus
 	{
 		private readonly IEnumerable<Func<Task>> _subscriptions;
@@ -31,9 +33,9 @@ namespace eventstore
 			_subscriptions = subscriptions;
 		}
 
-		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
+		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, ConfigureSubscriberHandle configureSubscriberHandle = null)
 		{
-			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
+			var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			var streamName = typeof(TSubscriber).GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
@@ -47,9 +49,9 @@ namespace eventstore
 				}));
 		}
 
-		public EventBus RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
+		public EventBus RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, ConfigureSubscriberHandle configureSubscriberHandle = null)
 		{
-			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
+			var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			var streamName = typeof(TSubscriber).GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
@@ -62,9 +64,9 @@ namespace eventstore
 				}));
 		}
 
-		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processHandle = null)
+		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, ConfigureSubscriberHandle configureSubscriberHandle = null)
 		{
-			var handle = (processHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
+			var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleEvent(subscriber, resolvedEvent));
 			var streamName = typeof(TSubscriber).GetEventStoreName();
 			var groupName = subscriber.GetType().GetEventStoreName();
 			return new EventBus(_createConnection,
