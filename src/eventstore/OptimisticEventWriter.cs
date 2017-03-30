@@ -21,8 +21,12 @@ namespace eventstore
 
 	public static class OptimisticEventWriter
 	{
-		public static async Task<WriteResult> WriteEvents(TryResolveConflict tryResolveConflict, IEventStore eventStore, string streamName, int streamExpectedVersion,
-			IEnumerable<object> events, Action<object, IDictionary<string, object>> configureEventHeader = null)
+		public static async Task<WriteResult> WriteEvents(
+            IEventStore eventStore,  string streamName, 
+            int streamExpectedVersion, 
+            IEnumerable<object> events, 
+            TryResolveConflict tryResolveConflict,
+			Action<object, IDictionary<string, object>> configureEventHeader = null)
 		{
 			while (true)
 			{

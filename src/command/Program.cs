@@ -31,10 +31,10 @@ namespace command
 					await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV2());
 					Console.WriteLine("application started: " + streamName);
 
-					// submit application
-					var state = new SubmitApplicationState().Fold<ApplicationStartedV1, SubmitApplicationState>(await eventStore.ReadEventsForward(streamName));
-					var events = Commands.SubmitApplicationV1(state, streamName);
-					await OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, events);
+                    // submit application
+                    var state = new SubmitApplicationState().Fold<ApplicationStartedV1, SubmitApplicationState>(await eventStore.ReadEventsForward(streamName));
+                    var newEvents = Commands.SubmitApplicationV1(state, streamName);
+					await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.SkipConflicts);
 					Console.WriteLine("application submitted: " + streamName);
 
 					await Task.Delay(2000);
