@@ -14,7 +14,7 @@ namespace eventstore
 {
 	public interface IProjectionManager
 	{
-		Task CreateOrUpdateContinuousProjection(string name, string query);
+		Task CreateOrUpdateContinuousProjection(string name, string query, int maxAttempts = 1);
 	}
 
 	public class ProjectionManager : IProjectionManager
@@ -35,15 +35,15 @@ namespace eventstore
 			_logger = logger;
 		}
 
-		public async Task CreateOrUpdateContinuousProjection(string name, string query)
+		public async Task CreateOrUpdateContinuousProjection(string name, string query, int maxAttempts)
 		{
 			try
 			{
-				await CreateContinuousProjection(name, query, 1);
+				await CreateContinuousProjection(name, query, maxAttempts);
 			}
 			catch (ProjectionCommandConflictException)
 			{
-				await UpdateProjection(name, query, 1);
+				await UpdateProjection(name, query, maxAttempts);
 			}
 		}
 
