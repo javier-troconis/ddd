@@ -7,9 +7,9 @@ namespace shared
 {
     public static class EnumerableExtensions
     {
-		public static Task<bool> AnyAsync<T>(this IEnumerable<T> source, Func<T, Task<bool>> predicate)
+		public static Task<bool> AnyAsync<T>(this IEnumerable<T> seq, Func<T, Task<bool>> predicate)
 		{
-			return source.Aggregate(Task.FromResult(false), async (x, y) => await x || await predicate(y));
+			return seq.Aggregate(Task.FromResult(false), async (x, y) => await x || await predicate(y));
 		}
-	}
+    }
 }

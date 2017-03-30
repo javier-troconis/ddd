@@ -13,6 +13,17 @@ namespace shared
 
     public static class MessageHandlerExtensions
     {
+        public static TOut Fold<TIn, TOut>(this IMessageHandler<TIn, TOut> seed, IEnumerable<object> seq)
+        {
+            return seq.Aggregate((TOut)seed, (x, y) => Fold(x, (dynamic)y));
+        }
+
+        private static TOut Fold<TOut, TIn>(TOut seed, TIn item)
+        {
+            var handler = seed as IMessageHandler<TIn, TOut>;
+            return Equals(handler, null) ? seed : handler.Handle(item);
+        }
+
         public static ICompositeMessageHandler<TIn, TOut1> ComposeForward<TIn, TOut, TOut1>(
             this IMessageHandler<TIn, TOut> @from, IMessageHandler<TOut, TOut1> to)
         {

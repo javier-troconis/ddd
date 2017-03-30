@@ -1,4 +1,6 @@
-﻿namespace shared
+﻿using System;
+
+namespace shared
 {
     public interface IMessageHandler<in TIn, out TOut>
     {

@@ -38,9 +38,9 @@ namespace management
 
             while (true)
             {
-                Console.WriteLine("1 - register topics projection");
-                Console.WriteLine("2 - register persistent subscriptions requested projection");
-				Console.WriteLine("3 - register projections requested projection");
+                Console.WriteLine("1 - create topics projection");
+                Console.WriteLine("2 - create persistent subscriptions requested projection");
+				Console.WriteLine("3 - create projections requested projection");
 				Console.WriteLine("4 - publish persistent subscriptions requested");
 				Console.WriteLine("5 - publish projections requested");
                 switch (Console.ReadKey().KeyChar)

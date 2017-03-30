@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
-
+using System.Linq;
 using EventStore.ClientAPI;
 using eventstore;
 using shared;
@@ -32,7 +32,7 @@ namespace command
 					Console.WriteLine("application started: " + streamName);
 
 					// submit application
-					var state = (await eventStore.ReadEventsForward(streamName)).FoldOver(new SubmitApplicationState());
+					var state = new SubmitApplicationState().Fold<ApplicationStartedV1, SubmitApplicationState>(await eventStore.ReadEventsForward(streamName));
 					var events = Commands.SubmitApplicationV1(state, streamName);
 					await OptimisticEventWriter.WriteEvents(ConflictResolutionStrategy.SkipConflicts, eventStore, streamName, ExpectedVersion.NoStream, events);
 					Console.WriteLine("application submitted: " + streamName);
