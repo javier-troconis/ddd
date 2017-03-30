@@ -8,7 +8,7 @@ namespace eventstore
 {
 	public interface IEventPublisher
 	{
-		Task PublishEvent(object @event, Action<object, IDictionary<string, object>> configureEventHeader = null);
+		Task PublishEvent(object @event, Func<EventDataSettings, EventDataSettings> configureEventDataSettings = null);
 	}
 
     public class EventPublisher : IEventPublisher
@@ -20,9 +20,9 @@ namespace eventstore
 		    _eventStore = eventStore;
 	    }
 
-	    public Task PublishEvent(object @event, Action<object, IDictionary<string, object>> configureEventHeader)
+	    public Task PublishEvent(object @event, Func<EventDataSettings, EventDataSettings> configureEventDataSettings)
 	    {
-		    return _eventStore.WriteEvents(@event.GetType().GetEventStoreName(), ExpectedVersion.Any, new[] { @event }, configureEventHeader);
+		    return _eventStore.WriteEvents(@event.GetType().GetEventStoreName(), ExpectedVersion.Any, new[] { @event }, configureEventDataSettings);
 	    }
     }
 }

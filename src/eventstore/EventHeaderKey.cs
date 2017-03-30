@@ -8,5 +8,6 @@ namespace eventstore
     internal static class EventHeaderKey
     {
 	    public const string Topics = "topics";
-    }
+		public const string ClrType = "clrType";
+	}
 }

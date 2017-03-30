@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -11,10 +12,37 @@ using Newtonsoft.Json.Linq;
 
 namespace eventstore
 {
+	public struct EventDataSettings
+	{
+		public readonly Guid EventId;
+		public readonly IDictionary<string, object> EventHeader;
+
+		private EventDataSettings(Guid eventId, IDictionary<string, object> eventHeader)
+		{
+			EventId = eventId;
+			EventHeader = eventHeader;
+		}
+
+		public EventDataSettings WithEventId(Guid eventId)
+		{
+			return new EventDataSettings(eventId, EventHeader);
+		}
+
+		public EventDataSettings AddEventHeaderEntry(string key, object value)
+		{
+			return new EventDataSettings(EventId, new Dictionary<string, object>(EventHeader) { [key] = value });
+		}
+
+		public static EventDataSettings Create()
+		{
+			return new EventDataSettings(Guid.Empty, new Dictionary<string, object>());
+		}
+	}
+
 	public interface IEventStore
 	{
 		Task<object[]> ReadEventsForward(string streamName, long fromEventNumber = 0);
-		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Action<object, IDictionary<string, object>> configureEventHeader = null);
+		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventDataSettings, EventDataSettings> configureEventDataSettings = null);
 	}
 
 	public class EventStore : IEventStore
@@ -22,7 +50,6 @@ namespace eventstore
 		private const int _defaultSliceSize = 10;
 		private static readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
 		private readonly IEventStoreConnection _eventStoreConnection;
-		private const string _eventClrTypeHeader = "EventClrType";
 
 		public EventStore(IEventStoreConnection eventStoreConnection)
 		{
@@ -31,30 +58,25 @@ namespace eventstore
 
 		public async Task<object[]> ReadEventsForward(string streamName, long fromEventNumber)
 		{
-            var resolvedEvents = await ReadResolvedEvents(streamName, fromEventNumber).ConfigureAwait(false);
+			var resolvedEvents = await ReadResolvedEvents(streamName, fromEventNumber).ConfigureAwait(false);
 			return resolvedEvents.Select(DeserializeEvent).ToArray();
 		}
 
-        //configureEventHeader - should have something that allows configuring the eventId, headers, etc.
-        public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Action<object, IDictionary<string, object>> configureEventHeader)
+		public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventDataSettings, EventDataSettings> configureEventDataSettings)
 		{
-            var eventsData = events
-                .Select(@event =>
-                {
-                    var eventType = @event.GetType();
-                    var eventHeader = new Dictionary<string, object>
-                    {
-                        { _eventClrTypeHeader, eventType.AssemblyQualifiedName },
-                        { EventHeaderKey.Topics, eventType.GetEventTopics() }
-                    };
-                    configureEventHeader?.Invoke(@event, eventHeader);
-                    return ConvertToEventData(@event, eventHeader);
-                });
-            return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData);
+			configureEventDataSettings = configureEventDataSettings ?? (x => x);
+			var eventData = events
+				.Select(@event =>
+					ConvertToEventData(@event, configureEventDataSettings(
+						EventDataSettings.Create()
+							.WithEventId(Guid.NewGuid())
+							.AddEventHeaderEntry(EventHeaderKey.ClrType, @event.GetType().AssemblyQualifiedName)
+							.AddEventHeaderEntry(EventHeaderKey.Topics, @event.GetType().GetEventTopics())))
+				);
+			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
+		}
 
-        }
-
-        private async Task<IReadOnlyCollection<ResolvedEvent>> ReadResolvedEvents(string streamName, long fromEventNumber)
+		private async Task<IEnumerable<ResolvedEvent>> ReadResolvedEvents(string streamName, long fromEventNumber)
 		{
 			var resolvedEvents = new List<ResolvedEvent>();
 
@@ -71,27 +93,26 @@ namespace eventstore
 					throw new Exception($"stream {streamName} has been deleted");
 				}
 				resolvedEvents.AddRange(slice.Events);
-                fromEventNumber += _defaultSliceSize;
-            } while (!slice.IsEndOfStream);
+				fromEventNumber += _defaultSliceSize;
+			} while (!slice.IsEndOfStream);
 
 			return resolvedEvents;
 		}
 
-        private static EventData ConvertToEventData(object @event, IDictionary<string, object> eventHeader)
-        {
-            var eventType = @event.GetType();
-            var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, _serializerSettings));
-            var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventHeader, _serializerSettings));
-            return new EventData(Guid.NewGuid(), eventType.Name.ToLower(), true, eventData, eventMetadata);
-        }
+		private static EventData ConvertToEventData(object @event, EventDataSettings eventDataSettings)
+		{
+			var eventType = @event.GetType();
+			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, _serializerSettings));
+			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventDataSettings.EventHeader, _serializerSettings));
+			return new EventData(eventDataSettings.EventId, eventType.Name.ToLower(), true, eventData, eventMetadata);
+		}
 
-        private static object DeserializeEvent(ResolvedEvent resolvedEvent)
+		private static object DeserializeEvent(ResolvedEvent resolvedEvent)
 		{
 			var recordedEvent = resolvedEvent.Event;
 			var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
-			var eventClrTypeName = (string)eventMetadata.Property(_eventClrTypeHeader).Value;
+			var eventClrTypeName = (string)eventMetadata.Property(EventHeaderKey.ClrType).Value;
 			return JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
 		}
-
 	}
 }

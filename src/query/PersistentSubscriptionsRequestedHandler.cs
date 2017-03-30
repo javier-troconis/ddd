@@ -21,7 +21,7 @@ namespace query
 
 		public Task Handle(IRecordedEvent<IPersistentSubscriptionsRequested> message)
 		{
-			if (!string.Equals(_serviceName, message.Data.ServiceName))
+			if (!string.Equals(_serviceName, message.Event.ServiceName))
 			{
 				return Task.CompletedTask;
 			}

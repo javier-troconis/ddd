@@ -115,7 +115,7 @@ namespace eventstore
 				resolvedEvent.Event.EventNumber,
 				resolvedEvent.Event.EventId,
 				resolvedEvent.Event.Created,
-				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
+				Event = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 			};
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}

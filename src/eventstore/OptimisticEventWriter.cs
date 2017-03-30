@@ -26,16 +26,17 @@ namespace eventstore
             int streamExpectedVersion, 
             IEnumerable<object> events, 
             TryResolveConflict tryResolveConflict,
-			Action<object, IDictionary<string, object>> configureEventHeader = null)
+			Func<EventDataSettings, EventDataSettings> configureEventDataSettings = null)
 		{
 			while (true)
 			{
 				try
 				{
-					return await eventStore.WriteEvents(streamName, streamExpectedVersion, events, configureEventHeader);
+					return await eventStore.WriteEvents(streamName, streamExpectedVersion, events, configureEventDataSettings);
 				}
 				catch (WrongExpectedVersionException)
 				{
+					
 				}
 				var nextStreamVersion = streamExpectedVersion + 1;
 				var eventsSinceLastWrite = await eventStore.ReadEventsForward(streamName, nextStreamVersion);

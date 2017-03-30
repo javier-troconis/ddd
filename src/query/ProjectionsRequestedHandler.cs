@@ -21,7 +21,7 @@ namespace query
 
 	    public Task Handle(IRecordedEvent<IProjectionsRequested> message)
 	    {
-			if (!string.Equals(_serviceName, message.Data.ServiceName))
+			if (!string.Equals(_serviceName, message.Event.ServiceName))
 			{
 				return Task.CompletedTask;
 			}
