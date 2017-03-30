@@ -35,6 +35,7 @@ namespace eventstore
 			return resolvedEvents.Select(DeserializeEvent).ToArray();
 		}
 
+        //configureEventHeader - should have something that allows configuring the eventId, headers, etc.
         public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Action<object, IDictionary<string, object>> configureEventHeader)
 		{
             var eventsData = events
