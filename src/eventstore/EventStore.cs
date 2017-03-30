@@ -40,9 +40,9 @@ namespace eventstore
 			return new EventDataSettings(EventId, EventName, new Dictionary<string, object>(EventHeader) { [key] = value });
 		}
 
-		public static EventDataSettings Create()
+		public static EventDataSettings Create(Guid eventId, string eventName)
 		{
-			return new EventDataSettings(Guid.Empty, string.Empty, new Dictionary<string, object>());
+			return new EventDataSettings(eventId, eventName, new Dictionary<string, object>());
 		}
 	}
 
@@ -75,9 +75,7 @@ namespace eventstore
 			var eventData = events
 				.Select(@event =>
 					ConvertToEventData(@event, configureEventDataSettings(
-						EventDataSettings.Create()
-							.SetEventId(Guid.NewGuid())
-							.SetEventName(@event.GetType().Name.ToLower())
+						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().Name.ToLower())
 							.SetEventHeader(EventHeaderKey.ClrType, @event.GetType().AssemblyQualifiedName)
 							.SetEventHeader(EventHeaderKey.Topics, @event.GetType().GetEventTopics())))
 				);
