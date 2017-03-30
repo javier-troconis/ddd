@@ -13,29 +13,36 @@ using Newtonsoft.Json.Linq;
 namespace eventstore
 {
 	public struct EventDataSettings
-	{
+	{ 
 		public readonly Guid EventId;
+		public readonly string EventName;
 		public readonly IDictionary<string, object> EventHeader;
 
-		private EventDataSettings(Guid eventId, IDictionary<string, object> eventHeader)
+		private EventDataSettings(Guid eventId, string eventName, IDictionary<string, object> eventHeader)
 		{
+			EventName = eventName;
 			EventId = eventId;
 			EventHeader = eventHeader;
 		}
 
-		public EventDataSettings WithEventId(Guid eventId)
+		public EventDataSettings SetEventId(Guid eventId)
 		{
-			return new EventDataSettings(eventId, EventHeader);
+			return new EventDataSettings(eventId, EventName, EventHeader);
 		}
 
-		public EventDataSettings AddEventHeaderEntry(string key, object value)
+		public EventDataSettings SetEventName(string eventName)
 		{
-			return new EventDataSettings(EventId, new Dictionary<string, object>(EventHeader) { [key] = value });
+			return new EventDataSettings(EventId, eventName, EventHeader);
+		}
+
+		public EventDataSettings SetEventHeader(string key, object value)
+		{
+			return new EventDataSettings(EventId, EventName, new Dictionary<string, object>(EventHeader) { [key] = value });
 		}
 
 		public static EventDataSettings Create()
 		{
-			return new EventDataSettings(Guid.Empty, new Dictionary<string, object>());
+			return new EventDataSettings(Guid.Empty, string.Empty, new Dictionary<string, object>());
 		}
 	}
 
@@ -69,9 +76,10 @@ namespace eventstore
 				.Select(@event =>
 					ConvertToEventData(@event, configureEventDataSettings(
 						EventDataSettings.Create()
-							.WithEventId(Guid.NewGuid())
-							.AddEventHeaderEntry(EventHeaderKey.ClrType, @event.GetType().AssemblyQualifiedName)
-							.AddEventHeaderEntry(EventHeaderKey.Topics, @event.GetType().GetEventTopics())))
+							.SetEventId(Guid.NewGuid())
+							.SetEventName(@event.GetType().Name.ToLower())
+							.SetEventHeader(EventHeaderKey.ClrType, @event.GetType().AssemblyQualifiedName)
+							.SetEventHeader(EventHeaderKey.Topics, @event.GetType().GetEventTopics())))
 				);
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
 		}
@@ -101,10 +109,9 @@ namespace eventstore
 
 		private static EventData ConvertToEventData(object @event, EventDataSettings eventDataSettings)
 		{
-			var eventType = @event.GetType();
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, _serializerSettings));
 			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventDataSettings.EventHeader, _serializerSettings));
-			return new EventData(eventDataSettings.EventId, eventType.Name.ToLower(), true, eventData, eventMetadata);
+			return new EventData(eventDataSettings.EventId, eventDataSettings.EventName, true, eventData, eventMetadata);
 		}
 
 		private static object DeserializeEvent(ResolvedEvent resolvedEvent)
