@@ -28,7 +28,7 @@ namespace command
 		{
 			if (!state.ApplicationHasBeenStarted)
 			{
-				throw new Exception("application has not been started");
+				throw new Exception("Cannot submit application. Application has not been started.");
 			}
 
 			yield return new ApplicationSubmittedV1(submittedBy);

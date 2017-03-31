@@ -28,18 +28,15 @@ namespace command
 				Task.Run(async () =>
 				{
 					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
-
 					// start application
-					await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV2());
+					eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV2()).Wait();
 					Console.WriteLine("application started: " + streamName);
 
 					// submit application
 					var state = new SubmitApplicationState().Fold<ApplicationStartedV1, SubmitApplicationState>(await eventStore.ReadEventsForward(streamName));
 					var newEvents = Commands.SubmitApplicationV1(state, streamName);
-					await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.SkipConflicts);
+					await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
 					Console.WriteLine("application submitted: " + streamName);
-
-					await Task.Delay(2000);
 				}).Wait();
 		}
 	}
