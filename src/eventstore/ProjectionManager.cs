@@ -47,6 +47,30 @@ namespace eventstore
 			}
 		}
 
+		private async Task<string> GetProjectionQuery(string name,int maxAttempts)
+		{
+			string query = string.Empty;
+			await Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
+			{
+				try
+				{
+					query = await manager.GetQueryAsync(name, new UserCredentials(_username, _password));
+				}
+				catch (ProjectionCommandFailedException ex) when (ex.HttpStatusCode == (int)HttpStatusCode.NotFound)
+				{
+					throw;
+				}
+				catch (Exception ex)
+				{
+					_logger.Info("Fetching projection {0} query attempt {1}/{2} failed. {3}", name, attempt, maxAttempts, ex.Message);
+					return false;
+				}
+				_logger.Info("Projection query {0} fetched.", name);
+				return true;
+			});
+			return query;
+		}
+
 		private Task CreateContinuousProjection(string name, string query, int maxAttempts)
 		{
 			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
