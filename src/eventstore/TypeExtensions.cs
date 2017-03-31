@@ -6,7 +6,7 @@ using shared;
 
 namespace eventstore
 {
-    public static class TypeExtensions
+    internal static class TypeExtensions
     {
         public static IEnumerable<Type> GetMessageHandlerTypes(this Type subscriberType)
         {
@@ -27,7 +27,7 @@ namespace eventstore
             return type.FullName.Replace('.', '_');
         }
 
-        public static IEnumerable<string> GetEventTopics(this Type eventType)
+		public static IEnumerable<string> GetEventTopics(this Type eventType)
         {
 	        return eventType
 		        .GetInterfaces()

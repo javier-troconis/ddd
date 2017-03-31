@@ -87,38 +87,23 @@ namespace eventstore
 			return Task.WhenAll(_subscriptions.Select(start => start()));
 		}
 
-		internal static async Task<ResolvedEvent> HandleEvent(object subscriber, ResolvedEvent resolvedEvent)
+		private static async Task<ResolvedEvent> HandleEvent(object subscriber, ResolvedEvent resolvedEvent)
 		{
-			var recordedEvent = DeserializeEvent(subscriber.GetType(), resolvedEvent);
+			var eventHandlingTypes = subscriber
+				.GetType()
+				.GetMessageHandlerTypes()
+				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
+			var recordedEvent = RecordedEventDeserializer.DeserializeRecordedEvent(eventHandlingTypes, resolvedEvent);
 			await HandleEvent(subscriber, (dynamic)recordedEvent);
 			return resolvedEvent;
 		}
 
-		internal static Task HandleEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent)
+		private static Task HandleEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent)
 		{
 			var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
 			return handler.Handle(recordedEvent);
 		}
 
-		internal static object DeserializeEvent(Type subscriberType, ResolvedEvent resolvedEvent)
-		{
-			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-			var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
-			var recordedEventHandlingTypes = subscriberType
-				.GetMessageHandlerTypes()
-				.Select(x => x.GetGenericArguments()[0]);
-			var recordedEventTypes = topics.Join(recordedEventHandlingTypes, x => x, x => x.GetGenericArguments()[0].GetEventStoreName(), (x, y) => y);
-			var recordedEventType = recordedEventTypes.First();
-			var recordedEvent = new
-			{
-				resolvedEvent.OriginalEventNumber,
-				resolvedEvent.Event.EventStreamId,
-				resolvedEvent.Event.EventNumber,
-				resolvedEvent.Event.EventId,
-				resolvedEvent.Event.Created,
-				Event = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
-			};
-			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
-		}
+		
 	}
 }
