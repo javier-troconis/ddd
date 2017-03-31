@@ -92,11 +92,11 @@ namespace eventstore
 				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, fromEventNumber, _defaultSliceSize, false).ConfigureAwait(false);
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
-					throw new Exception($"stream {streamName} not found");
+					throw new Exception($"Stream {streamName} not found.");
 				}
 				if (slice.Status == SliceReadStatus.StreamDeleted)
 				{
-					throw new Exception($"stream {streamName} has been deleted");
+					throw new Exception($"Stream {streamName} has been deleted.");
 				}
 				resolvedEvents.AddRange(slice.Events);
 				fromEventNumber += _defaultSliceSize;

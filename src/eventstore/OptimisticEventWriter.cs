@@ -36,8 +36,11 @@ namespace eventstore
 			}
 			catch (WrongExpectedVersionException ex)
 			{
-				var match = Regex.Match(ex.Message, @"Current version: (\d+)$");
-				streamExpectedVersion = long.Parse(match.Groups[1].Value);
+				streamExpectedVersion = long.Parse(Regex.Match(ex.Message, @"Current version: ((-|)\d+)$").Groups[1].Value);
+			}
+			if (streamExpectedVersion == ExpectedVersion.NoStream)
+			{
+				return await WriteEvents(eventStore, streamName, streamExpectedVersion, events, tryResolveConflict, configureEventDataSettings);
 			}
 			IEnumerable<object> conflictingEvents;
 			do
