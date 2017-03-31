@@ -82,9 +82,9 @@ namespace eventstore
 				}));
 		}
 
-		public Task Start()
+		public void Start()
 		{
-			return Task.WhenAll(_subscriptions.Select(start => start()));
+			_subscriptions.ToList().ForEach(start => start());
 		}
 
 		private static async Task<ResolvedEvent> HandleEvent(object subscriber, ResolvedEvent resolvedEvent)
@@ -103,7 +103,5 @@ namespace eventstore
 			var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
 			return handler.Handle(recordedEvent);
 		}
-
-		
 	}
 }
