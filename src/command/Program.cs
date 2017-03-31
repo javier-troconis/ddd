@@ -24,7 +24,7 @@ namespace command
 			connection.ConnectAsync().Wait();
 			IEventStore eventStore = new eventstore.EventStore(connection);
 
-			//while (true)
+			while (true)
 				Task.Run(async () =>
 				{
 					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
@@ -37,6 +37,8 @@ namespace command
 					var newEvents = Commands.SubmitApplicationV1(commandState, streamName);
 					await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
 					Console.WriteLine("application submitted: " + streamName);
+
+					await Task.Delay(1000);
 				}).Wait();
 		}
 	}
