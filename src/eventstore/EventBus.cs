@@ -34,7 +34,7 @@ namespace eventstore
 		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, 
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureSubscriberHandle = null)
 		{
-            var handle = HandleResolvedEvent.Partial(subscriber).PipeForward(configureSubscriberHandle ?? (x => x));
+            var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleResolvedEvent(subscriber, resolvedEvent));
             var streamName = typeof(TSubscriber).GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
@@ -51,7 +51,7 @@ namespace eventstore
 		public EventBus RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, 
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureSubscriberHandle = null)
 		{
-            var handle = HandleResolvedEvent.Partial(subscriber).PipeForward(configureSubscriberHandle ?? (x => x));
+            var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleResolvedEvent(subscriber, resolvedEvent));
             var streamName = typeof(TSubscriber).GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
@@ -67,7 +67,7 @@ namespace eventstore
 		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, 
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureSubscriberHandle = null)
 		{
-            var handle = HandleResolvedEvent.Partial(subscriber).PipeForward(configureSubscriberHandle ?? (x => x));
+            var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleResolvedEvent(subscriber, resolvedEvent));
             var streamName = typeof(TSubscriber).GetEventStoreName();
 			var groupName = subscriber.GetType().GetEventStoreName();
 			return new EventBus(_createConnection,
@@ -87,8 +87,7 @@ namespace eventstore
             Parallel.ForEach(_subscriptions, start => start());
 		}
 
-        private static readonly Func<object, ResolvedEvent, Task<ResolvedEvent>> HandleResolvedEvent = 
-            async (subscriber, resolvedEvent) =>
+        private static async Task<ResolvedEvent> HandleResolvedEvent(object subscriber, ResolvedEvent resolvedEvent)
         {
             var eventHandlingTypes = subscriber
                 .GetType()
@@ -97,7 +96,7 @@ namespace eventstore
             var recordedEvent = RecordedEventDeserializer.DeserializeRecordedEvent(eventHandlingTypes, resolvedEvent);
             await HandleRecordedEvent(subscriber, (dynamic)recordedEvent);
             return resolvedEvent;
-        };
+        }
 
         private static Task HandleRecordedEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent)
 		{
