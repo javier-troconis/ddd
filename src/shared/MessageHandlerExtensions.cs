@@ -13,27 +13,25 @@ namespace shared
 
     public static class MessageHandlerExtensions
     {
-        public static TOut Fold<TIn, TOut>(this IMessageHandler<TIn, TOut> seed, IEnumerable<object> seq)
+        public static TOut Apply<TIn, TOut>(this TOut subscriber, object message) where TOut : IMessageHandler<TIn, TOut>
         {
-            return seq.Aggregate((TOut)seed, (x, y) => Fold(x, (dynamic)y));
+            return Apply(subscriber, (dynamic)message);
         }
 
-        private static TOut Fold<TOut, TIn>(TOut seed, TIn item)
-        {
-            var handler = seed as IMessageHandler<TIn, TOut>;
-            return Equals(handler, null) ? seed : handler.Handle(item);
-        }
-
-        public static ICompositeMessageHandler<TIn, TOut1> ComposeForward<TIn, TOut, TOut1>(
-            this IMessageHandler<TIn, TOut> @from, IMessageHandler<TOut, TOut1> to)
+        public static ICompositeMessageHandler<TIn, TOut1> ComposeForward<TIn, TOut, TOut1>(this IMessageHandler<TIn, TOut> @from, IMessageHandler<TOut, TOut1> to)
         {
             return new MessageHandler<TIn, TOut, TOut1>(@from.Handle, to.Handle);
         }
 
-        public static ICompositeMessageHandler<TIn1, TOut> ComposeBackward<TIn1, TIn, TOut>(
-            this IMessageHandler<TIn, TOut> to, IMessageHandler<TIn1, TIn> @from)
+        public static ICompositeMessageHandler<TIn1, TOut> ComposeBackward<TIn1, TIn, TOut>(this IMessageHandler<TIn, TOut> to, IMessageHandler<TIn1, TIn> @from)
         {
             return new MessageHandler<TIn1, TIn, TOut>(@from.Handle, to.Handle);
+        }
+
+        private static TOut Apply<TOut, TIn>(TOut subscriber, TIn message)
+        {
+            var handler = subscriber as IMessageHandler<TIn, TOut>;
+            return Equals(handler, null) ? subscriber : handler.Handle(message);
         }
 
         private class MessageHandler<TIn, TInOut, TOut> : ICompositeMessageHandler<TIn, TOut>

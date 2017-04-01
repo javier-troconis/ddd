@@ -101,8 +101,8 @@ namespace eventstore
 
         private static Task HandleRecordedEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent)
 		{
-			var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
-			return handler.Handle(recordedEvent);
-		}
+            var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
+            return handler.Handle(recordedEvent);
+        }
 	}
 }
