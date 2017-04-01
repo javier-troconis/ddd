@@ -49,10 +49,7 @@ namespace query
 
             Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
 
-            while (true)
-            {
-
-            }
+            while (true);
         }
 
         private static readonly Func<ResolvedEvent, Task<ResolvedEvent>> _writeCheckpoint = resolvedEvent =>

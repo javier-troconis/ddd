@@ -9,7 +9,7 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionRegistry
 	{
-		Task RegisterPersistentSubscription<TStreamName, TGroupName>(Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null);
+		Task RegisterPersistentSubscription<TStreamName, TGroupName>(Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null);
 	}
 
     public class PersistentSubscriptionRegistry : IPersistentSubscriptionRegistry
@@ -21,19 +21,18 @@ namespace eventstore
 		    _persistentSubscriptionManager = persistentSubscriptionManager;
 	    }
 
-	    public Task RegisterPersistentSubscription<TStreamName, TGroupName>(Action<PersistentSubscriptionSettingsBuilder> configurePersistentSubscription)
+	    public Task RegisterPersistentSubscription<TStreamName, TGroupName>(Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription)
 	    {
 		    var streamName = typeof(TStreamName).GetEventStoreName();
 		    var groupName = typeof(TGroupName).GetEventStoreName();
-            var persistentSubscriptionSettings = PersistentSubscriptionSettings
-                .Create()
+            var persistentSubscriptionSettings = (configurePersistentSubscription ?? (x => x))(
+                PersistentSubscriptionSettings.Create()
                 .ResolveLinkTos()
                 .StartFromCurrent()
                 .MinimumCheckPointCountOf(5)
                 .MaximumCheckPointCountOf(10)
                 .CheckPointAfter(TimeSpan.FromSeconds(1))
-                .WithExtraStatistics();
-            configurePersistentSubscription?.Invoke(persistentSubscriptionSettings);
+                .WithExtraStatistics());
             return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, groupName, persistentSubscriptionSettings);
 	    }
 	}

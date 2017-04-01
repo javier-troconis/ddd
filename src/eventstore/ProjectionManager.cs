@@ -14,7 +14,7 @@ namespace eventstore
 {
 	public interface IProjectionManager
 	{
-		Task CreateOrUpdateContinuousProjection(string name, string query, int maxAttempts = 1);
+		Task CreateOrUpdateContinuousProjection(string name, string query);
 	}
 
 	public class ProjectionManager : IProjectionManager
@@ -25,7 +25,6 @@ namespace eventstore
 		private readonly string _password;
 		private readonly ILogger _logger;
 
-        // do we need credentials ???
 		public ProjectionManager(string clusterDns, int externalHttpPort, string username, string password, ILogger logger)
 		{
 			_clusterDns = clusterDns;
@@ -35,22 +34,26 @@ namespace eventstore
 			_logger = logger;
 		}
 
-		public async Task CreateOrUpdateContinuousProjection(string name, string query, int maxAttempts)
+		public async Task CreateOrUpdateContinuousProjection(string name, string query)
 		{
 			try
 			{
-				await CreateContinuousProjection(name, query, maxAttempts);
+				await CreateContinuousProjection(name, query);
 			}
 			catch (ProjectionCommandConflictException)
 			{
-				await UpdateProjection(name, query, maxAttempts);
-			}
+				var storedQuery = await GetProjectionQuery(name);
+                if(!string.Equals(query, storedQuery))
+                {
+                    await UpdateProjection(name, query);
+                }
+			} 
 		}
 
-		private async Task<string> GetProjectionQuery(string name,int maxAttempts)
+		private async Task<string> GetProjectionQuery(string name)
 		{
 			string query = string.Empty;
-			await Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
+			await Execute(_clusterDns, _externalHttpPort, _logger, async (manager, maxAttempts, attempt) =>
 			{
 				try
 				{
@@ -60,20 +63,19 @@ namespace eventstore
 				{
 					throw;
 				}
-				catch (Exception ex)
-				{
-					_logger.Info("Fetching projection {0} query attempt {1}/{2} failed. {3}", name, attempt, maxAttempts, ex.Message);
+                catch (Exception) when (maxAttempts >= attempt + 1)
+                {
 					return false;
 				}
-				_logger.Info("Projection query {0} fetched.", name);
+				_logger.Info("Projection {0} query retrieved.", name);
 				return true;
 			});
 			return query;
 		}
 
-		private Task CreateContinuousProjection(string name, string query, int maxAttempts)
+		private Task CreateContinuousProjection(string name, string query)
 		{
-			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
+			return Execute(_clusterDns, _externalHttpPort, _logger, async (manager, maxAttempts, attempt) =>
 			{
 				try
 				{
@@ -83,9 +85,8 @@ namespace eventstore
 				{
 					throw;
 				}
-				catch (Exception ex)
-				{
-					_logger.Info("Creating projection {0} attempt {1}/{2} failed. {3}", name, attempt, maxAttempts, ex.Message);
+                catch (Exception) when (maxAttempts >= attempt + 1)
+                {
 					return false;
 				}
 				_logger.Info("Projection {0} created.", name);
@@ -93,9 +94,9 @@ namespace eventstore
 			});
 		}
 
-		private Task UpdateProjection(string name, string newQuery, int maxAttempts)
+		private Task UpdateProjection(string name, string newQuery)
 		{
-			return Execute(_clusterDns, _externalHttpPort, _logger, maxAttempts, async (manager, attempt) =>
+			return Execute(_clusterDns, _externalHttpPort, _logger, async (manager, maxAttempts, attempt) =>
 			{
 				try
 				{
@@ -105,9 +106,8 @@ namespace eventstore
 				{
 					throw;
 				}
-				catch (Exception ex)
+				catch (Exception) when (maxAttempts >= attempt + 1)
 				{
-					_logger.Info("Updating projection {0} attempt {1}/{2} failed. {3}", name, attempt, maxAttempts, ex.Message);
 					return false;
 				}
 				_logger.Info("Projection {0} updated.", name);
@@ -115,29 +115,17 @@ namespace eventstore
 			});
 		}
 
-		
-        // get rid of the retry thing, just try the httpendpoints
-		private static async Task Execute(string clusterDns, int externalHttpPort, ILogger logger, int maxAttempts, Func<ProjectionsManager, int, Task<bool>> operation)
+		private static Task Execute(string clusterDns, int externalHttpPort, ILogger logger, Func<ProjectionsManager, int, int, Task<bool>> operation)
 		{
 			var httpEndpoints = Dns.GetHostEntry(clusterDns)
 				.AddressList
 				.Select(ipAddress => 
-					new IPEndPoint(ipAddress, externalHttpPort));
-			var managers = httpEndpoints
-				.Select(httpEndpoint =>
-					new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromSeconds(5)))
-				.ToArray();
-			int attempt = 1;
-			while(true)
-			{
-				var succeeded = await managers.AnyAsync(manager => operation(manager, attempt++));
-				if (succeeded || maxAttempts < attempt)
-				{
-					break;
-				}
-				await Task.Delay(500);
-			}
-		}
+					new IPEndPoint(ipAddress, externalHttpPort))
+                .ToArray();
+            return httpEndpoints
+                .AnyAsync((httpEndpoint, index) => 
+                    operation(new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromSeconds(5)), httpEndpoints.Length, index + 1));
+        }
 
 		
 	}

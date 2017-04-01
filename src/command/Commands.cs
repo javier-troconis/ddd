@@ -26,12 +26,12 @@ namespace command
 
 		public static IEnumerable<object> SubmitApplicationV1(SubmitApplicationState state, string submittedBy)
 		{
-			if (!state.ApplicationHasBeenStarted)
-			{
-				throw new Exception("Cannot submit application. Application has not been started.");
-			}
+            if (!state.ApplicationHasBeenStarted)
+            {
+                throw new Exception("Cannot submit application. Application has not been started.");
+            }
 
-			yield return new ApplicationSubmittedV1(submittedBy);
+            yield return new ApplicationSubmittedV1(submittedBy);
 		}
 	}
 }

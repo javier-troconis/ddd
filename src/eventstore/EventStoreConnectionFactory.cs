@@ -11,9 +11,9 @@ namespace eventstore
 		private readonly int _internalHttpPort;
         private readonly string _username;
         private readonly string _password;
-		private readonly Action<ConnectionSettingsBuilder> _configureConnection;
+		private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
 
-		public EventStoreConnectionFactory(string clusterDns, int internalHttpPort, string username, string password, Action<ConnectionSettingsBuilder> configureConnection = null)
+		public EventStoreConnectionFactory(string clusterDns, int internalHttpPort, string username, string password, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection = null)
 		{
 			_clusterDns = clusterDns;
 			_internalHttpPort = internalHttpPort;
@@ -24,11 +24,10 @@ namespace eventstore
 
 		public IEventStoreConnection CreateConnection()
 		{
-			var connectionSettings = ConnectionSettings
-				.Create()
-				.KeepReconnecting()
-				.SetDefaultUserCredentials(new UserCredentials(_username, _password));
-			_configureConnection?.Invoke(connectionSettings);
+            var connectionSettings = (_configureConnection ?? (x => x))(
+                ConnectionSettings.Create()
+                .KeepReconnecting()
+                .SetDefaultUserCredentials(new UserCredentials(_username, _password)));
 			var clusterSettings = ClusterSettings
 				.Create()
 				.DiscoverClusterViaDns()
