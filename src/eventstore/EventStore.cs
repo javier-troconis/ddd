@@ -65,7 +65,7 @@ namespace eventstore
 
 		public async Task<object[]> ReadEventsForward(string streamName, long fromEventNumber)
 		{
-			var resolvedEvents = await ReadResolvedEvents(streamName, fromEventNumber).ConfigureAwait(false);
+            var resolvedEvents = await ReadResolvedEvents(streamName, fromEventNumber).ConfigureAwait(false);
 			return resolvedEvents.Select(DeserializeEvent).ToArray();
 		}
 
