@@ -116,7 +116,7 @@ namespace eventstore
 		}
 
 		
-
+        // get rid of the retry thing, just try the httpendpoints
 		private static async Task Execute(string clusterDns, int externalHttpPort, ILogger logger, int maxAttempts, Func<ProjectionsManager, int, Task<bool>> operation)
 		{
 			var httpEndpoints = Dns.GetHostEntry(clusterDns)
