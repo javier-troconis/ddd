@@ -63,6 +63,9 @@ namespace eventstore
 				}));
 		}
 
+
+
+        // TSubscriberGroup
 		public EventBus RegisterPersistentSubscriber(string streamName, string groupName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent)
 		{
 			return new EventBus(_createConnection,
