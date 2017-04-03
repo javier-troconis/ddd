@@ -2,7 +2,7 @@
 
 namespace eventstore
 {
-    public class StreamConflictException : Exception
+    public class StreamConcurrencyException : Exception
     {
      
     }

@@ -50,7 +50,7 @@ namespace eventstore
 			IEnumerable<object> mergedEvents;
 			if (!tryResolveConflict(events, conflictingEvents, out mergedEvents))
 			{
-				throw new StreamConflictException();
+				throw new StreamConcurrencyException();
 			}
 			return await WriteEvents(eventStore, streamName, streamExpectedVersion, mergedEvents, tryResolveConflict, configureEventDataSettings);
 		}
