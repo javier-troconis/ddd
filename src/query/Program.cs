@@ -23,7 +23,7 @@ namespace query
                 EventStoreSettings.Password,
                 new ConsoleLogger());
 
-            ISubscriptionProjectionRegistry subscriptionProjectionRegistry = new ProjectionRegistry(projectionManager);
+            var subscriptionProjectionRegistry = new ProjectionRegistry(projectionManager);
 
             var connectionFactory = new EventStoreConnectionFactory(
                 EventStoreSettings.ClusterDns,
@@ -31,21 +31,21 @@ namespace query
                 EventStoreSettings.Username,
                 EventStoreSettings.Password);
 
-            var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
+			var persistentSubscriptionRegistry = new PersistentSubscriptionRegistry(new PersistentSubscriptionManager(connectionFactory.CreateConnection));
 
 			var eventBus = new EventBus(connectionFactory.CreateConnection)
-					.RegisterCatchupSubscriber<Subscriber2>(
+					.RegisterCatchupSubscriber(
 							new Subscriber2(),
 							() => Task.FromResult(default(long?)))
-					.RegisterCatchupSubscriber<Subscriber1>(
+					.RegisterCatchupSubscriber(
 							new Subscriber1(),
 							() => Task.FromResult(default(long?)))
-					.RegisterPersistentSubscriber<Subscriber3, Subscriber3>(
+					.RegisterPersistentSubscriber(
 							new Subscriber3())
-					.RegisterPersistentSubscriber<IProjectionsRequestedHandler, ProjectionsRequestedHandler>(
+					.RegisterPersistentSubscriber<IProjectionsRequestedHandler>(
 							new ProjectionsRequestedHandler("*", subscriptionProjectionRegistry))
 					.RegisterVolatileSubscriber<IPersistentSubscriptionsRequestedHandler>(
-							new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionManager));
+							new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionRegistry));
 
 			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
 

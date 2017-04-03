@@ -127,6 +127,5 @@ namespace eventstore
                     operation(new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromSeconds(5)), httpEndpoints.Length, index + 1));
         }
 
-		
 	}
 }

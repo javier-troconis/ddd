@@ -10,19 +10,19 @@ namespace eventstore
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
 		private readonly TimeSpan _reconnectDelay;
-		private readonly Func<ResolvedEvent, Task> _handleResolvedEvent;
+		private readonly Func<ResolvedEvent, Task> _handleEvent;
 		private readonly Func<Task<long?>> _getCheckpoint;
 
 		public CatchUpSubscription(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
-			Func<ResolvedEvent, Task> handleResolvedEvent,
+			Func<ResolvedEvent, Task> handleEvent,
 			TimeSpan reconnectDelay,
 			Func<Task<long?>> getCheckpoint)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
-			_handleResolvedEvent = handleResolvedEvent;
+			_handleEvent = handleEvent;
 			_reconnectDelay = reconnectDelay;
 			_getCheckpoint = getCheckpoint;
 		}
@@ -49,7 +49,7 @@ namespace eventstore
 
 		private void OnEventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
 		{
-			_handleResolvedEvent(resolvedEvent);
+			_handleEvent(resolvedEvent);
 		}
 
 		private Action<EventStoreCatchUpSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)

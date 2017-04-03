@@ -10,20 +10,20 @@ namespace eventstore
 		private readonly string _groupName;
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly string _streamName;
-		private readonly Func<ResolvedEvent, Task> _handleResolvedEvent;
+		private readonly Func<ResolvedEvent, Task> _handleEvent;
 		private readonly TimeSpan _reconnectDelay;
 
 		public PersistentSubscription(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
 			string groupName,
-			Func<ResolvedEvent, Task> handleResolvedEvent,
+			Func<ResolvedEvent, Task> handleEvent,
 			TimeSpan reconnectDelay)
 		{
 			_createConnection = createConnection;
 			_streamName = streamName;
 			_groupName = groupName;
-			_handleResolvedEvent = handleResolvedEvent;
+			_handleEvent = handleEvent;
 			_reconnectDelay = reconnectDelay;
 		}
 
@@ -50,7 +50,7 @@ namespace eventstore
 		{
 			try
 			{
-				await _handleResolvedEvent(resolvedEvent);
+				await _handleEvent(resolvedEvent);
 			}
 			catch (Exception ex)
 			{

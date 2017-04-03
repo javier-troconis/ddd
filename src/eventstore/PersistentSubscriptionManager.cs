@@ -9,7 +9,7 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionManager
 	{
-		Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null);
+		Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, PersistentSubscriptionSettings subscriptionSettings);
 	}
 
 	public class PersistentSubscriptionManager : IPersistentSubscriptionManager
@@ -21,27 +21,18 @@ namespace eventstore
 			_createConnection = createConnection;
 		}
 
-		public async Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription)
+		public async Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, PersistentSubscriptionSettings subscriptionSettings)
 		{
-            var persistentSubscriptionSettings = (configurePersistentSubscription ?? (x => x))(
-                PersistentSubscriptionSettings.Create()
-                .ResolveLinkTos()
-                .StartFromCurrent()
-                .MinimumCheckPointCountOf(5)
-                .MaximumCheckPointCountOf(10)
-                .CheckPointAfter(TimeSpan.FromSeconds(1))
-                .WithExtraStatistics());
-
             using (var connection = _createConnection())
 			{
 				await connection.ConnectAsync();
 				try
 				{
-					await connection.CreatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
+					await connection.CreatePersistentSubscriptionAsync(streamName, groupName, subscriptionSettings, connection.Settings.DefaultUserCredentials);
 				}
 				catch (InvalidOperationException)
 				{
-					await connection.UpdatePersistentSubscriptionAsync(streamName, groupName, persistentSubscriptionSettings, connection.Settings.DefaultUserCredentials);
+					await connection.UpdatePersistentSubscriptionAsync(streamName, groupName, subscriptionSettings, connection.Settings.DefaultUserCredentials);
 				}
 			}
 		}

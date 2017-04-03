@@ -15,7 +15,7 @@ namespace eventstore
 
 	public interface ISubscriptionProjectionRegistry
 	{
-		Task CreateOrUpdateSubscriptionProjection<TSubscription>();
+		Task RegisterSubscriptionProjection<TSubscription>();
 	}
 
 	public class ProjectionRegistry : ITopicsProjectionRegistry, ISubscriptionProjectionRegistry
@@ -51,7 +51,7 @@ fromAll()
 			return _projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, query);
 		}
 
-		public Task CreateOrUpdateSubscriptionProjection<TSubscription>()
+		public Task RegisterSubscriptionProjection<TSubscription>()
 		{
 			const string queryTemplate =
 				@"var topics = [{0}];

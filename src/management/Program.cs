@@ -49,10 +49,10 @@ namespace management
 						topicsProjectionRegistry.CreateOrUpdateTopicsProjection();
                         break;
                     case '2':
-						subscriptionProjectionRegistry.CreateOrUpdateSubscriptionProjection<IPersistentSubscriptionsRequestedHandler>();
+						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IPersistentSubscriptionsRequestedHandler>();
                         break;
 					case '3':
-						subscriptionProjectionRegistry.CreateOrUpdateSubscriptionProjection<IProjectionsRequestedHandler>();
+						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IProjectionsRequestedHandler>();
 						break;
 					case '4':
                         eventPublisher.PublishEvent(new PersistentSubscriptionsRequested("*", "*"));
