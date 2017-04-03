@@ -33,33 +33,23 @@ namespace query
 
             var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
 
+			var eventBus = new EventBus(connectionFactory.CreateConnection)
+					.RegisterCatchupSubscriber<Subscriber2>(
+							new Subscriber2(),
+							() => Task.FromResult(default(long?)))
+					.RegisterCatchupSubscriber<Subscriber1>(
+							new Subscriber1(),
+							() => Task.FromResult(default(long?)))
+					.RegisterPersistentSubscriber<Subscriber3, Subscriber3>(
+							new Subscriber3())
+					.RegisterPersistentSubscriber<IProjectionsRequestedHandler, ProjectionsRequestedHandler>(
+							new ProjectionsRequestedHandler("*", subscriptionProjectionRegistry))
+					.RegisterVolatileSubscriber<IPersistentSubscriptionsRequestedHandler>(
+							new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionManager));
 
-            var eventBus = new EventBus(connectionFactory.CreateConnection).RegisterCatchupSubscriber<Subscriber2>(new Subscriber2(), () => Task.FromResult(default(long?)));
+			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
 
-
-            //var eventBus = new EventBus(connectionFactory.CreateConnection)
-            //        .RegisterCatchupSubscriber(
-            //                new Subscriber2(), SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle,
-            //                () => Task.FromResult(default(long?)))
-            //        .RegisterCatchupSubscriber(
-            //                "",
-            //                SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new Subscriber1()),
-            //                () => Task.FromResult(default(long?)))
-            //        .RegisterPersistentSubscriber(
-            //                "", 
-            //                "", 
-            //                SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new Subscriber3()))
-            //        .RegisterPersistentSubscriber(
-            //                "",
-            //                "", 
-            //                SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new ProjectionsRequestedHandler("*", subscriptionProjectionRegistry)))
-            //        .RegisterVolatileSubscriber(
-            //                "", 
-            //                SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionManager)));
-
-            //Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
-
-            while (true);
+			while (true) { };
         }
 
         private static readonly Func<ResolvedEvent, Task<ResolvedEvent>> _writeCheckpoint = resolvedEvent =>

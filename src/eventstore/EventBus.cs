@@ -23,6 +23,7 @@ namespace eventstore
 		public EventBus(Func<IEventStoreConnection> createConnection)
 			: this(createConnection, Enumerable.Empty<Func<Task>>())
 		{
+
 		}
 
 		private EventBus(Func<IEventStoreConnection> createConnection, IEnumerable<Func<Task>> subscriptions)
@@ -31,12 +32,22 @@ namespace eventstore
 			_subscriptions = subscriptions;
 		}
 
-        public EventBus RegisterCatchupSubscriber<TSubscriber>(ResolvedEventMessageHandler<TSubscriber> resolvedEventMessageHandler, Func<Task<long?>> getCheckpoint) where TSubscriber : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscription>(ResolvedEventHandler<TSubscription> resolvedEventHandler, Func<Task<long?>> getCheckpoint) where TSubscription : IMessageHandler
         {
-            return RegisterCatchupSubscriber(typeof(TSubscriber).GetEventStoreName(), resolvedEventMessageHandler.Handle, getCheckpoint);
+            return RegisterCatchupSubscriber(typeof(TSubscription).GetEventStoreName(), resolvedEventHandler.Handle, getCheckpoint);
         }
 
-        public EventBus RegisterCatchupSubscriber(string streamName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<Task<long?>> getCheckpoint)
+		public EventBus RegisterVolatileSubscriber<TSubscription>(ResolvedEventHandler<TSubscription> resolvedEventHandler) where TSubscription : IMessageHandler
+		{
+			return RegisterVolatileSubscriber(typeof(TSubscription).GetEventStoreName(), resolvedEventHandler.Handle);
+		}
+
+		public EventBus RegisterPersistentSubscriber<TSubscription, TSubscriptionGroup>(ResolvedEventHandler<TSubscription> resolvedEventHandler) where TSubscriptionGroup : TSubscription where  TSubscription : IMessageHandler
+		{
+			return RegisterPersistentSubscriber(typeof(TSubscription).GetEventStoreName(), typeof(TSubscriptionGroup).GetEventStoreName(), resolvedEventHandler.Handle);
+		}
+
+		public EventBus RegisterCatchupSubscriber(string streamName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<Task<long?>> getCheckpoint)
 		{
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
@@ -63,9 +74,6 @@ namespace eventstore
 				}));
 		}
 
-
-
-        // TSubscriberGroup
 		public EventBus RegisterPersistentSubscriber(string streamName, string groupName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent)
 		{
 			return new EventBus(_createConnection,

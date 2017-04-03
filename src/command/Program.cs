@@ -41,7 +41,7 @@ namespace command
                  Console.WriteLine("application submitted: " + streamName);
             });
 
-            while (true);
+            while (true) { };
         }
     }
 }
