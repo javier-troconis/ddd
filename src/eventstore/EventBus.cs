@@ -31,12 +31,12 @@ namespace eventstore
 			_subscriptions = subscriptions;
 		}
 
-        public EventBus RegisterCatchupSubscriber<TSubscriber>(IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> resolvedEventMessageHandler, Func<Task<long?>> getCheckpoint) where TSubscriber : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscriber>(ResolvedEventMessageHandler<TSubscriber> messageHandler, Func<Task<long?>> getCheckpoint) where TSubscriber : IMessageHandler
         {
-            return RegisterCatchupSubscriber(typeof(TSubscriber).GetEventStoreName(), resolvedEventMessageHandler.Handle, getCheckpoint);
+            return RegisterCatchupSubscriber(typeof(TSubscriber).GetEventStoreName(), messageHandler.Handle, getCheckpoint);
         }
 
-        public EventBus RegisterCatchupSubscriber(string streamName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<Task<long?>> getCheckpoint)
+        public EventBus RegisterCatchupSubscriber(string streamName, Func<ResolvedEvent, Task<ResolvedEvent>> handle, Func<Task<long?>> getCheckpoint)
 		{
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
@@ -44,7 +44,7 @@ namespace eventstore
 					new CatchUpSubscription(
 						_createConnection,
 						streamName,
-						handleResolvedEvent,
+						handle,
 						TimeSpan.FromSeconds(1),
 						getCheckpoint).Start
 				}));
