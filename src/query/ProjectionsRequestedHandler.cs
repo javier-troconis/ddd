@@ -27,9 +27,9 @@ namespace query
 			}
 
 			return Task.WhenAll(
-				_subscriptionProjectionRegistry.RegisterSubscriptionProjection<Subscriber1>(),
-				_subscriptionProjectionRegistry.RegisterSubscriptionProjection<Subscriber2>(),
-				_subscriptionProjectionRegistry.RegisterSubscriptionProjection<Subscriber3>()
+				_subscriptionProjectionRegistry.CreateOrUpdateSubscriptionProjection<Subscriber1>(),
+				_subscriptionProjectionRegistry.CreateOrUpdateSubscriptionProjection<Subscriber2>(),
+				_subscriptionProjectionRegistry.CreateOrUpdateSubscriptionProjection<Subscriber3>()
 				);
 		}
     }

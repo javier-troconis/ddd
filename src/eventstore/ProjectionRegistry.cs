@@ -10,12 +10,12 @@ namespace eventstore
 {
 	public interface ITopicsProjectionRegistry
 	{
-		Task RegisterTopicsProjection();
+		Task CreateOrUpdateTopicsProjection();
 	}
 
 	public interface ISubscriptionProjectionRegistry
 	{
-		Task RegisterSubscriptionProjection<TSubscription>();
+		Task CreateOrUpdateSubscriptionProjection<TSubscription>();
 	}
 
 	public class ProjectionRegistry : ITopicsProjectionRegistry, ISubscriptionProjectionRegistry
@@ -27,7 +27,7 @@ namespace eventstore
 			_projectionManager = projectionManager;
 		}
 
-		public Task RegisterTopicsProjection()
+		public Task CreateOrUpdateTopicsProjection()
 		{
 			const string queryTemplate =
 				@"function emitTopic(e) {{
@@ -51,7 +51,7 @@ fromAll()
 			return _projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, query);
 		}
 
-		public Task RegisterSubscriptionProjection<TSubscription>()
+		public Task CreateOrUpdateSubscriptionProjection<TSubscription>()
 		{
 			const string queryTemplate =
 				@"var topics = [{0}];

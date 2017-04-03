@@ -11,9 +11,9 @@ namespace query
 	public class PersistentSubscriptionsRequestedHandler : IPersistentSubscriptionsRequestedHandler
 	{
 		private readonly string _serviceName;
-		private readonly IPersistentSubscriptionRegistry _persistentSubscriptionRegistry;
+		private readonly IPersistentSubscriptionManager _persistentSubscriptionRegistry;
 
-		public PersistentSubscriptionsRequestedHandler(string serviceName, IPersistentSubscriptionRegistry persistentSubscriptionRegistry)
+		public PersistentSubscriptionsRequestedHandler(string serviceName, IPersistentSubscriptionManager persistentSubscriptionRegistry)
 		{
 			_serviceName = serviceName;
 			_persistentSubscriptionRegistry = persistentSubscriptionRegistry;
@@ -26,9 +26,9 @@ namespace query
 				return Task.CompletedTask;
 			}
 
-			return Task.WhenAll(
-				_persistentSubscriptionRegistry.RegisterPersistentSubscription<IProjectionsRequestedHandler, ProjectionsRequestedHandler>(),
-				_persistentSubscriptionRegistry.RegisterPersistentSubscription<Subscriber3, Subscriber3>()
+            return Task.WhenAll(
+                _persistentSubscriptionRegistry.CreateOrUpdatePersistentSubscription<ProjectionsRequestedHandler, IProjectionsRequestedHandler>()
+                _persistentSubscriptionRegistry.CreateOrUpdatePersistentSubscription<Subscriber3>()
 			);
 		}
 

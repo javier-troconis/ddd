@@ -35,7 +35,7 @@ namespace command
             {
                  // submit application
                  var events = await eventStore.ReadEventsForward(streamName);
-                 var state = events.Aggregate(new SubmitApplicationState(), MessageHandlerExtensions.Apply<ApplicationStartedV1, SubmitApplicationState>);
+                 var state = events.Aggregate(new SubmitApplicationV1State(), MessageHandlerExtensions.Apply);
                  var newEvents = Commands.SubmitApplicationV1(state, streamName);
                  await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
                  Console.WriteLine("application submitted: " + streamName);

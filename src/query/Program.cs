@@ -32,20 +32,30 @@ namespace query
                 EventStoreSettings.Password);
 
             var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
-            var persistentSubscriptionRegistry = new PersistentSubscriptionRegistry(persistentSubscriptionManager);
+
+
+            var x = new ResolvedEventMessageHandler<Subscriber1>(new Subscriber1()).ComposeForward(new ResolvedEventMessageHandler(y => y));
+
 
             var eventBus = new EventBus(connectionFactory.CreateConnection)
                     .RegisterCatchupSubscriber(
-                        new Subscriber2(),
-                            () => Task.FromResult(default(long?)),
-                            _writeCheckpoint.ToAsyncInput().ComposeBackward)
+                            new Subscriber2(), SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle,
+                            () => Task.FromResult(default(long?)))
                     .RegisterCatchupSubscriber(
-                        new Subscriber1(),
-                            () => Task.FromResult(default(long?)),
-                            _writeCheckpoint.ToAsyncInput().ComposeBackward)
-                    .RegisterPersistentSubscriber(new Subscriber3())
-                    .RegisterPersistentSubscriber<IProjectionsRequestedHandler>(new ProjectionsRequestedHandler("*", subscriptionProjectionRegistry))
-                    .RegisterVolatileSubscriber<IPersistentSubscriptionsRequestedHandler>(new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionRegistry));
+                            "",
+                            SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new Subscriber1()),
+                            () => Task.FromResult(default(long?)))
+                    .RegisterPersistentSubscriber(
+                            "", 
+                            "", 
+                            SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new Subscriber3()))
+                    .RegisterPersistentSubscriber(
+                            "",
+                            "", 
+                            SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new ProjectionsRequestedHandler("*", subscriptionProjectionRegistry)))
+                    .RegisterVolatileSubscriber(
+                            "", 
+                            SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionManager)));
 
             Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
 

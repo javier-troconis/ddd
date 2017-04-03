@@ -46,13 +46,13 @@ namespace management
                 switch (Console.ReadKey().KeyChar)
                 {
                     case '1':
-						topicsProjectionRegistry.RegisterTopicsProjection();
+						topicsProjectionRegistry.CreateOrUpdateTopicsProjection();
                         break;
                     case '2':
-						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IPersistentSubscriptionsRequestedHandler>();
+						subscriptionProjectionRegistry.CreateOrUpdateSubscriptionProjection<IPersistentSubscriptionsRequestedHandler>();
                         break;
 					case '3':
-						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IProjectionsRequestedHandler>();
+						subscriptionProjectionRegistry.CreateOrUpdateSubscriptionProjection<IProjectionsRequestedHandler>();
 						break;
 					case '4':
                         eventPublisher.PublishEvent(new PersistentSubscriptionsRequested("*", "*"));

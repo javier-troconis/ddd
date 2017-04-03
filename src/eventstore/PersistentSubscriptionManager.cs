@@ -9,7 +9,7 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionManager
 	{
-		Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, PersistentSubscriptionSettingsBuilder persistentSubscriptionSettings);
+		Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null);
 	}
 
 	public class PersistentSubscriptionManager : IPersistentSubscriptionManager
@@ -21,9 +21,18 @@ namespace eventstore
 			_createConnection = createConnection;
 		}
 
-		public async Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, PersistentSubscriptionSettingsBuilder persistentSubscriptionSettings)
+		public async Task CreateOrUpdatePersistentSubscription(string streamName, string groupName, Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription)
 		{
-			using (var connection = _createConnection())
+            var persistentSubscriptionSettings = (configurePersistentSubscription ?? (x => x))(
+                PersistentSubscriptionSettings.Create()
+                .ResolveLinkTos()
+                .StartFromCurrent()
+                .MinimumCheckPointCountOf(5)
+                .MaximumCheckPointCountOf(10)
+                .CheckPointAfter(TimeSpan.FromSeconds(1))
+                .WithExtraStatistics());
+
+            using (var connection = _createConnection())
 			{
 				await connection.ConnectAsync();
 				try

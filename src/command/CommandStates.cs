@@ -2,25 +2,25 @@
 
 namespace command
 {
-	public struct SubmitApplicationState :
-		 IMessageHandler<ApplicationStartedV1, SubmitApplicationState>,
-		 IMessageHandler<ApplicationStartedV2, SubmitApplicationState>
+	public struct SubmitApplicationV1State :
+		 IMessageHandler<ApplicationStartedV1, SubmitApplicationV1State>,
+		 IMessageHandler<ApplicationStartedV2, SubmitApplicationV1State>
 	{
 		public readonly bool ApplicationHasBeenStarted;
 
-		public SubmitApplicationState(bool applicationHasBeenStarted)
+		public SubmitApplicationV1State(bool applicationHasBeenStarted)
 		{
 			ApplicationHasBeenStarted = applicationHasBeenStarted;
 		}
 
-		public SubmitApplicationState Handle(ApplicationStartedV1 message)
+		public SubmitApplicationV1State Handle(ApplicationStartedV1 message)
 		{
-			return new SubmitApplicationState(true);
+			return new SubmitApplicationV1State(true);
 		}
 
-		public SubmitApplicationState Handle(ApplicationStartedV2 message)
+		public SubmitApplicationV1State Handle(ApplicationStartedV2 message)
 		{
-			return new SubmitApplicationState(true);
+			return new SubmitApplicationV1State(true);
 		}
 	}
 }

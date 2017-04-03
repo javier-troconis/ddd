@@ -31,45 +31,40 @@ namespace eventstore
 			_subscriptions = subscriptions;
 		}
 
-		public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, 
-			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureSubscriberHandle = null)
+        public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<TSubscriber, Func<ResolvedEvent, Task<ResolvedEvent>>> handler, Func<Task<long?>> getCheckpoint)
+        {
+            return RegisterCatchupSubscriber(typeof(TSubscriber).GetEventStoreName(), handler(subscriber), getCheckpoint);
+        }
+
+        public EventBus RegisterCatchupSubscriber(string streamName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<Task<long?>> getCheckpoint)
 		{
-            var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleResolvedEvent(subscriber, resolvedEvent));
-            var streamName = typeof(TSubscriber).GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
 				{
 					new CatchUpSubscription(
 						_createConnection,
 						streamName,
-						handle,
+						handleResolvedEvent,
 						TimeSpan.FromSeconds(1),
 						getCheckpoint).Start
 				}));
 		}
 
-		public EventBus RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, 
-			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureSubscriberHandle = null)
+		public EventBus RegisterVolatileSubscriber(string streamName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent)
 		{
-            var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleResolvedEvent(subscriber, resolvedEvent));
-            var streamName = typeof(TSubscriber).GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
 				{
 					new VolatileSubscription(
 						_createConnection,
 						streamName,
-						handle,
+						handleResolvedEvent,
 						TimeSpan.FromSeconds(1)).Start
 				}));
 		}
 
-		public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, 
-			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureSubscriberHandle = null)
+		public EventBus RegisterPersistentSubscriber(string streamName, string groupName, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent)
 		{
-            var handle = (configureSubscriberHandle ?? (x => x))(resolvedEvent => HandleResolvedEvent(subscriber, resolvedEvent));
-            var streamName = typeof(TSubscriber).GetEventStoreName();
-			var groupName = subscriber.GetType().GetEventStoreName();
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
 				{
@@ -77,7 +72,7 @@ namespace eventstore
 						_createConnection,
 						streamName,
 						groupName,
-						handle,
+						handleResolvedEvent,
 						TimeSpan.FromSeconds(1)).Start
 				}));
 		}
@@ -86,22 +81,5 @@ namespace eventstore
 		{
             Parallel.ForEach(_subscriptions, start => start());
 		}
-
-        private static async Task<ResolvedEvent> HandleResolvedEvent(object subscriber, ResolvedEvent resolvedEvent)
-        {
-            var eventHandlingTypes = subscriber
-                .GetType()
-                .GetMessageHandlerTypes()
-                .Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-            var recordedEvent = RecordedEventDeserializer.DeserializeRecordedEvent(eventHandlingTypes, resolvedEvent);
-            await HandleRecordedEvent(subscriber, (dynamic)recordedEvent);
-            return resolvedEvent;
-        }
-
-        private static Task HandleRecordedEvent<TRecordedEvent>(object subscriber, TRecordedEvent recordedEvent)
-		{
-            var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
-            return handler.Handle(recordedEvent);
-        }
 	}
 }

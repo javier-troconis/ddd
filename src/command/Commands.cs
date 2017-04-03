@@ -24,13 +24,12 @@ namespace command
 			yield return new ApplicationStartedV3();
 		}
 
-		public static IEnumerable<object> SubmitApplicationV1(SubmitApplicationState state, string submittedBy)
+		public static IEnumerable<object> SubmitApplicationV1(SubmitApplicationV1State state, string submittedBy)
 		{
             if (!state.ApplicationHasBeenStarted)
             {
                 throw new Exception("Cannot submit application. Application has not been started.");
             }
-
             yield return new ApplicationSubmittedV1(submittedBy);
 		}
 	}
