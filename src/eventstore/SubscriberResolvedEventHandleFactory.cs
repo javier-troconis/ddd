@@ -13,10 +13,9 @@ namespace eventstore
 {
     public static class SubscriberResolvedEventHandleFactory
     {
-        public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandle(IMessageHandler subscriber)
+        public async static Task<ResolvedEvent> CreateSubscriberResolvedEventHandle(IMessageHandler subscriber, ResolvedEvent resolvedEvent)
         {
-            return async resolvedEvent =>
-            {
+         
                 var eventHandlingTypes = subscriber
                     .GetType()
                     .GetMessageHandlerTypes()
@@ -24,7 +23,7 @@ namespace eventstore
                 var recordedEvent = DeserializeRecordedEvent(eventHandlingTypes, resolvedEvent);
                 await HandleSubscriberRecordedEvent(subscriber, (dynamic)recordedEvent);
                 return resolvedEvent;
-            };
+            
         }
 
         private static Task HandleSubscriberRecordedEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)

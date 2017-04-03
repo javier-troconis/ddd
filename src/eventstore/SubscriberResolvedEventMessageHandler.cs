@@ -7,39 +7,28 @@ using System.Threading.Tasks;
 
 namespace eventstore
 {
-    public sealed class ResolvedEventMessageHandler : IMessageHandler<ResolvedEvent, Task<ResolvedEvent>>
-    {
-        private readonly Func<ResolvedEvent, Task<ResolvedEvent>> _handleResolvedEvent;
 
-        public ResolvedEventMessageHandler(Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent)
-        {
-            _handleResolvedEvent = handleResolvedEvent;
-        }
 
-        public Task<ResolvedEvent> Handle(ResolvedEvent message)
-        {
-            return _handleResolvedEvent(message);
-        }
-    }
 
     public sealed class ResolvedEventMessageHandler<TSubscriber> : IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> where TSubscriber : IMessageHandler
     {
-        private readonly TSubscriber _subscriber;
+        private readonly IMessageHandler _subscriber;
 
-        public ResolvedEventMessageHandler(TSubscriber subscriber)
+        public ResolvedEventMessageHandler(IMessageHandler subscriber) 
         {
             _subscriber = subscriber;
         }
 
         public Task<ResolvedEvent> Handle(ResolvedEvent message)
         {
-            var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(_subscriber);
-            return handleResolvedEvent(message);
+            return SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle(_subscriber, message);
         }
 
         public static implicit operator ResolvedEventMessageHandler<TSubscriber>(TSubscriber subscriber)
         {
             return new ResolvedEventMessageHandler<TSubscriber>(subscriber);
         }
+
+
     }
 }
