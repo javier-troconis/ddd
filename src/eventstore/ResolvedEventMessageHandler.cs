@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 
 namespace eventstore
 {
-    public class ResolvedEventMessageHandler<TSubscriber> : IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> where TSubscriber : IMessageHandler
+    public sealed class ResolvedEventMessageHandler<TSubscriber> : IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> where TSubscriber : IMessageHandler
     {
         private readonly IMessageHandler _subscriber;
 
