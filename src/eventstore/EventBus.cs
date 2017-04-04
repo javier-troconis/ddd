@@ -98,7 +98,6 @@ namespace eventstore
 			};
 		}
 
-
 		private static object DeserializeEvent(IEnumerable<Type> eventTypes, ResolvedEvent resolvedEvent)
 		{
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
@@ -116,7 +115,7 @@ namespace eventstore
 			return Impromptu.CoerceConvert(recordedEvent, typeof(IRecordedEvent<>).MakeGenericType(eventType));
 		}
 
-		private static Task HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
+        private static Task HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
 		{
 			var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
 			return handler.Handle(recordedEvent);
