@@ -90,30 +90,30 @@ namespace eventstore
 				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0])
 				.ToArray();
 
-			Func<ResolvedEvent, object> deserializeEvent =
-				resolvedEvent =>
-				{
-					var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-					var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
-					var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).First();
-					var recordedEvent = new
-					{
-						resolvedEvent.OriginalEventNumber,
-						resolvedEvent.Event.EventStreamId,
-						resolvedEvent.Event.EventNumber,
-						resolvedEvent.Event.EventId,
-						resolvedEvent.Event.Created,
-						Event = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
-					};
-					return Impromptu.CoerceConvert(recordedEvent, typeof(IRecordedEvent<>).MakeGenericType(eventType));
-				};
-
 			return async resolvedEvent =>
 			{
-				var recordedEvent = deserializeEvent(resolvedEvent);
+				var recordedEvent = DeserializeEvent(eventHandlingTypes, resolvedEvent);
 				await HandleEvent(subscriber, (dynamic)recordedEvent);
 				return resolvedEvent;
 			};
+		}
+
+
+		private static object DeserializeEvent(IEnumerable<Type> eventTypes, ResolvedEvent resolvedEvent)
+		{
+			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+			var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
+			var eventType = topics.Join(eventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).First();
+			var recordedEvent = new
+			{
+				resolvedEvent.OriginalEventNumber,
+				resolvedEvent.Event.EventStreamId,
+				resolvedEvent.Event.EventNumber,
+				resolvedEvent.Event.EventId,
+				resolvedEvent.Event.Created,
+				Event = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
+			};
+			return Impromptu.CoerceConvert(recordedEvent, typeof(IRecordedEvent<>).MakeGenericType(eventType));
 		}
 
 		private static Task HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
