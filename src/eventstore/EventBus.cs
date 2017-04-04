@@ -98,7 +98,7 @@ namespace eventstore
 			};
 		}
 
-		private static object DeserializeEvent(Type[] eventTypes, ResolvedEvent resolvedEvent)
+		private static object DeserializeEvent(IEnumerable<Type> eventTypes, ResolvedEvent resolvedEvent)
 		{
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 			var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
