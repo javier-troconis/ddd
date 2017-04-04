@@ -38,8 +38,11 @@ namespace management
 
             while (true)
             {
+				// create topics stream
                 Console.WriteLine("1 - create topics projection");
-                Console.WriteLine("2 - create persistent subscriptions requested projection");
+				// create persistent subscription requested subscription stream
+				Console.WriteLine("2 - create persistent subscriptions requested projection");
+				// create projections requested subscription stream
 				Console.WriteLine("3 - create projections requested projection");
 				Console.WriteLine("4 - publish persistent subscriptions requested");
 				Console.WriteLine("5 - publish projections requested");

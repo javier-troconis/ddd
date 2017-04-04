@@ -98,11 +98,15 @@ namespace eventstore
 			};
 		}
 
-		private static object DeserializeEvent(IEnumerable<Type> eventTypes, ResolvedEvent resolvedEvent)
+		private static object DeserializeEvent(Type[] eventTypes, ResolvedEvent resolvedEvent)
 		{
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 			var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
-			var eventType = topics.Join(eventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).First();
+			var eventType = topics.Join(eventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
+			if (eventType == null)
+			{
+				throw new Exception($"Failed to deserialized event for topic {topics[0]}. The messagehandler for topic {topics[0]} has been removed from the subscriber but the subscription stream has not been updated.");
+			}
 			var recordedEvent = new
 			{
 				resolvedEvent.OriginalEventNumber,
