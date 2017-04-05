@@ -42,7 +42,7 @@ namespace management
                 Console.WriteLine("1 - create topics projection");
 				// create persistent subscription registration requested stream
 				Console.WriteLine("2 - create persistent subscriptions requested projection");
-				// create projection registration requested stream
+				// create subscription stream registration requested stream
 				Console.WriteLine("3 - create projections requested projection");
 				// request persistent subscription registration -> persistent subscription registration requested
 				Console.WriteLine("4 - publish persistent subscriptions requested");
