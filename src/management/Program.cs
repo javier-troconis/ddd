@@ -39,31 +39,31 @@ namespace management
             while (true)
             {
 				// create topics stream
-                Console.WriteLine("1 - create topics projection");
+                Console.WriteLine("1 - create topics stream");
 				// create persistent subscription registration requested stream
-				Console.WriteLine("2 - create persistent subscriptions requested projection");
+				Console.WriteLine("2 - create persistent subscription registration requested stream");
 				// create subscription stream registration requested stream
-				Console.WriteLine("3 - create projections requested projection");
+				Console.WriteLine("3 - create subscription stream registration requested stream");
 				// request persistent subscription registration -> persistent subscription registration requested
-				Console.WriteLine("4 - publish persistent subscriptions requested");
+				Console.WriteLine("4 - request persistent subscription registration");
 				// request subscription stream registration -> subscription stream registration requested
-				Console.WriteLine("5 - publish projections requested");
+				Console.WriteLine("5 - request subscription stream registration");
                 switch (Console.ReadKey().KeyChar)
                 {
                     case '1':
 						topicsProjectionRegistry.CreateOrUpdateTopicsProjection();
                         break;
                     case '2':
-						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IPersistentSubscriptionsRequestedHandler>();
+						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IPersistentSubscriptionRegistrationRequestedHandler>();
                         break;
-					case '3':
-						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IProjectionsRequestedHandler>();
-						break;
+					//case '3':
+					//	subscriptionProjectionRegistry.RegisterSubscriptionProjection<IProjectionsRequestedHandler>();
+					//	break;
 					case '4':
-                        eventPublisher.PublishEvent(new PersistentSubscriptionsRequested("*", "*"));
+                        eventPublisher.PublishEvent(new PersistentSubscriptionRegistrationRequested("*", "*"));
                         break;
 					case '5':
-						eventPublisher.PublishEvent(new ProjectionsRequested("*", "*"));
+						eventPublisher.PublishEvent(new SubscriptionStreamRegistrationRequested("*", "*"));
 						break;
 					default:
                         return;

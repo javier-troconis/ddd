@@ -42,10 +42,10 @@ namespace query
 							() => Task.FromResult(default(long?)))
 					.RegisterPersistentSubscriber(
 							new Subscriber3())
-					.RegisterPersistentSubscriber<IProjectionsRequestedHandler>(
-							new ProjectionsRequestedHandler("*", subscriptionProjectionRegistry))
-					.RegisterVolatileSubscriber<IPersistentSubscriptionsRequestedHandler>(
-							new PersistentSubscriptionsRequestedHandler("*", persistentSubscriptionRegistry));
+					.RegisterPersistentSubscriber<ISubscriptionStreamRegistrationRequestedHandler>(
+							new SubscriptionStreamRegistrationRequestedHandler("*", subscriptionProjectionRegistry))
+					.RegisterVolatileSubscriber<IPersistentSubscriptionRegistrationRequestedHandler>(
+							new PersistentSubscriptionRegistrationRequestedHandler("*", persistentSubscriptionRegistry));
 
 			Parallel.For(1, 3, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
 

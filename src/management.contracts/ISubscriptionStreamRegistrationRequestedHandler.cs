@@ -7,7 +7,7 @@ using shared;
 
 namespace management.contracts
 {
-    public interface IPersistentSubscriptionsRequestedHandler : IMessageHandler<IRecordedEvent<IPersistentSubscriptionsRequested>, Task>
+    public interface ISubscriptionStreamRegistrationRequestedHandler : IMessageHandler<IRecordedEvent<ISubscriptionStreamRegistrationRequested>, Task>
     {
 
     }

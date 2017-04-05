@@ -8,18 +8,18 @@ using shared;
 
 namespace query
 {
-    public class ProjectionsRequestedHandler : IProjectionsRequestedHandler
+    public class SubscriptionStreamRegistrationRequestedHandler : ISubscriptionStreamRegistrationRequestedHandler
 	{
 		private readonly string _serviceName;
 	    private readonly ISubscriptionProjectionRegistry _subscriptionProjectionRegistry;
 
-	    public ProjectionsRequestedHandler(string serviceName, ISubscriptionProjectionRegistry subscriptionProjectionRegistry)
+	    public SubscriptionStreamRegistrationRequestedHandler(string serviceName, ISubscriptionProjectionRegistry subscriptionProjectionRegistry)
 	    {
 		    _serviceName = serviceName;
 		    _subscriptionProjectionRegistry = subscriptionProjectionRegistry;
 	    }
 
-	    public Task Handle(IRecordedEvent<IProjectionsRequested> message)
+	    public Task Handle(IRecordedEvent<ISubscriptionStreamRegistrationRequested> message)
 	    {
 			if (!string.Equals(_serviceName, message.Event.ServiceName))
 			{
