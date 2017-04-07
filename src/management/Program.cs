@@ -38,31 +38,20 @@ namespace management
 
             while (true)
             {
-				// create topics stream
-                Console.WriteLine("1 - create topics stream");
-				// create persistent subscription registration requested stream
-				Console.WriteLine("2 - create persistent subscription registration requested stream");
-				// create subscription stream registration requested stream
-				Console.WriteLine("3 - create subscription stream registration requested stream");
-				// request persistent subscription registration -> persistent subscription registration requested
-				Console.WriteLine("4 - request persistent subscription registration");
-				// request subscription stream registration -> subscription stream registration requested
-				Console.WriteLine("5 - request subscription stream registration");
+                Console.WriteLine("1 - register system streams");
+				Console.WriteLine("2 - request persistent subscription registrations");
+				Console.WriteLine("3 - request subscription stream registrations");
                 switch (Console.ReadKey().KeyChar)
                 {
                     case '1':
-						topicsProjectionRegistry.CreateOrUpdateTopicsProjection();
+						topicsProjectionRegistry.RegisterTopicsProjection();
+                        subscriptionProjectionRegistry.RegisterSubscriptionProjection<IPersistentSubscriptionRegistrationRequestedHandler>();
+                        subscriptionProjectionRegistry.RegisterSubscriptionProjection<ISubscriptionStreamRegistrationRequested>();
                         break;
-                    case '2':
-						subscriptionProjectionRegistry.RegisterSubscriptionProjection<IPersistentSubscriptionRegistrationRequestedHandler>();
-                        break;
-					//case '3':
-					//	subscriptionProjectionRegistry.RegisterSubscriptionProjection<IProjectionsRequestedHandler>();
-					//	break;
-					case '4':
+					case '2':
                         eventPublisher.PublishEvent(new PersistentSubscriptionRegistrationRequested("*", "*"));
                         break;
-					case '5':
+					case '3':
 						eventPublisher.PublishEvent(new SubscriptionStreamRegistrationRequested("*", "*"));
 						break;
 					default:

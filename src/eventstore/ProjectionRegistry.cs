@@ -10,7 +10,7 @@ namespace eventstore
 {
 	public interface ITopicsProjectionRegistry
 	{
-		Task CreateOrUpdateTopicsProjection();
+		Task RegisterTopicsProjection();
 	}
 
 	public interface ISubscriptionProjectionRegistry
@@ -27,7 +27,7 @@ namespace eventstore
 			_projectionManager = projectionManager;
 		}
 
-		public Task CreateOrUpdateTopicsProjection()
+		public Task RegisterTopicsProjection()
 		{
 			const string queryTemplate =
 				@"function emitTopic(e) {{
