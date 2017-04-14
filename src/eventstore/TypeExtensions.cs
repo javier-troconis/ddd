@@ -24,7 +24,7 @@ namespace eventstore
 
         public static string GetEventStoreName(this Type type)
         {
-            return type.FullName.Replace('.', '_');
+            return type.FullName.Replace('.', '_').Replace('+', '_').ToLower();
         }
 
 		public static IEnumerable<string> GetEventTopics(this Type eventType)

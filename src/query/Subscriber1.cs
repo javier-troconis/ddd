@@ -19,7 +19,7 @@ namespace query
 
 	    public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 	    {
-			Console.WriteLine($"{nameof(IApplicationStartedV2)} {message.EventStreamId}");
+			//Console.WriteLine($"{nameof(IApplicationStartedV2)} {message.EventStreamId}");
 			return Task.CompletedTask;
 		}
     }

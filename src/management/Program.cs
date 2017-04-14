@@ -43,14 +43,13 @@ namespace management
 						streamProvisioner.ProvisionSystemStreams();
                         break;
                     case '2':
-						var subscriptionStreamProvisioningRequestor = new SubscriptionStreamProvisioningRequestor(eventPublisher);
-						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamsProvisioning("*", "*");
-                        break;
-					case '3':
 						var persistentSubscriptionProvisioningRequestor = new PersistentSubscriptionProvisioningRequestor(eventPublisher);
 						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionsProvisioning("*", "*");
                         break;
-					
+					case '3':
+						var subscriptionStreamProvisioningRequestor = new SubscriptionStreamProvisioningRequestor(eventPublisher);
+						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamsProvisioning("*", "*");
+                        break;				
 					default:
                         return;
                 }

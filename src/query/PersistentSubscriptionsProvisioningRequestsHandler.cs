@@ -23,6 +23,7 @@ namespace query
 
 		public Task Handle(IRecordedEvent<IPersistentSubscriptionsProvisioningRequested> message)
 		{
+			Console.WriteLine("calling " + nameof(PersistentSubscriptionsProvisioningRequestsHandler) + " " + message.EventId);
 			return Task.WhenAll(
 				_subscriptionStreamProvisioner.ProvisionPersistentSubscription<Subscriber3>(),
 				_subscriptionStreamProvisioner.ProvisionPersistentSubscription<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>()
