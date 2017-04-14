@@ -1,35 +1,31 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Threading.Tasks;
 using System.Linq;
-using System.Threading.Tasks;
-
-using EventStore.ClientAPI;
-using EventStore.ClientAPI.Exceptions;
+using shared;
 
 namespace eventstore
 {
-	public interface ITopicsProjectionRegistry
+	public interface ISystemStreamsProvisioner
 	{
-		Task CreateOrUpdateTopicsProjection();
+		Task ProvisionSystemStreams();
 	}
 
-	public interface ISubscriptionProjectionRegistry
+	public interface ISubscriptionStreamProvisioner
 	{
-		Task RegisterSubscriptionProjection<TSubscription>();
+		Task ProvisionSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler;
 	}
 
-	public class ProjectionRegistry : ITopicsProjectionRegistry, ISubscriptionProjectionRegistry
+	public class StreamProvisioner : ISystemStreamsProvisioner, ISubscriptionStreamProvisioner
 	{
 		private readonly IProjectionManager _projectionManager;
 
-		public ProjectionRegistry(IProjectionManager projectionManager)
+		public StreamProvisioner(IProjectionManager projectionManager)
 		{
 			_projectionManager = projectionManager;
 		}
 
-		public Task CreateOrUpdateTopicsProjection()
+		public Task ProvisionSystemStreams()
 		{
-			const string queryTemplate =
+			const string projectionQueryTemplate =
 				@"function emitTopic(e) {{
     return function(topic) {{
            var message = {{ streamId: '{0}', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false }};
@@ -47,11 +43,15 @@ fromAll()
             topics.forEach(emitTopic(e));
         }}
     }});";
-			var query = string.Format(queryTemplate, StreamName.Topics);
-			return _projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, query);
+			var projectionQuery = string.Format(projectionQueryTemplate, StreamName.Topics);
+			return Task.WhenAll(
+				_projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, projectionQuery),
+				ProvisionSubscriptionStream<IPersistentSubscriptionsProvisioningRequests>(),
+				ProvisionSubscriptionStream<ISubscriptionStreamsProvisioningRequests>()
+				);
 		}
 
-		public Task RegisterSubscriptionProjection<TSubscription>()
+		public Task ProvisionSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler
 		{
 			const string queryTemplate =
 				@"var topics = [{0}];
@@ -87,4 +87,5 @@ fromStream('{2}')
 			return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionName, query);
 		}
 	}
+
 }

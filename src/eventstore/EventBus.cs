@@ -36,6 +36,12 @@ namespace eventstore
         public EventBus RegisterCatchupSubscriber<TSubscription>(TSubscription subscriber, Func<Task<long?>> getCheckpoint, 
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureEventHandling = null) where TSubscription : IMessageHandler
         {
+			return RegisterCatchupSubscriber<TSubscription, TSubscription>(subscriber, getCheckpoint, configureEventHandling);
+		}
+
+		public EventBus RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint,
+			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
+		{
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
 				{
@@ -51,6 +57,12 @@ namespace eventstore
 		public EventBus RegisterVolatileSubscriber<TSubscription>(TSubscription subscriber, 
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureEventHandling = null) where TSubscription : IMessageHandler
 		{
+			return RegisterVolatileSubscriber<TSubscription, TSubscription>(subscriber, configureEventHandling);
+		}
+
+		public EventBus RegisterVolatileSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber,
+			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
+		{
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
 				{
@@ -62,8 +74,14 @@ namespace eventstore
 				}));
 		}
 
-		public EventBus RegisterPersistentSubscriber<TSubscription>(TSubscription subscriber, 
+		public EventBus RegisterPersistentSubscriber<TSubscription>(TSubscription subscriber,
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureEventHandling = null) where TSubscription : IMessageHandler
+		{
+			return RegisterPersistentSubscriber<TSubscription, TSubscription>(subscriber, configureEventHandling);
+		}
+
+		public EventBus RegisterPersistentSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, 
+			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> configureEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
 		{
 			return new EventBus(_createConnection,
 				_subscriptions.Concat(new Func<Task>[]
@@ -71,7 +89,7 @@ namespace eventstore
 					new PersistentSubscription(
 						_createConnection,
 						typeof(TSubscription).GetEventStoreName(),
-						subscriber.GetType().GetEventStoreName(),
+						typeof(TSubscriber).GetEventStoreName(),
 						(configureEventHandling ?? (x => x))(CreateEventHandle(subscriber)),
 						TimeSpan.FromSeconds(1)).Start
 				}));

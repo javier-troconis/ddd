@@ -32,9 +32,9 @@ namespace eventstore
 			while (true)
 			{
 				var connection = _createConnection();
-				var checkpoint = await _getCheckpoint();
 				try
 				{
+					var checkpoint = await _getCheckpoint();
 					await connection.ConnectAsync();
 					connection.SubscribeToStreamFrom(_streamName, checkpoint, CatchUpSubscriptionSettings.Default, OnEventAppeared, subscriptionDropped: OnSubscriptionDropped(connection));
 					return;
