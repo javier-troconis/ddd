@@ -40,10 +40,7 @@ namespace eventstore
 				PersistentSubscriptionSettings
 					.Create()
 					.ResolveLinkTos()
-					//.StartFromBeginning()
-					.StartFromCurrent()
-					//.MinimumCheckPointCountOf(5)
-					//.MaximumCheckPointCountOf(10)
+					.StartFromBeginning()
 					.MaximumCheckPointCountOf(1)
 					.CheckPointAfter(TimeSpan.FromSeconds(1))
 					.WithExtraStatistics());
