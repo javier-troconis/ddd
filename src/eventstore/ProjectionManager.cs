@@ -75,8 +75,7 @@ namespace eventstore
             var httpEndpoints = Dns.GetHostEntry(clusterDns)
                 .AddressList
                 .Select(ipAddress =>
-                    new IPEndPoint(ipAddress, externalHttpPort))
-                .ToArray();
+                    new IPEndPoint(ipAddress, externalHttpPort));
             return httpEndpoints
                 .AnyAsync(httpEndpoint =>
                     operation(new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromSeconds(5))));
