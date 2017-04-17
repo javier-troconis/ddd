@@ -37,7 +37,7 @@ namespace eventstore
         public Task CreateOrUpdateContinuousProjection(string name, string query, int maxAttempts)
         {
             return Retry.RetryUntil(
-                x =>
+                attempt =>
                     Execute(
                         _clusterDns,
                         _externalHttpPort,
@@ -61,7 +61,7 @@ namespace eventstore
                             }
                             catch (Exception ex)
                             {
-                                _logger.Error(ex, "Failed to create projection {0}.", name);
+                                _logger.Error(ex, "Failed to create projection {0}. Attempt {1}/{2}", name, attempt, maxAttempts);
                                 return false;
                             }
                             return true;
