@@ -1,5 +1,10 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using System.Linq;
+using System.Net;
+
+using EventStore.ClientAPI.Exceptions;
+
 using shared;
 
 namespace eventstore
