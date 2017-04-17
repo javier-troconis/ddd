@@ -40,7 +40,7 @@ namespace eventstore
 				_clusterDns,
 				_externalHttpPort,
 				_logger,
-				async manager =>
+				async (manager, maxAttempts, attempt) =>
 				{
 					var userCredentials = new UserCredentials(_username, _password);
 					try
@@ -57,24 +57,29 @@ namespace eventstore
 							_logger.Info("Projection {0} updated.", name);
 						}
 					}
+					catch (Exception) when (maxAttempts > attempt)
+					{
+						return false;
+					}
 					catch (Exception ex)
 					{
 						_logger.Error(ex, "Failed to create projection {0}.", name);
-						return false;
+						throw;
 					}
 					return true;
 				});
 		}
 
-		private static Task Execute(string clusterDns, int externalHttpPort, ILogger logger, Func<ProjectionsManager, Task<bool>> operation)
+		private static Task Execute(string clusterDns, int externalHttpPort, ILogger logger, Func<ProjectionsManager, int, int, Task<bool>> operation)
 		{
 			var httpEndpoints = Dns.GetHostEntry(clusterDns)
 				.AddressList
 				.Select(ipAddress =>
-					new IPEndPoint(ipAddress, externalHttpPort));
+					new IPEndPoint(ipAddress, externalHttpPort))
+				.ToArray();
 			return httpEndpoints
-				.AnyAsync(httpEndpoint =>
-					operation(new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromSeconds(5))));
+				.AnyAsync((httpEndpoint, index) =>
+					operation(new ProjectionsManager(logger, httpEndpoint, TimeSpan.FromSeconds(5)), httpEndpoints.Length, index + 1));
 		}
 	}
 }
