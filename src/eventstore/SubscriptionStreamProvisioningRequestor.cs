@@ -4,7 +4,7 @@ namespace eventstore
 {
 	public interface ISubscriptionStreamProvisioningRequestor
 	{
-		Task RequestSubscriptionStreamsProvisioning(string serviceName, string subscriptionStreamName);
+		Task RequestSubscriptionStreamsProvisioning(string subscriptionStreamName);
 	}
 
 	
@@ -17,9 +17,9 @@ namespace eventstore
 			_eventPublisher = eventPublisher;
 		}
 
-		public Task RequestSubscriptionStreamsProvisioning(string serviceName, string subscriptionStreamName)
+		public Task RequestSubscriptionStreamsProvisioning(string subscriptionStreamName)
 		{
-			return _eventPublisher.PublishEvent(new SubscriptionStreamsProvisioningRequested(serviceName, subscriptionStreamName));
+			return _eventPublisher.PublishEvent(new SubscriptionStreamsProvisioningRequested(subscriptionStreamName));
 		}
 	}
 }

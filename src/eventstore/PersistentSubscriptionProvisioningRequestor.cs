@@ -4,7 +4,7 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionProvisioningRequestor
 	{
-		Task RequestPersistentSubscriptionsProvisioning(string serviceName, string persistentSubscriptionName);
+		Task RequestPersistentSubscriptionsProvisioning(string persistentSubscriptionName);
 	}
 
 	public class PersistentSubscriptionProvisioningRequestor : IPersistentSubscriptionProvisioningRequestor
@@ -16,9 +16,9 @@ namespace eventstore
 			_eventPublisher = eventPublisher;
 		}
 
-		public Task RequestPersistentSubscriptionsProvisioning(string serviceName, string persistentSubscriptionName)
+		public Task RequestPersistentSubscriptionsProvisioning(string persistentSubscriptionName)
 		{
-			return _eventPublisher.PublishEvent(new PersistentSubscriptionsProvisioningRequested(serviceName, persistentSubscriptionName));
+			return _eventPublisher.PublishEvent(new PersistentSubscriptionsProvisioningRequested(persistentSubscriptionName));
 		}
 	}
 

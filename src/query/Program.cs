@@ -41,10 +41,10 @@ namespace query
 					.RegisterPersistentSubscriber(
 							new Subscriber3())
 					.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
-							new SubscriptionStreamsProvisioningRequestsHandler("*", new StreamProvisioner(projectionManager))
+							new SubscriptionStreamsProvisioningRequestsHandler(new StreamProvisioner(projectionManager))
 							)
 					.RegisterVolatileSubscriber<IPersistentSubscriptionsProvisioningRequests, PersistentSubscriptionsProvisioningRequestsHandler>(
-							new PersistentSubscriptionsProvisioningRequestsHandler("*", new PersistentSubscriptionProvisioner(persistentSubscriptionManager))
+							new PersistentSubscriptionsProvisioningRequestsHandler(new PersistentSubscriptionProvisioner(persistentSubscriptionManager))
 							);
 
 			Parallel.For(1, 2, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());

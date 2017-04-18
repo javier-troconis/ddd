@@ -44,11 +44,11 @@ namespace management
                         break;
                     case '2':
 						var persistentSubscriptionProvisioningRequestor = new PersistentSubscriptionProvisioningRequestor(eventPublisher);
-						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionsProvisioning("*", "*");
+						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionsProvisioning("*");
                         break;
 					case '3':
 						var subscriptionStreamProvisioningRequestor = new SubscriptionStreamProvisioningRequestor(eventPublisher);
-						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamsProvisioning("*", "*");
+						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamsProvisioning("*");
                         break;				
 					default:
                         return;

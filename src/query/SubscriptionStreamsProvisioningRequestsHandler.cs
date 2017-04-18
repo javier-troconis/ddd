@@ -11,23 +11,23 @@ namespace query
 {
 	public class SubscriptionStreamsProvisioningRequestsHandler : ISubscriptionStreamsProvisioningRequests
 	{
-		private readonly string _serviceName;
 		private readonly ISubscriptionStreamProvisioner _subscriptionStreamProvisioner;
 
-		public SubscriptionStreamsProvisioningRequestsHandler(string serviceName, ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
+		public SubscriptionStreamsProvisioningRequestsHandler(ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
 		{
-			_serviceName = serviceName;
 			_subscriptionStreamProvisioner = subscriptionStreamProvisioner;
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriptionStreamsProvisioningRequested> message)
 		{
 			Console.WriteLine("calling " + nameof(SubscriptionStreamsProvisioningRequestsHandler) + " " + message.EventId);
-			return Task.WhenAll(
-				_subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber1>(),
-				_subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber2>(),
-				_subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber3>()
+			// static queue per subscriptionstream provisioning
+			Parallel.Invoke(
+				() => _subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber1>(),
+				() => _subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber2>(),
+				() => _subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber3>()
 				);
+			return Task.CompletedTask;
 		}
 	}
 }
