@@ -22,9 +22,9 @@ namespace query
 		{
 			Console.WriteLine("calling " + nameof(SubscriptionStreamsProvisioningRequestsHandler) + " " + message.EventId);
 			return _subscriptionStreamProvisioner
-				.IncludeSubscriptionStream<Subscriber1>()
-				.IncludeSubscriptionStream<Subscriber2>()
-				.IncludeSubscriptionStream<Subscriber3>()
+				.IncludeSubscriptionStreamProvisioning<Subscriber1>()
+				.IncludeSubscriptionStreamProvisioning<Subscriber2>()
+				.IncludeSubscriptionStreamProvisioning<Subscriber3>()
 				.ProvisionSubscriptionStreams(message.Event.SubscriptionStream);
 		}
 	}
