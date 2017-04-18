@@ -4,16 +4,16 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionsProvisioningRequested
 	{
-		string PersistentSubscriptionName { get; }
+		string PersistentSubscriptionGroup { get; }
 	}
 
 	internal class PersistentSubscriptionsProvisioningRequested : IPersistentSubscriptionsProvisioningRequested
 	{
-	    public PersistentSubscriptionsProvisioningRequested(string persistentSubscriptionName)
+	    public PersistentSubscriptionsProvisioningRequested(string persistentSubscriptionGroup)
 	    {
-		    PersistentSubscriptionName = persistentSubscriptionName;
+		    PersistentSubscriptionGroup = persistentSubscriptionGroup;
 	    }
 
-	    public string PersistentSubscriptionName { get; }
+	    public string PersistentSubscriptionGroup { get; }
 	}
 }

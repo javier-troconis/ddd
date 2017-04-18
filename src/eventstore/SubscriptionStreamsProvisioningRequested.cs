@@ -4,16 +4,16 @@ namespace eventstore
 {
 	public interface ISubscriptionStreamsProvisioningRequested
 	{
-		string SubscriptionStreamName { get; }
+		string SubscriptionStream { get; }
 	}
 
 	internal class SubscriptionStreamsProvisioningRequested : ISubscriptionStreamsProvisioningRequested
 	{
-	    public SubscriptionStreamsProvisioningRequested(string subscriptionStreamName)
+	    public SubscriptionStreamsProvisioningRequested(string subscriptionStream)
 	    {
-		    SubscriptionStreamName = subscriptionStreamName;
+		    SubscriptionStream = subscriptionStream;
 	    }
 
-	    public string SubscriptionStreamName { get; }
+	    public string SubscriptionStream { get; }
 	}
 }

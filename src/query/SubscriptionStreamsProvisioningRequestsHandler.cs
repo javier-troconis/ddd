@@ -21,13 +21,11 @@ namespace query
 		public Task Handle(IRecordedEvent<ISubscriptionStreamsProvisioningRequested> message)
 		{
 			Console.WriteLine("calling " + nameof(SubscriptionStreamsProvisioningRequestsHandler) + " " + message.EventId);
-			// static queue per subscriptionstream provisioning
-			Parallel.Invoke(
-				() => _subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber1>(),
-				() => _subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber2>(),
-				() => _subscriptionStreamProvisioner.ProvisionSubscriptionStream<Subscriber3>()
-				);
-			return Task.CompletedTask;
+			return _subscriptionStreamProvisioner
+				.IncludeSubscriptionStream<Subscriber1>()
+				.IncludeSubscriptionStream<Subscriber2>()
+				.IncludeSubscriptionStream<Subscriber3>()
+				.ProvisionSubscriptionStreams(message.Event.SubscriptionStream);
 		}
 	}
 }

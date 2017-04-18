@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using System.Linq;
 using System.Net;
@@ -16,16 +17,28 @@ namespace eventstore
 
 	public interface ISubscriptionStreamProvisioner
 	{
-		Task ProvisionSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler;
+		ISubscriptionStreamProvisioner IncludeSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler;
+		Task ProvisionSubscriptionStreams(string subscriptionStream = "*");
 	}
 
 	public class StreamProvisioner : ISystemStreamsProvisioner, ISubscriptionStreamProvisioner
 	{
+		private static readonly TaskQueue _provisioningTasksQueue = new TaskQueue();
 		private readonly IProjectionManager _projectionManager;
+		private readonly IDictionary<string, Func<Task>> _provisioningTask;
 
 		public StreamProvisioner(IProjectionManager projectionManager)
+			: this(projectionManager, new Dictionary<string, Func<Task>>())
+		{
+		}
+
+		private StreamProvisioner(
+			IProjectionManager projectionManager,
+			IDictionary<string, Func<Task>> provisioningTask
+			)
 		{
 			_projectionManager = projectionManager;
+			_provisioningTask = provisioningTask;
 		}
 
 		public Task ProvisionSystemStreams()
@@ -50,13 +63,14 @@ fromAll()
     }});";
 			var projectionQuery = string.Format(projectionQueryTemplate, StreamName.Topics);
 			return Task.WhenAll(
-				_projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, projectionQuery),
-				ProvisionSubscriptionStream<IPersistentSubscriptionsProvisioningRequests>(),
-				ProvisionSubscriptionStream<ISubscriptionStreamsProvisioningRequests>()
+				_provisioningTasksQueue.SendToChannelAsync(StreamName.Topics, () => _projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, projectionQuery)),
+				IncludeSubscriptionStream<IPersistentSubscriptionsProvisioningRequests>()
+					.IncludeSubscriptionStream<ISubscriptionStreamsProvisioningRequests>()
+						.ProvisionSubscriptionStreams()
 				);
 		}
 
-		public Task ProvisionSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler
+		public ISubscriptionStreamProvisioner IncludeSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler
 		{
 			const string queryTemplate =
 				@"var topics = [{0}];
@@ -83,14 +97,30 @@ var handlers = topics.reduce(
 
 fromStream('{2}')
     .when(handlers);";
+			return new StreamProvisioner(_projectionManager, new Dictionary<string, Func<Task>>(_provisioningTask)
+			{
+				{
+					typeof(TSubscription).GetEventStoreName(),
+					() =>
+					{
+						var subscriptionType = typeof(TSubscription);
+						var subscriptionName = subscriptionType.GetEventStoreName();
+						var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
+						var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
+						var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName, StreamName.Topics);
+						return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionName, query);
+					}
+				}
+			});
+		}
 
-			var subscriptionType = typeof(TSubscription);
-			var subscriptionName = subscriptionType.GetEventStoreName();
-			var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-			var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
-			var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName, StreamName.Topics);
-			return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionName, query);
+		public Task ProvisionSubscriptionStreams(string subscriptionStream = "*")
+		{
+			return Task.WhenAll(
+				_provisioningTask
+					.Where(x => x.Key.MatchesWildcard(subscriptionStream))
+					.Select(x => _provisioningTasksQueue.SendToChannelAsync(x.Key, x.Value))
+				);
 		}
 	}
-
 }

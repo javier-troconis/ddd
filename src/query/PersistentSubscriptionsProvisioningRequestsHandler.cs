@@ -22,11 +22,11 @@ namespace query
 		{
 			Console.WriteLine("calling " + nameof(PersistentSubscriptionsProvisioningRequestsHandler) + " " + message.EventId);
 
-			Parallel.Invoke(
-				() => _subscriptionStreamProvisioner.ProvisionPersistentSubscription<Subscriber3>(),
-				() => _subscriptionStreamProvisioner.ProvisionPersistentSubscription<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>()
-				);
-			return Task.CompletedTask;
+			return _subscriptionStreamProvisioner
+				.IncludePersistentSubscription<Subscriber3>()
+				.IncludePersistentSubscription<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
+					x => x.PreferDispatchToSingle())
+				.ProvisionPersistentSubscriptions(message.Event.PersistentSubscriptionGroup);
 		}
 	}
 }
