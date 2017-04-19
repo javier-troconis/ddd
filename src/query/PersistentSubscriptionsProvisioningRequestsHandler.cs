@@ -25,7 +25,7 @@ namespace query
 			return _subscriptionStreamProvisioner
 				.IncludePersistentSubscriptionProvisioning<Subscriber3>()
 				.IncludePersistentSubscriptionProvisioning<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
-					x => x.PreferDispatchToSingle())
+					x => x.WithMaxRetriesOf(0))
 				.ProvisionPersistentSubscriptions(message.Event.PersistentSubscriptionGroup);
 		}
 	}
