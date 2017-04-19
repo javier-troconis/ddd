@@ -23,8 +23,8 @@ namespace query
 			Console.WriteLine("calling " + nameof(PersistentSubscriptionsProvisioningRequestsHandler) + " " + message.EventId);
 
 			return _subscriptionStreamProvisioner
-				.IncludePersistentSubscriptionProvisioning<Subscriber3>()
-				.IncludePersistentSubscriptionProvisioning<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
+				.RegisterPersistentSubscriptionProvisioning<Subscriber3>()
+				.RegisterPersistentSubscriptionProvisioning<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
 					x => x.WithMaxRetriesOf(0))
 				.ProvisionPersistentSubscriptions(message.Event.PersistentSubscriptionGroup);
 		}

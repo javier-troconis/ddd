@@ -12,10 +12,10 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionProvisioner
 	{
-		IPersistentSubscriptionProvisioner IncludePersistentSubscriptionProvisioning<TSubscription>(
+		IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
 			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler;
 
-		IPersistentSubscriptionProvisioner IncludePersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
+		IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
 			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription;
 
 		Task ProvisionPersistentSubscriptions(string subscriptionGroup = "*");
@@ -42,13 +42,13 @@ namespace eventstore
 			_provisioningTask = provisioningTask;
 		}
 
-		public IPersistentSubscriptionProvisioner IncludePersistentSubscriptionProvisioning<TSubscription>(
+		public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
 			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler
 		{
-			return IncludePersistentSubscriptionProvisioning<TSubscription, TSubscription>(configurePersistentSubscription);
+			return RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscription>(configurePersistentSubscription);
 		}
 
-		public IPersistentSubscriptionProvisioner IncludePersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
+		public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
 			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription
 		{
 			return new PersistentSubscriptionProvisioner(

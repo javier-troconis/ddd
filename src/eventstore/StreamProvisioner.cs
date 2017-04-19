@@ -17,7 +17,7 @@ namespace eventstore
 
 	public interface ISubscriptionStreamProvisioner
 	{
-		ISubscriptionStreamProvisioner IncludeSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler;
+		ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler;
 		Task ProvisionSubscriptionStreams(string subscriptionStream = "*");
 	}
 
@@ -65,13 +65,13 @@ fromAll()
 			var projectionQuery = string.Format(projectionQueryTemplate, StreamName.Topics);
 			return Task.WhenAll(
 				_provisioningTasksQueue.SendToChannelAsync(StreamName.Topics, () => _projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, projectionQuery)),
-				IncludeSubscriptionStreamProvisioning<IPersistentSubscriptionsProvisioningRequests>()
-					.IncludeSubscriptionStreamProvisioning<ISubscriptionStreamsProvisioningRequests>()
+				RegisterSubscriptionStreamProvisioning<IPersistentSubscriptionsProvisioningRequests>()
+					.RegisterSubscriptionStreamProvisioning<ISubscriptionStreamsProvisioningRequests>()
 						.ProvisionSubscriptionStreams()
 				);
 		}
 
-		public ISubscriptionStreamProvisioner IncludeSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler
+		public ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler
 		{
 			const string queryTemplate =
 				@"var topics = [{0}];
