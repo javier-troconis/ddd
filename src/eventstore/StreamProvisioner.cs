@@ -18,7 +18,7 @@ namespace eventstore
 	public interface ISubscriptionStreamProvisioner
 	{
 		ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler;
-		Task ProvisionSubscriptionStreams(string subscriptionStream = "*");
+		Task ProvisionSubscriptionStreams(string subscriptionStreamName = "*");
 	}
 
 	public class StreamProvisioner : ISystemStreamsProvisioner, ISubscriptionStreamProvisioner
@@ -116,11 +116,11 @@ fromStream('{2}')
 			});
 		}
 
-		public Task ProvisionSubscriptionStreams(string subscriptionStream = "*")
+		public Task ProvisionSubscriptionStreams(string subscriptionStreamName = "*")
 		{
 			return Task.WhenAll(
 				_provisioningTask
-					.Where(x => x.Key.MatchesWildcard(subscriptionStream))
+					.Where(x => x.Key.MatchesWildcard(subscriptionStreamName))
 					.Select(x => _provisioningTasksQueue.SendToChannelAsync(x.Key, x.Value))
 				);
 		}
