@@ -18,8 +18,11 @@ namespace shared
 
         public Task<bool> SendToChannelAsync(string channelName, Func<Task> getTask, TaskSucceeded taskSucceeded = null, TaskFailed taskFailed = null)
         {
-            var channel = _channels.GetOrAdd(channelName, new Lazy<Channel>(() => new Channel(channelName)));
-            return channel.Value.SendAsync(getTask, taskSucceeded, taskFailed);
+            var channel = _channels.GetOrAdd(channelName, new Lazy<Channel>(() => new Channel(channelName))).Value;
+            return channel.SendAsync(
+                getTask,
+                c => Task.Run(() => taskSucceeded?.Invoke(c)),
+                (c, ex) => Task.Run(() => taskFailed?.Invoke(c, ex)));
         }
 
         public void CancelChannel(string channelName)
@@ -58,10 +61,10 @@ namespace shared
                     }
                     catch (Exception ex)
                     {
-                        taskFailed?.Invoke(name, ex);
+                        taskFailed(name, ex);
                         return;
                     }
-                    taskSucceeded?.Invoke(name);
+                    taskSucceeded(name);
                 });
             }
 
