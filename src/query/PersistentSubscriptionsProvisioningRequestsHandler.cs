@@ -20,8 +20,6 @@ namespace query
 
 		public Task Handle(IRecordedEvent<IPersistentSubscriptionsProvisioningRequested> message)
 		{
-			Console.WriteLine("calling " + nameof(PersistentSubscriptionsProvisioningRequestsHandler) + " " + message.EventId);
-
 			return _subscriptionStreamProvisioner
 				.RegisterPersistentSubscriptionProvisioning<Subscriber3>()
 				.RegisterPersistentSubscriptionProvisioning<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(

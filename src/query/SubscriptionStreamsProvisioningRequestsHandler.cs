@@ -20,7 +20,6 @@ namespace query
 
 		public Task Handle(IRecordedEvent<ISubscriptionStreamsProvisioningRequested> message)
 		{
-			Console.WriteLine("calling " + nameof(SubscriptionStreamsProvisioningRequestsHandler) + " " + message.EventId);
 			return _subscriptionStreamProvisioner
 				.RegisterSubscriptionStreamProvisioning<Subscriber1>()
 				.RegisterSubscriptionStreamProvisioning<Subscriber2>()
