@@ -14,6 +14,7 @@ namespace query
     {
         public Task Handle(IRecordedEvent<IApplicationStartedV3> message)
         {
+            Console.WriteLine($"{nameof(Subscriber2)} - {nameof(IApplicationStartedV3)} {message.EventId}");
             return Task.CompletedTask;
         }
 
@@ -25,8 +26,8 @@ namespace query
 
         public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
 	    {
-			//Console.WriteLine($"{nameof(IApplicationStartedV1)} {message.EventStreamId}");
-			return Task.CompletedTask;
+            Console.WriteLine($"{nameof(Subscriber2)} - {nameof(IApplicationStartedV1)} {message.EventId}");
+            return Task.CompletedTask;
 		}
 
     }
