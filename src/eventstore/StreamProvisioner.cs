@@ -43,11 +43,10 @@ namespace eventstore
 
 		public Task ProvisionSystemStreams()
 		{
-            const string queryName = "by_event_topic";
-			const string queryTemplate =
+			const string projectionQueryTemplate =
 				@"function emitTopic(e) {{
     return function(topic) {{
-           var message = {{ streamId: '{0}-' + topic, eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false }};
+           var message = {{ streamId: '{0}', eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false }};
            eventProcessor.emit(message);
     }};
 }}
@@ -56,16 +55,16 @@ fromAll()
     .when({{
         $any: function(s, e) {{
             var topics;
-            if (e.streamId.indexOf('{0}') === 0  || !e.metadata || !(topics = e.metadata.topics)) {{
+            if (e.streamId === '{0}' || !e.metadata || !(topics = e.metadata.topics)) {{
                 return;
             }}
             topics.forEach(emitTopic(e));
         }}
     }});";
 
-			var query = string.Format(queryTemplate, "topic");
+			var projectionQuery = string.Format(projectionQueryTemplate, StreamName.Topics);
 			return Task.WhenAll(
-				_provisioningTasksQueue.SendToChannelAsync(queryName, () => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query)),
+				_provisioningTasksQueue.SendToChannelAsync(StreamName.Topics, () => _projectionManager.CreateOrUpdateContinuousProjection(StreamName.Topics, projectionQuery)),
 				RegisterSubscriptionStreamProvisioning<IPersistentSubscriptionsProvisioningRequests>()
 					.RegisterSubscriptionStreamProvisioning<ISubscriptionStreamsProvisioningRequests>()
 						.ProvisionSubscriptionStreams()
@@ -92,12 +91,12 @@ var handlers = topics.reduce(
         return x;
     }}, 
 	{{
-		$init: function() {{
+		$init: function(){{
 			return {{ lastEvent: ''}};
 		}}
 	}});
 
-fromAll()
+fromStream('{2}')
     .when(handlers);";
 
 			return new StreamProvisioner(_projectionManager, new Dictionary<string, Func<Task>>(_provisioningTask)
@@ -110,7 +109,7 @@ fromAll()
 						var subscriptionName = subscriptionType.GetEventStoreName();
 						var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
 						var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
-						var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName);
+						var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName, StreamName.Topics);
 						return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionName, query);
 					}
 				}
