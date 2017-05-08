@@ -38,7 +38,7 @@ namespace command
 					await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
 					Console.WriteLine("application submitted: " + streamName);
 
-					await Task.Delay(5000);
+					await Task.Delay(1000);
 				}).Wait();
 			}
 		}
