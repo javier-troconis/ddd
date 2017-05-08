@@ -134,8 +134,9 @@ namespace eventstore
 				resolvedEvent.Event.Created,
 				Event = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 			};
-			return Impromptu.CoerceConvert(recordedEvent, typeof(IRecordedEvent<>).MakeGenericType(eventType));
-		}
+            var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);
+            return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
+        }
 
         private static Task HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
 		{

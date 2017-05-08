@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-    public interface IRecordedEvent<out TEvent>
+    public interface IRecordedEvent<TEvent>
     {
 		long OriginalEventNumber { get; }
 	    string EventStreamId { get; }
