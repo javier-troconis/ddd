@@ -15,8 +15,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.7.0" />
+   
     <PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="1.1.*" />
+    <PackageReference Include="System.Threading.Tasks.Dataflow" Version="4.7.*" />
   </ItemGroup>
 
   <ItemGroup>
