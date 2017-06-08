@@ -17,9 +17,6 @@
     <ProjectReference Include="..\eventstore\eventstore.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
+
 
 </Project>

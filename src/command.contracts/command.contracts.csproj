@@ -15,9 +15,6 @@
     <ProjectReference Include="..\shared\shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Reference Include="System" />
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
+ 
 
 </Project>
