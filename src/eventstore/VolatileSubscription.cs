@@ -7,7 +7,7 @@ namespace eventstore
 {
 	public sealed class VolatileSubscription
 	{
-		private readonly Func<IEventStoreConnection> _createConnection;
+		private readonly Lazy<Task<IEventStoreConnection>> _connection;
 		private readonly string _streamName;
 		private readonly TimeSpan _reconnectDelay;
 		private readonly Func<ResolvedEvent, Task> _handleEvent;
@@ -18,7 +18,13 @@ namespace eventstore
 			Func<ResolvedEvent, Task> handleEvent,
 			TimeSpan reconnectDelay)
 		{
-			_createConnection = createConnection;
+			_connection = new Lazy<Task<IEventStoreConnection>>(
+				async () =>
+				{
+					var connection = createConnection();
+					await connection.ConnectAsync();
+					return connection;
+				});
 			_streamName = streamName;
 			_handleEvent = handleEvent;
 			_reconnectDelay = reconnectDelay;
@@ -28,18 +34,16 @@ namespace eventstore
 		{
 			while (true)
 			{
-				var connection = _createConnection();
 				try
 				{
-					await connection.ConnectAsync();
-					await connection.SubscribeToStreamAsync(_streamName, true, OnEventAppeared, OnSubscriptionDropped(connection));
-					return;
+					var connection = await _connection.Value;
+					await connection.SubscribeToStreamAsync(_streamName, true, OnEventAppeared, OnSubscriptionDropped);
+					break;
 				}
 				catch
 				{
-					connection.Dispose();
+					await Task.Delay(_reconnectDelay);
 				}
-				await Task.Delay(_reconnectDelay);
 			}
 		}
 
@@ -48,13 +52,9 @@ namespace eventstore
 			_handleEvent(resolvedEvent);
 		}
 
-		private Action<EventStoreSubscription, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
+		private async void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)
 		{
-			return async (subscription, reason, exception) =>
-			{
-				connection.Dispose();
-				await Start();
-			};
+			await Start();
 		}
 
 	}

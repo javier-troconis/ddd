@@ -8,7 +8,7 @@ namespace eventstore
 	public sealed class PersistentSubscription
 	{
 		private readonly string _groupName;
-		private readonly Func<IEventStoreConnection> _createConnection;
+		private readonly Lazy<Task<IEventStoreConnection>> _connection;
 		private readonly string _streamName;
 		private readonly Func<ResolvedEvent, Task> _handleEvent;
 		private readonly TimeSpan _reconnectDelay;
@@ -20,7 +20,13 @@ namespace eventstore
 			Func<ResolvedEvent, Task> handleEvent,
 			TimeSpan reconnectDelay)
 		{
-			_createConnection = createConnection;
+			_connection = new Lazy<Task<IEventStoreConnection>>(
+				async () =>
+				{
+					var connection = createConnection();
+					await connection.ConnectAsync();
+					return connection;
+				});
 			_streamName = streamName;
 			_groupName = groupName;
 			_handleEvent = handleEvent;
@@ -31,18 +37,16 @@ namespace eventstore
 		{
 			while (true)
 			{
-				var connection = _createConnection();
 				try
 				{
-					await connection.ConnectAsync();
-					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _groupName, OnEventAppeared, OnSubscriptionDropped(connection), autoAck: false);
-					return;
+					var connection = await _connection.Value;
+					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _groupName, OnEventAppeared, OnSubscriptionDropped, autoAck: false);
+					break;
 				}
 				catch
 				{
-					connection.Dispose();
+					await Task.Delay(_reconnectDelay);
 				}
-				await Task.Delay(_reconnectDelay);
 			}
 		}
 
@@ -51,22 +55,18 @@ namespace eventstore
 			try
 			{
 				await _handleEvent(resolvedEvent);
+				subscription.Acknowledge(resolvedEvent);
 			}
 			catch (Exception ex)
 			{
 				subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
-				return;
 			}
-			subscription.Acknowledge(resolvedEvent);
+			
 		}
 
-		private Action<EventStorePersistentSubscriptionBase, SubscriptionDropReason, Exception> OnSubscriptionDropped(IDisposable connection)
+		private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
 		{
-			return async (subscription, reason, exception) =>
-			{
-				connection.Dispose();
-				await Start();
-			};
+			await Start();
 		}
 	}
 }
