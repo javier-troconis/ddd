@@ -18,7 +18,9 @@ namespace management
                 EventStoreSettings.ClusterDns,
                 EventStoreSettings.InternalHttpPort,
                 EventStoreSettings.Username,
-                EventStoreSettings.Password);
+                EventStoreSettings.Password, 
+				x => x
+					.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)));
 
 			var connection = connectionFactory.CreateConnection();
 			connection.ConnectAsync().Wait();

@@ -5,20 +5,18 @@ using EventStore.ClientAPI;
 
 namespace eventstore
 {
-	public sealed class CatchUpSubscription
+	public sealed class VolatileSubscriber
 	{
 		private readonly Lazy<Task<IEventStoreConnection>> _connection;
 		private readonly string _streamName;
 		private readonly TimeSpan _reconnectDelay;
-		private readonly Func<ResolvedEvent, Task> _handleEvent;
-		private readonly Func<Task<long?>> _getCheckpoint;
+		private readonly Action<EventStoreSubscription, ResolvedEvent> _handleEvent;
 
-		public CatchUpSubscription(
+		public VolatileSubscriber(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
-			Func<ResolvedEvent, Task> handleEvent,
-			TimeSpan reconnectDelay,
-			Func<Task<long?>> getCheckpoint)
+			Action<EventStoreSubscription, ResolvedEvent> handleEvent,
+			TimeSpan reconnectDelay)
 		{
 			_connection = new Lazy<Task<IEventStoreConnection>>(
 				async () =>
@@ -30,7 +28,6 @@ namespace eventstore
 			_streamName = streamName;
 			_handleEvent = handleEvent;
 			_reconnectDelay = reconnectDelay;
-			_getCheckpoint = getCheckpoint;
 		}
 
 		public async Task Start()
@@ -40,8 +37,7 @@ namespace eventstore
 				try
 				{
 					var connection = await _connection.Value;
-					var checkpoint = await _getCheckpoint();
-					connection.SubscribeToStreamFrom(_streamName, checkpoint, CatchUpSubscriptionSettings.Default, OnEventAppeared, subscriptionDropped: OnSubscriptionDropped);
+					await connection.SubscribeToStreamAsync(_streamName, true, _handleEvent, OnSubscriptionDropped);
 					break;
 				}
 				catch
@@ -51,12 +47,7 @@ namespace eventstore
 			}
 		}
 
-		private void OnEventAppeared(EventStoreCatchUpSubscription subscription, ResolvedEvent resolvedEvent)
-		{
-			_handleEvent(resolvedEvent);
-		}
-
-		private async void OnSubscriptionDropped(EventStoreCatchUpSubscription subscription, SubscriptionDropReason reason, Exception exception)
+		private async void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)
 		{
 			await Start();
 		}

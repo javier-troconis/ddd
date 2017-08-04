@@ -5,17 +5,19 @@ using EventStore.ClientAPI;
 
 namespace eventstore
 {
-	public sealed class VolatileSubscription
+	public sealed class PersistentSubscriber
 	{
+		private readonly string _groupName;
 		private readonly Lazy<Task<IEventStoreConnection>> _connection;
 		private readonly string _streamName;
+		private readonly Action<EventStorePersistentSubscriptionBase, ResolvedEvent> _handleEvent;
 		private readonly TimeSpan _reconnectDelay;
-		private readonly Func<ResolvedEvent, Task> _handleEvent;
 
-		public VolatileSubscription(
+		public PersistentSubscriber(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
-			Func<ResolvedEvent, Task> handleEvent,
+			string groupName,
+			Action<EventStorePersistentSubscriptionBase, ResolvedEvent> handleEvent,
 			TimeSpan reconnectDelay)
 		{
 			_connection = new Lazy<Task<IEventStoreConnection>>(
@@ -26,6 +28,7 @@ namespace eventstore
 					return connection;
 				});
 			_streamName = streamName;
+			_groupName = groupName;
 			_handleEvent = handleEvent;
 			_reconnectDelay = reconnectDelay;
 		}
@@ -37,7 +40,7 @@ namespace eventstore
 				try
 				{
 					var connection = await _connection.Value;
-					await connection.SubscribeToStreamAsync(_streamName, true, OnEventAppeared, OnSubscriptionDropped);
+					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _groupName, _handleEvent, OnSubscriptionDropped, autoAck: false);
 					break;
 				}
 				catch
@@ -47,16 +50,9 @@ namespace eventstore
 			}
 		}
 
-		private void OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
-		{
-			_handleEvent(resolvedEvent);
-		}
-
-		private async void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)
+		private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
 		{
 			await Start();
 		}
-
 	}
-
 }
