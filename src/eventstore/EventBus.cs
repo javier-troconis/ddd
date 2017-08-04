@@ -165,11 +165,18 @@ namespace eventstore
 
 		private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandler(IMessageHandler subscriber)
 		{
+			//Task HandleEvent<TRecordedEvent>(TRecordedEvent recordedEvent)
+			//{
+			//	var handler = (IMessageHandler<TRecordedEvent, Task>)subscriber;
+			//	return handler.Handle(recordedEvent);
+			//}
+
 			var eventHandlingTypes = subscriber
 				.GetType()
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0])
 				.ToArray();
+
 
 			return async resolvedEvent =>
 			{
