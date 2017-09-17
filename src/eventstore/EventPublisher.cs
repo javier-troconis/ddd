@@ -22,7 +22,7 @@ namespace eventstore
 
 	    public Task PublishEvent(object @event, Func<EventDataSettings, EventDataSettings> configureEventDataSettings)
 	    {
-		    return _eventStore.WriteEvents(@event.GetType().GetEventStoreName(), ExpectedVersion.Any, new[] { @event }, configureEventDataSettings);
+		    return _eventStore.WriteEvents(typeof(EventPublisher).GetEventStoreName(), ExpectedVersion.Any, new[] { @event }, configureEventDataSettings);
 	    }
     }
 }

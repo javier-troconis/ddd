@@ -42,7 +42,9 @@ namespace management
 							EventStoreSettings.Username,
 							EventStoreSettings.Password,
 							new ConsoleLogger());
-						var streamProvisioner = new StreamProvisioner(projectionManager);
+                        var topicStreamProvisioner = new TopicStreamProvisioner(projectionManager);
+                        var subscriptionStreamProvisioner = new SubscriptionStreamProvisioner(projectionManager);
+						var streamProvisioner = new SystemStreamsProvisioner(topicStreamProvisioner, subscriptionStreamProvisioner);
 						streamProvisioner.ProvisionSystemStreams();
                         break;
                     case '2':

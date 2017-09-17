@@ -43,7 +43,7 @@ namespace query
 					.RegisterPersistentSubscriber(
 							new Subscriber3())
 					.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
-							new SubscriptionStreamsProvisioningRequestsHandler(new StreamProvisioner(projectionManager))
+							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))
 							)
 					.RegisterVolatileSubscriber<IPersistentSubscriptionsProvisioningRequests, PersistentSubscriptionsProvisioningRequestsHandler>(
 							new PersistentSubscriptionsProvisioningRequestsHandler(new PersistentSubscriptionProvisioner(persistentSubscriptionManager))
