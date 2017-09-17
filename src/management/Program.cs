@@ -31,8 +31,9 @@ namespace management
                 Console.WriteLine("1 - provision system streams");
 				Console.WriteLine("2 - request persistent subscriptions provisioning");
 				Console.WriteLine("3 - request subscription streams provisioning");
-				
-                switch (Console.ReadKey().KeyChar)
+
+                var option = Console.ReadKey().KeyChar;
+                switch (option)
                 {
                     case '1':
 						var projectionManager = new ProjectionManager(
