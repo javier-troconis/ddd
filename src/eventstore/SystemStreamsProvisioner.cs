@@ -37,7 +37,7 @@ namespace eventstore
                     _subscriptionStreamProvisioner
                         .RegisterSubscriptionStreamProvisioning<IPersistentSubscriptionsProvisioningRequests>()
                         .RegisterSubscriptionStreamProvisioning<ISubscriptionStreamsProvisioningRequests>()
-                        .ProvisionSubscriptionStream()
+                        .ProvisionSubscriptionStreams()
                 );
 		}
 

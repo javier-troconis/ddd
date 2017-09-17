@@ -24,7 +24,7 @@ namespace query
 				.RegisterSubscriptionStreamProvisioning<Subscriber1>()
 				.RegisterSubscriptionStreamProvisioning<Subscriber2>()
 				.RegisterSubscriptionStreamProvisioning<Subscriber3>()
-				.ProvisionSubscriptionStream(message.Event.SubscriptionStream);
+				.ProvisionSubscriptionStreams(message.Event.SubscriptionStream);
 		}
 	}
 }
