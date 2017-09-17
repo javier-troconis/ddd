@@ -10,79 +10,82 @@ using shared;
 
 namespace eventstore
 {
-	public interface IPersistentSubscriptionProvisioner
-	{
-		IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
-			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler;
+    public interface IPersistentSubscriptionProvisioner
+    {
+        IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
+            Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler;
 
-		IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
-			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription;
+        IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
+            Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription;
 
-		Task ProvisionPersistentSubscriptions(string subscriptionGroupName = "*");
-	}
+        Task ProvisionPersistentSubscriptions(string subscriptionGroupName = "*");
+    }
 
-	public class PersistentSubscriptionProvisioner : IPersistentSubscriptionProvisioner
-	{
-		private static readonly TaskQueue _provisioningTasksQueue = new TaskQueue();
-		private readonly IPersistentSubscriptionManager _persistentSubscriptionManager;
-		private readonly IDictionary<string, Func<Task>> _provisioningTask;
+    public class PersistentSubscriptionProvisioner : IPersistentSubscriptionProvisioner
+    {
+        private static readonly TaskQueue _provisioningTasksQueue = new TaskQueue();
+        private readonly IPersistentSubscriptionManager _persistentSubscriptionManager;
+        private readonly IEnumerable<Func<string, Task>> _provisioningTasks;
 
-		public PersistentSubscriptionProvisioner(IPersistentSubscriptionManager persistentSubscriptionManager)
-			:
-				this(persistentSubscriptionManager, new Dictionary<string, Func<Task>>())
-		{
-		}
+        public PersistentSubscriptionProvisioner(IPersistentSubscriptionManager persistentSubscriptionManager)
+            :
+                this(persistentSubscriptionManager, Enumerable.Empty<Func<string, Task>>())
+        {
+        }
 
-		private PersistentSubscriptionProvisioner(
-			IPersistentSubscriptionManager persistentSubscriptionManager,
-			IDictionary<string, Func<Task>> provisioningTask
-			)
-		{
-			_persistentSubscriptionManager = persistentSubscriptionManager;
-			_provisioningTask = provisioningTask;
-		}
+        private PersistentSubscriptionProvisioner(
+            IPersistentSubscriptionManager persistentSubscriptionManager,
+            IEnumerable<Func<string, Task>> provisioningTasks
+            )
+        {
+            _persistentSubscriptionManager = persistentSubscriptionManager;
+            _provisioningTasks = provisioningTasks;
+        }
 
-		public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
-			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler
-		{
-			return RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscription>(configurePersistentSubscription);
-		}
+        public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
+            Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler
+        {
+            return RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscription>(configurePersistentSubscription);
+        }
 
-		public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
-			Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription
-		{
-			return new PersistentSubscriptionProvisioner(
-				_persistentSubscriptionManager,
-				new Dictionary<string, Func<Task>>(_provisioningTask)
-				{
-					{
-						typeof(TSubscriptionGroup).GetEventStoreName(),
-						() =>
-						{
-							configurePersistentSubscription = configurePersistentSubscription ?? (x => x);
-							var streamName = typeof(TSubscription).GetEventStoreName();
-							var groupName = typeof(TSubscriptionGroup).GetEventStoreName();
-							var persistentSubscriptionSettings = configurePersistentSubscription(
-								PersistentSubscriptionSettings
-									.Create()
-									.ResolveLinkTos()
-									.StartFromBeginning()
-									.MaximumCheckPointCountOf(1)
-									.CheckPointAfter(TimeSpan.FromSeconds(1))
-									.WithExtraStatistics());
-							return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, groupName, persistentSubscriptionSettings);
-						}
-					}
-				});
-		}
+        public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
+            Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription
+        {
+            return new PersistentSubscriptionProvisioner(
+                _persistentSubscriptionManager,
+                _provisioningTasks.Concat(
+                    new Func<string, Task>[] {
+                        targetSubscriptionGroupName =>
+                            {
+                                var subscriptionGroupName = typeof(TSubscription).GetEventStoreName();
+                                if(!subscriptionGroupName.MatchesWildcard(targetSubscriptionGroupName))
+                                {
+                                    return Task.CompletedTask;
+                                }
+                                return _provisioningTasksQueue.SendToChannelAsync(subscriptionGroupName,
+                                    () =>
+                                        {
+                                            configurePersistentSubscription = configurePersistentSubscription ?? (x => x);
+                                            var streamName = typeof(TSubscription).GetEventStoreName();
+                                            var groupName = typeof(TSubscriptionGroup).GetEventStoreName();
+                                            var persistentSubscriptionSettings = configurePersistentSubscription(
+                                                PersistentSubscriptionSettings
+                                                    .Create()
+                                                    .ResolveLinkTos()
+                                                    .StartFromBeginning()
+                                                    .MaximumCheckPointCountOf(1)
+                                                    .CheckPointAfter(TimeSpan.FromSeconds(1))
+                                                    .WithExtraStatistics());
+                                            return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, groupName, persistentSubscriptionSettings);
+                                        });
+                            }
+                    })
+            );
+        }
 
-		public Task ProvisionPersistentSubscriptions(string subscriptionGroupName = "*")
-		{
-			return Task.WhenAll(
-				_provisioningTask
-					.Where(x => x.Key.MatchesWildcard(subscriptionGroupName))
-					.Select(x => _provisioningTasksQueue.SendToChannelAsync(x.Key, x.Value))
-					);
-		}
-	}
+        public Task ProvisionPersistentSubscriptions(string targetSubscriptionGroupName = "*")
+        {
+            return Task.WhenAll(_provisioningTasks.Select(x => x(targetSubscriptionGroupName)));
+        }
+    }
 }

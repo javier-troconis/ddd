@@ -17,7 +17,6 @@ namespace eventstore
 
 	public class SystemStreamsProvisioner : ISystemStreamsProvisioner
 	{
-		private static readonly TaskQueue _provisioningTasksQueue = new TaskQueue();
         private readonly ITopicStreamProvisioner _topicStreamProvisioner;
         private readonly ISubscriptionStreamProvisioner _subscriptionStreamProvisioner;
 

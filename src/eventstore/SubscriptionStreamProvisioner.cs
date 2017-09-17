@@ -26,11 +26,11 @@ namespace eventstore
 
         private SubscriptionStreamProvisioner(
             IProjectionManager projectionManager,
-            IEnumerable<Func<string, Task>> provisioningTask
+            IEnumerable<Func<string, Task>> provisioningTasks
             )
         {
             _projectionManager = projectionManager;
-            _provisioningTasks = provisioningTask;
+            _provisioningTasks = provisioningTasks;
         }
 
         public ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler
