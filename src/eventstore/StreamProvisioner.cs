@@ -15,11 +15,7 @@ namespace eventstore
 		Task ProvisionSystemStreams();
 	}
 
-	public interface ISubscriptionStreamProvisioner
-	{
-		ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler;
-		Task ProvisionSubscriptionStreams(string subscriptionStreamName = "*");
-	}
+	
 
 	public class StreamProvisioner : ISystemStreamsProvisioner, ISubscriptionStreamProvisioner
 	{
@@ -43,7 +39,7 @@ namespace eventstore
 
 		public Task ProvisionSystemStreams()
 		{
-            const string queryName = "by_event_topic";
+            const string queryName = "topic";
 			const string queryTemplate =
 				@"function emitTopic(e) {{
     return function(topic) {{
@@ -63,7 +59,7 @@ fromAll()
         }}
     }});";
 
-			var query = string.Format(queryTemplate, "topic");
+			var query = string.Format(queryTemplate, queryName);
 			return Task.WhenAll(
 				_provisioningTasksQueue.SendToChannelAsync(queryName, () => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query)),
 				RegisterSubscriptionStreamProvisioning<IPersistentSubscriptionsProvisioningRequests>()
