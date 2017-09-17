@@ -44,8 +44,8 @@ namespace management
 							new ConsoleLogger());
                         var topicStreamProvisioner = new TopicStreamProvisioner(projectionManager);
                         var subscriptionStreamProvisioner = new SubscriptionStreamProvisioner(projectionManager);
-						var streamProvisioner = new SystemStreamsProvisioner(topicStreamProvisioner, subscriptionStreamProvisioner);
-						streamProvisioner.ProvisionSystemStreams();
+						var systemStreamProvisioner = new SystemStreamsProvisioner(topicStreamProvisioner, subscriptionStreamProvisioner);
+						systemStreamProvisioner.ProvisionSystemStreams();
                         break;
                     case '2':
 						var persistentSubscriptionProvisioningRequestor = new PersistentSubscriptionProvisioningRequestor(eventPublisher);
