@@ -10,7 +10,7 @@ namespace eventstore
     public interface ISubscriptionStreamProvisioner
     {
         ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler;
-        Task ProvisionSubscriptionStream(string targetSubscriptionStreamName = "*");
+        Task ProvisionSubscriptionStream(string subscriptionStreamNameWildcard = "*");
     }
 
     public class SubscriptionStreamProvisioner : ISubscriptionStreamProvisioner
@@ -65,10 +65,10 @@ fromAll()
                 _projectionManager,
                 _provisioningTasks.Concat(
                     new Func<string, Task>[] {
-                        targetSubscriptionStreamName =>
+                        subscriptionStreamNameWildcard =>
                             {
                                 var subscriptionStreamName = typeof(TSubscription).GetEventStoreName();
-                                if(!subscriptionStreamName.MatchesWildcard(targetSubscriptionStreamName))
+                                if(!subscriptionStreamName.MatchesWildcard(subscriptionStreamNameWildcard))
                                 {
                                     return Task.CompletedTask;
                                 }
@@ -87,9 +87,9 @@ fromAll()
             );
         }
 
-        public Task ProvisionSubscriptionStream(string targetSubscriptionStreamName = "*")
+        public Task ProvisionSubscriptionStream(string subscriptionStreamNameWildcard = "*")
         {
-            return Task.WhenAll(_provisioningTasks.Select(x => x(targetSubscriptionStreamName)));
+            return Task.WhenAll(_provisioningTasks.Select(x => x(subscriptionStreamNameWildcard)));
         }
     }
 }
