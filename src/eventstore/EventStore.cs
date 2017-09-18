@@ -20,8 +20,8 @@ namespace eventstore
 
 		private EventDataSettings(Guid eventId, string eventName, IDictionary<string, object> eventHeader)
 		{
-			EventName = eventName;
 			EventId = eventId;
+			EventName = eventName;
 			EventHeader = eventHeader;
 		}
 
