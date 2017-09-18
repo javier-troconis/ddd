@@ -28,32 +28,25 @@ namespace eventstore
         {
             const string queryName = "topic";
             const string queryTemplate =
-                @"var topics = [{0}];
-
-function handle(s, e) {{
-    var event = e.bodyRaw;
-    if(event !== s.lastEvent) {{ 
-        var message = {{ streamId: '{1}', eventName: '$>', body: event, isJson: false }};
-        eventProcessor.emit(message);
-    }}
-	s.lastEvent = event;
+				@"function emitTopic(e) {{
+    return function(topic) {{
+           var message = {{ streamId: '{0}-' + topic, eventName: topic, body: e.sequenceNumber + '@' + e.streamId, isJson: false }};
+           eventProcessor.emit(message);
+    }};
 }}
 
-var handlers = topics.reduce(
-    function(x, y) {{
-        x[y] = handle;
-        return x;
-    }}, 
-	{{
-		$init: function() {{
-			return {{ lastEvent: ''}};
-		}}
-	}});
-
 fromAll()
-    .when(handlers);";
+    .when({{
+        $any: function(s, e) {{
+            var topics;
+            if (e.streamId.indexOf('{0}') === 0  || !e.metadata || !(topics = e.metadata.topics)) {{
+                return;
+            }}
+            topics.forEach(emitTopic(e));
+        }}
+    }});";
 
-            var query = string.Format(queryTemplate, queryName);
+			var query = string.Format(queryTemplate, queryName);
             return _provisioningTasksQueue.SendToChannelAsync(queryName, () => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query));
         }
     }
