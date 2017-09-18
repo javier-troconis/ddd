@@ -36,12 +36,12 @@ namespace query
 							new Subscriber2(),
 							() => Task.FromResult(default(long?))
 							)
-					.RegisterCatchupSubscriber(
-							new Subscriber1(),
-							() => Task.FromResult(default(long?))
-							)
-					.RegisterPersistentSubscriber(
-							new Subscriber3())
+					//.RegisterCatchupSubscriber(
+					//		new Subscriber1(),
+					//		() => Task.FromResult(default(long?))
+					//		)
+					//.RegisterPersistentSubscriber(
+					//		new Subscriber3())
 					.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
 							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))
 							)
