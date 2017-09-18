@@ -54,8 +54,6 @@ namespace eventstore
 
 	public class EventStore : IEventStore
 	{
-		private const int _defaultSliceSize = 10;
-		private static readonly JsonSerializerSettings _serializerSettings = new JsonSerializerSettings { TypeNameHandling = TypeNameHandling.None };
 		private readonly IEventStoreConnection _eventStoreConnection;
 
 		public EventStore(IEventStoreConnection eventStoreConnection)
@@ -84,12 +82,14 @@ namespace eventstore
 
 		private async Task<IEnumerable<ResolvedEvent>> ReadResolvedEvents(string streamName, long fromEventNumber)
 		{
+			const int defaultSliceSize = 10;
+
 			var resolvedEvents = new List<ResolvedEvent>();
 
 			StreamEventsSlice slice;
 			do
 			{
-				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, fromEventNumber, _defaultSliceSize, false).ConfigureAwait(false);
+				slice = await _eventStoreConnection.ReadStreamEventsForwardAsync(streamName, fromEventNumber, defaultSliceSize, false).ConfigureAwait(false);
 				if (slice.Status == SliceReadStatus.StreamNotFound)
 				{
 					throw new Exception($"Stream {streamName} not found.");
@@ -99,7 +99,7 @@ namespace eventstore
 					throw new Exception($"Stream {streamName} has been deleted.");
 				}
 				resolvedEvents.AddRange(slice.Events);
-				fromEventNumber += _defaultSliceSize;
+				fromEventNumber += defaultSliceSize;
 			} while (!slice.IsEndOfStream);
 
 			return resolvedEvents;
@@ -107,8 +107,12 @@ namespace eventstore
 
 		private static EventData ConvertToEventData(object @event, EventDataSettings eventDataSettings)
 		{
-			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, _serializerSettings));
-			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventDataSettings.EventHeader, _serializerSettings));
+			var serializerSettings = new JsonSerializerSettings
+			{
+				TypeNameHandling = TypeNameHandling.None
+			};
+			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, serializerSettings));
+			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventDataSettings.EventHeader, serializerSettings));
 			return new EventData(eventDataSettings.EventId, eventDataSettings.EventName, true, eventData, eventMetadata);
 		}
 
