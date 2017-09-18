@@ -26,59 +26,59 @@ namespace command
             connection.ConnectAsync().Wait();
             IEventStore eventStore = new eventstore.EventStore(connection);
 
-	        while (true)
-	        {
-		        Console.WriteLine("1 - IApplicationStartedV1");
-		        Console.WriteLine("2 - IApplicationStartedV2");
-		        Console.WriteLine("3 - IApplicationStartedV3");
-
-		        var option = Console.ReadKey().KeyChar;
-		        switch (option)
-		        {
-			        case '1':
-				        eventStore.WriteEvents(
-						        "application-" + Guid.NewGuid().ToString("N").ToLower(),
-						        ExpectedVersion.NoStream,
-						        Commands.StartApplicationV1())
-					        .Wait();
-				        break;
-					case '2':
-				        eventStore.WriteEvents(
-								"application-" + Guid.NewGuid().ToString("N").ToLower(), 
-								ExpectedVersion.NoStream, 
-								Commands.StartApplicationV2())
-							.Wait();
-						break;
-			        case '3':
-						eventStore.WriteEvents(
-								"application-" + Guid.NewGuid().ToString("N").ToLower(),
-								ExpectedVersion.NoStream,
-								Commands.StartApplicationV3())
-							.Wait();
-						break;
-			        default:
-				        return;
-		        }
-		        Console.WriteLine();
-	        }
-
-			//while (true)
-			//{
-			//    Task.Run(async () =>
+			//    while (true)
 			//    {
-			//        var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
-			//        eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Commands.StartApplicationV3()).Wait();
-			//        Console.WriteLine("application started: " + streamName);
+			//     Console.WriteLine("1 - IApplicationStartedV1");
+			//     Console.WriteLine("2 - IApplicationStartedV2");
+			//     Console.WriteLine("3 - IApplicationStartedV3");
 
-			//        //var events = await eventStore.ReadEventsForward(streamName);
-			//        //var state = events.Aggregate(new SubmitApplicationV1State(), MessageHandlerExtensions.Apply);
-			//        //var newEvents = Commands.SubmitApplicationV1(state, streamName);
-			//        //await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
-			//        //Console.WriteLine("application submitted: " + streamName);
+			//     var option = Console.ReadKey().KeyChar;
+			//     switch (option)
+			//     {
+			//      case '1':
+			//       eventStore.WriteEvents(
+			//	        "application-" + Guid.NewGuid().ToString("N").ToLower(),
+			//	        ExpectedVersion.NoStream,
+			//	        Command.StartApplicationV1())
+			//        .Wait();
+			//       break;
+			//case '2':
+			//       eventStore.WriteEvents(
+			//			"application-" + Guid.NewGuid().ToString("N").ToLower(), 
+			//			ExpectedVersion.NoStream, 
+			//			Command.StartApplicationV2())
+			//		.Wait();
+			//	break;
+			//      case '3':
+			//	eventStore.WriteEvents(
+			//			"application-" + Guid.NewGuid().ToString("N").ToLower(),
+			//			ExpectedVersion.NoStream,
+			//			Command.StartApplicationV3())
+			//		.Wait();
+			//	break;
+			//      default:
+			//       return;
+			//     }
+			//     Console.WriteLine();
+			//    }
 
-			//        await Task.Delay(5000);
-			//    }).Wait();
-			//}
+			while (true)
+			{
+				Task.Run(async () =>
+				{
+					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
+					await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Command.StartApplicationV3());
+					Console.WriteLine("application started: " + streamName);
+
+					var events = await eventStore.ReadEventsForward(streamName);
+					var state = events.Aggregate(new SubmitApplicationState(), MessageHandlerExtensions.Apply);
+					var newEvents = Command.SubmitApplicationV1(state, streamName);
+					await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
+					Console.WriteLine("application submitted: " + streamName);
+
+					await Task.Delay(1000);
+				}).Wait();
+			}
 		}
     }
 }
