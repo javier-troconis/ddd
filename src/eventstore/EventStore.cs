@@ -50,6 +50,7 @@ namespace eventstore
 	{
 		Task<object[]> ReadEventsForward(string streamName, long fromEventNumber = 0);
 		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventDataSettings, EventDataSettings> configureEventDataSettings = null);
+		Task<WriteResult> WriteStreamMetadata(string streamName, long expectedMetadataStreamVersion, StreamMetadata metadata);
 	}
 
 	public class EventStore : IEventStore
@@ -122,6 +123,11 @@ namespace eventstore
 			var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
 			var eventClrTypeName = (string)eventMetadata.Property(EventHeaderKey.ClrType).Value;
 			return JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
+		}
+
+		public Task<WriteResult> WriteStreamMetadata(string streamName, long expectedMetadataStreamVersion, StreamMetadata metadata)
+		{
+			return _eventStoreConnection.SetStreamMetadataAsync(streamName, expectedMetadataStreamVersion, metadata);
 		}
 	}
 }
