@@ -23,7 +23,10 @@ namespace query
 			return _subscriptionStreamProvisioner
 				.RegisterPersistentSubscriptionProvisioning<Subscriber3>()
 				.RegisterPersistentSubscriptionProvisioning<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
-					x => x.WithMaxRetriesOf(0))
+					x => x
+                        .WithMaxRetriesOf(0)
+                        .PreferDispatchToSingle()
+                    )
 				.ProvisionPersistentSubscriptions(message.Event.PersistentSubscriptionGroup);
 		}
 	}
