@@ -52,6 +52,7 @@ namespace eventstore
 
 		private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
 		{
+			subscription.Stop(TimeSpan.FromSeconds(10));
 			await Start();
 		}
 	}
