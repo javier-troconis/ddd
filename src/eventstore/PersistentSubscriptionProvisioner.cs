@@ -18,7 +18,7 @@ namespace eventstore
         IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
             Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription;
 
-        Task ProvisionPersistentSubscriptions(string subscriptionGroupNameWildcard = "*");
+        Task ProvisionPersistentSubscriptions(string targetSubscriptionGroupName = "*");
     }
 
     public class PersistentSubscriptionProvisioner : IPersistentSubscriptionProvisioner
@@ -55,37 +55,34 @@ namespace eventstore
                 _persistentSubscriptionManager,
                 _provisioningTasks.Concat(
                     new Func<string, Task>[] {
-                        subscriptionGroupNameWildcard =>
+                        targetSubscriptionGroupName =>
                             {
-                                var subscriptionGroupName = typeof(TSubscription).GetEventStoreName();
-                                if(!subscriptionGroupName.MatchesWildcard(subscriptionGroupNameWildcard))
+                                var subscriptionGroupName = typeof(TSubscriptionGroup).GetEventStoreName();
+                                if(!subscriptionGroupName.MatchesWildcard(targetSubscriptionGroupName))
                                 {
                                     return Task.CompletedTask;
                                 }
-                                return _provisioningTasksQueue.SendToChannelAsync(subscriptionGroupName,
-                                    () =>
-                                        {
-                                            configurePersistentSubscription = configurePersistentSubscription ?? (x => x);
-                                            var streamName = typeof(TSubscription).GetEventStoreName();
-                                            var groupName = typeof(TSubscriptionGroup).GetEventStoreName();
-                                            var persistentSubscriptionSettings = configurePersistentSubscription(
-                                                PersistentSubscriptionSettings
-                                                    .Create()
-                                                    .ResolveLinkTos()
-                                                    .StartFromBeginning()
-                                                    .MaximumCheckPointCountOf(1)
-                                                    .CheckPointAfter(TimeSpan.FromSeconds(1))
-                                                    .WithExtraStatistics());
-                                            return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, groupName, persistentSubscriptionSettings);
-                                        });
+                                var streamName = typeof(TSubscription).GetEventStoreName();
+                                configurePersistentSubscription = configurePersistentSubscription ?? (x => x);
+                                var persistentSubscriptionSettings = configurePersistentSubscription(
+                                    PersistentSubscriptionSettings
+                                        .Create()
+                                        .ResolveLinkTos()
+                                        .StartFromBeginning()
+                                        .MaximumCheckPointCountOf(1)
+                                        .CheckPointAfter(TimeSpan.FromSeconds(1))
+                                        .WithExtraStatistics()
+                                    );
+                                return _provisioningTasksQueue.SendToChannelAsync(streamName,
+                                    () =>_persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, subscriptionGroupName, persistentSubscriptionSettings));
                             }
                     })
             );
         }
 
-        public Task ProvisionPersistentSubscriptions(string subscriptionGroupNameWildcard = "*")
+        public Task ProvisionPersistentSubscriptions(string targetSubscriptionGroupName)
         {
-            return Task.WhenAll(_provisioningTasks.Select(x => x(subscriptionGroupNameWildcard)));
+            return Task.WhenAll(_provisioningTasks.Select(x => x(targetSubscriptionGroupName)));
         }
     }
 }

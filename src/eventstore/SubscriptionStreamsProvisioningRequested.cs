@@ -3,8 +3,6 @@
 namespace eventstore
 {
 
-    // todo: rename to ISubscriptionStreamProvisionRequested
-
     public interface ISubscriptionStreamsProvisioningRequested
 	{
 		string SubscriptionStream { get; }

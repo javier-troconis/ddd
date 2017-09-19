@@ -10,7 +10,7 @@ namespace eventstore
     public interface ISubscriptionStreamProvisioner
     {
         ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler;
-        Task ProvisionSubscriptionStreams(string subscriptionStreamNameWildcard = "*");
+        Task ProvisionSubscriptionStreams(string targetSubscriptionStreamName = "*");
     }
 
     public class SubscriptionStreamProvisioner : ISubscriptionStreamProvisioner
@@ -65,31 +65,27 @@ fromAll()
                 _projectionManager,
                 _provisioningTasks.Concat(
                     new Func<string, Task>[] {
-                        subscriptionStreamNameWildcard =>
+                        targetSubscriptionStreamName =>
                             {
                                 var subscriptionStreamName = typeof(TSubscription).GetEventStoreName();
-                                if(!subscriptionStreamName.MatchesWildcard(subscriptionStreamNameWildcard))
+                                if(!subscriptionStreamName.MatchesWildcard(targetSubscriptionStreamName))
                                 {
                                     return Task.CompletedTask;
                                 }
+                                var subscriptionType = typeof(TSubscription);
+                                var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
+                                var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
+                                var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionStreamName);
                                 return _provisioningTasksQueue.SendToChannelAsync(subscriptionStreamName,
-                                    () =>
-                                        {
-                                            var subscriptionType = typeof(TSubscription);
-                                            var subscriptionName = subscriptionType.GetEventStoreName();
-                                            var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-                                            var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
-                                            var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionName);
-                                            return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionName, query);
-                                        });
+                                    () => _projectionManager.CreateOrUpdateContinuousProjection(subscriptionStreamName, query));
                             }
                     })
             );
         }
 
-        public Task ProvisionSubscriptionStreams(string subscriptionStreamNameWildcard = "*")
+        public Task ProvisionSubscriptionStreams(string targetSubscriptionStreamName = "*")
         {
-            return Task.WhenAll(_provisioningTasks.Select(x => x(subscriptionStreamNameWildcard)));
+            return Task.WhenAll(_provisioningTasks.Select(x => x(targetSubscriptionStreamName)));
         }
     }
 }
