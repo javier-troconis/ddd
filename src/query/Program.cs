@@ -37,14 +37,13 @@ namespace query
 							)
 					.RegisterCatchupSubscriber(
 							new Subscriber2(),
-							() => Task.FromResult(default(long?))
-							)
-					.RegisterPersistentSubscriber(
-							new Subscriber3(),
-							SubscriberResolvedEventHandlerFactory
-								.CreateSubscriberResolvedEventHandler(new Subscriber3Continuation())
+							() => Task.FromResult(default(long?)),
+							new Subscriber2Continuation()
+								.CreateResolvedEventHandler()
 								.ToAsyncInput()
-								.ComposeBackward
+								.ComposeBackward)
+					.RegisterPersistentSubscriber(
+							new Subscriber3()
 							)
 					.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
 							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))

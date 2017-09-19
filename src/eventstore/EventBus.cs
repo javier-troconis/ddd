@@ -42,7 +42,7 @@ namespace eventstore
 		public EventBus RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint,
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
 		{
-			var subscriberResolvedEventHandler = SubscriberResolvedEventHandlerFactory.CreateSubscriberResolvedEventHandler(subscriber);
+			var subscriberResolvedEventHandler = MessageHandlerExtensions.CreateResolvedEventHandler(subscriber);
 			processEventHandling = processEventHandling ?? (x => x);
 
 			return new EventBus(_createConnection,
@@ -72,7 +72,7 @@ namespace eventstore
 		public EventBus RegisterVolatileSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber,
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
 		{
-			var subscriberResolvedEventHandler = SubscriberResolvedEventHandlerFactory.CreateSubscriberResolvedEventHandler(subscriber);
+			var subscriberResolvedEventHandler = MessageHandlerExtensions.CreateResolvedEventHandler(subscriber);
 			processEventHandling = processEventHandling ?? (x => x);
 
 			return new EventBus(_createConnection,
@@ -101,7 +101,7 @@ namespace eventstore
 		public EventBus RegisterPersistentSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber,
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
 		{
-			var subscriberResolvedEventHandler = SubscriberResolvedEventHandlerFactory.CreateSubscriberResolvedEventHandler(subscriber);
+			var subscriberResolvedEventHandler = MessageHandlerExtensions.CreateResolvedEventHandler(subscriber);
 			processEventHandling = processEventHandling ?? (x => x);
 
 			void EventHandlingSucceeded(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent)

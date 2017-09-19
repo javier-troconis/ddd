@@ -11,9 +11,9 @@ using shared;
 
 namespace eventstore
 {
-    public static class SubscriberResolvedEventHandlerFactory
+    public static class MessageHandlerExtensions
     {
-	    public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandler(IMessageHandler subscriber)
+	    public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandler(this IMessageHandler subscriber)
 	    {
 		    var eventHandlingTypes = subscriber
 			    .GetType()
@@ -40,7 +40,6 @@ namespace eventstore
 		    if (eventType == null)
 		    {
 			    return null;
-			    //throw new Exception($"Failed to deserialized event for topic {topics[0]}. The messagehandler for topic {topics[0]} has been removed from the subscriber but the subscription stream has not been updated.");
 		    }
 		    var recordedEvent = new
 		    {

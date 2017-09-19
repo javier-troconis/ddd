@@ -29,6 +29,15 @@ namespace query
             Console.WriteLine($"{nameof(Subscriber2)} - {message.EventStreamId} - {nameof(IApplicationStartedV1)} {message.EventId}");
             return Task.CompletedTask;
 		}
-
     }
+
+	public class Subscriber2Continuation :
+		IMessageHandler<IRecordedEvent<IApplicationStartedV1>, Task>
+	{
+		public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
+		{
+			Console.WriteLine($"{nameof(Subscriber2Continuation)} - {message.EventStreamId} - {nameof(IApplicationStartedV1)} {message.EventId}");
+			return Task.CompletedTask;
+		}
+	}
 }
