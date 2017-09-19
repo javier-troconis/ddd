@@ -5,13 +5,14 @@ using System.Threading.Tasks;
 
 namespace shared
 {
-    public interface IRecordedEvent<TEvent>
+    public interface IRecordedEvent<out TData>
     {
-		long OriginalEventNumber { get; }
+	    string OriginalStreamId { get; }
+	    long OriginalEventNumber { get; }
 	    string EventStreamId { get; }
 	    long EventNumber { get; }
 	    Guid EventId { get; }
 	    DateTime Created { get; }
-	    TEvent Event { get; }
+	    TData Data { get; }
     }
 }

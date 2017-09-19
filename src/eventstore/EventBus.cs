@@ -177,7 +177,6 @@ namespace eventstore
 				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0])
 				.ToArray();
 
-
 			return async resolvedEvent =>
 			{
 				var recordedEvent = DeserializeEvent(eventHandlingTypes, resolvedEvent);
@@ -197,12 +196,13 @@ namespace eventstore
 			}
 			var recordedEvent = new
 			{
+				resolvedEvent.OriginalStreamId,
 				resolvedEvent.OriginalEventNumber,
 				resolvedEvent.Event.EventStreamId,
 				resolvedEvent.Event.EventNumber,
 				resolvedEvent.Event.EventId,
 				resolvedEvent.Event.Created,
-				Event = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
+				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 			};
 			var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);

@@ -27,7 +27,7 @@ namespace query
                         .WithMaxRetriesOf(0)
                         .PreferDispatchToSingle()
                     )
-				.ProvisionPersistentSubscriptions(message.Event.PersistentSubscriptionGroup);
+				.ProvisionPersistentSubscriptions(message.Data.PersistentSubscriptionGroup);
 		}
 	}
 }

@@ -52,6 +52,10 @@ namespace eventstore
 
 		private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
 		{
+			if (reason == SubscriptionDropReason.UserInitiated)
+			{
+				return;
+			}
 			await Start();
 		}
 	}
