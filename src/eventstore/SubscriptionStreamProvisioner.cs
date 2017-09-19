@@ -35,6 +35,7 @@ namespace eventstore
 
         public ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler
         {
+            // pull from specific streams ?
             const string queryTemplate =
                 @"var topics = [{0}];
 
