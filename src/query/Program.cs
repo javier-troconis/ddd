@@ -40,7 +40,12 @@ namespace query
 							() => Task.FromResult(default(long?))
 							)
 					.RegisterPersistentSubscriber(
-							new Subscriber3())
+							new Subscriber3(),
+							SubscriberResolvedEventHandlerFactory
+								.CreateSubscriberResolvedEventHandler(new Subscriber3Continuation())
+								.ToAsyncInput()
+								.ComposeBackward
+							)
 					.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
 							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))
 							)
