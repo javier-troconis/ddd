@@ -7,12 +7,12 @@ namespace command
 
 	}
 
-	public struct ApplicationStartedV2 : IApplicationStartedV2
+	public struct ApplicationStartedV2 : IApplicationStartedV2, IApplicationStartedV1
 	{
 
 	}
 
-	public struct ApplicationStartedV3 : IApplicationStartedV3
+	public struct ApplicationStartedV3 : IApplicationStartedV3, IApplicationStartedV2, IApplicationStartedV1
 	{
 
 	}

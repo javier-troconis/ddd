@@ -21,7 +21,7 @@ namespace eventstore
 					new MemoryCache(new MemoryCacheOptions()),
 					new MemoryCacheEntryOptions()
 						.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
-					(eventType, resolvedEvent) => eventType == null ? Guid.Empty : resolvedEvent.Event.EventId);
+					(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandler(this IMessageHandler subscriber)
