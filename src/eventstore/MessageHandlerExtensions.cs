@@ -21,7 +21,7 @@ namespace eventstore
 					new MemoryCache(new MemoryCacheOptions()),
 					new MemoryCacheEntryOptions()
 						.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
-					(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
+					(eventType, resolvedEvent) => eventType == null ? Guid.Empty : resolvedEvent.Event.EventId);
 
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandler(this IMessageHandler subscriber)
@@ -37,7 +37,7 @@ namespace eventstore
 				var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 				var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
 				var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
-				var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
+				var recordedEvent = TryDeserializeEventWithCaching(eventType, resolvedEvent);
 				if (recordedEvent != null)
 				{
 					await HandleEvent(subscriber, (dynamic)recordedEvent);
@@ -62,7 +62,6 @@ namespace eventstore
 				resolvedEvent.Event.Created,
 				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 			};
-			Console.WriteLine(eventType);
 			var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}

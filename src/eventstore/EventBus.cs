@@ -162,7 +162,5 @@ namespace eventstore
 				return resolvedEvent;
 			};
 		}
-
-		
 	}
 }

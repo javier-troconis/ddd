@@ -4,11 +4,11 @@
     {
     }
 
-	public interface IApplicationStartedV2 : IApplicationStartedV1
+	public interface IApplicationStartedV2 
 	{
 	}
 
-	public interface IApplicationStartedV3 : IApplicationStartedV2
+	public interface IApplicationStartedV3
 	{
 	}
 
