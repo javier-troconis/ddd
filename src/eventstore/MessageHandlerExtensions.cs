@@ -48,7 +48,6 @@ namespace eventstore
 
 		private static object TryDeserializeEvent(Type eventType, ResolvedEvent resolvedEvent)
 		{
-			Console.WriteLine("deserlizing");
 			if (eventType == default(Type))
 			{
 				return null;
