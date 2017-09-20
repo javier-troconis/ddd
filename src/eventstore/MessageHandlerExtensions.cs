@@ -23,7 +23,11 @@ namespace eventstore
 
 		    return async resolvedEvent =>
 		    {
-			    var recordedEvent = TryDeserializeEvent(eventHandlingTypes, resolvedEvent);
+			    var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+			    var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
+			    var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
+
+				var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
 			    if (recordedEvent != null)
 			    {
 				    await HandleEvent(subscriber, (dynamic) recordedEvent);
@@ -32,11 +36,8 @@ namespace eventstore
 		    };
 	    }
 
-	    private static object TryDeserializeEvent(IEnumerable<Type> eventTypes, ResolvedEvent resolvedEvent)
-	    {
-		    var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-		    var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
-		    var eventType = topics.Join(eventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
+	    private static object TryDeserializeEvent(Type eventType, ResolvedEvent resolvedEvent)
+		{ 
 		    if (eventType == null)
 		    {
 			    return null;
