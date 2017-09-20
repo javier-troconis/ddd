@@ -45,24 +45,34 @@ namespace shared
 			return f2.ComposeForward(f1);
 		}
 
-		public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions)
+		public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, object> getEntryKey = null)
 		{
-			return x => cache.GetOrCreate(x, z =>
-			{
-				z.SetOptions(memoryCacheEntryOptions);
-				return new Lazy<T2>(() => f(x), LazyThreadSafetyMode.ExecutionAndPublication);
-			}).Value;
+			return x => cache.GetOrCreate(
+				getEntryKey == null ? x : getEntryKey(x), 
+				z =>
+				{
+					z.SetOptions(memoryCacheEntryOptions);
+					return new Lazy<T2>(() => f(x), LazyThreadSafetyMode.ExecutionAndPublication);
+				}).Value;
 		}
 
-		public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions)
+		public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, object> getEntryKey = null)
 		{
-			var f1 = new Func<Tuple<T1, T2>, T3>(x => f(x.Item1, x.Item2)).Memoize(cache, memoryCacheEntryOptions);
+			var f1 = new Func<Tuple<T1, T2>, T3>(x => f(x.Item1, x.Item2))
+				.Memoize(
+					cache, 
+					memoryCacheEntryOptions, 
+					getEntryKey == null ? null : new Func<Tuple<T1, T2>, object>(entry => getEntryKey(entry.Item1, entry.Item2)));
 			return (x, y) => f1(new Tuple<T1, T2>(x, y));
 		}
 
-		public static Func<T1, T2, T3, T4> Memoize<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions)
+		public static Func<T1, T2, T3, T4> Memoize<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, T3, object> getEntryKey = null)
 		{
-			var f1 = new Func<Tuple<T1, T2, T3>, T4>(x => f(x.Item1, x.Item2, x.Item3)).Memoize(cache, memoryCacheEntryOptions);
+			var f1 = new Func<Tuple<T1, T2, T3>, T4>(x => f(x.Item1, x.Item2, x.Item3))
+				.Memoize(
+					cache, 
+					memoryCacheEntryOptions,
+					getEntryKey == null ? null : new Func<Tuple<T1, T2, T3>, object>(entry => getEntryKey(entry.Item1, entry.Item2, entry.Item3)));
 			return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
 		}
 

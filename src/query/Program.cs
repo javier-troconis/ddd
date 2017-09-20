@@ -32,19 +32,20 @@ namespace query
 			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
 
 			var eventBus = new EventBus(connectionFactory.CreateConnection)
-					.RegisterVolatileSubscriber(
-							new Subscriber1()
-							)
+					//.RegisterVolatileSubscriber(
+					//		new Subscriber1()
+					//		)
 					.RegisterCatchupSubscriber(
 							new Subscriber2(),
-							() => Task.FromResult(default(long?)),
-							new Subscriber2Continuation()
-								.CreateResolvedEventHandler()
-								.ToAsyncInput()
-								.ComposeBackward)
-					.RegisterPersistentSubscriber(
-							new Subscriber3()
+							() => Task.FromResult(default(long?))//,
+							//new Subscriber2Continuation()
+							//	.CreateResolvedEventHandler()
+							//	.ToAsyncInput()
+							//	.ComposeBackward
 							)
+					//.RegisterPersistentSubscriber(
+					//		new Subscriber3()
+					//		)
 					.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
 							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))
 							)

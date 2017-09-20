@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -14,13 +15,13 @@ namespace eventstore
 {
 	public static class MessageHandlerExtensions
 	{
-		private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCache =
-			new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
-				.Memoize(
-					new MemoryCache(new MemoryCacheOptions()),
-					new MemoryCacheEntryOptions()
-						.SetSlidingExpiration(TimeSpan.FromSeconds(5))
-				);
+		//private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
+		//	new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
+		//		.Memoize(
+		//			new MemoryCache(new MemoryCacheOptions()),
+		//			new MemoryCacheEntryOptions()
+		//				.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
+		//			(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandler(this IMessageHandler subscriber)
@@ -36,8 +37,7 @@ namespace eventstore
 				var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 				var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
 				var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
-
-				var recordedEvent = TryDeserializeEventWithCache(eventType, resolvedEvent);
+				var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
 				if (recordedEvent != null)
 				{
 					await HandleEvent(subscriber, (dynamic)recordedEvent);
@@ -48,7 +48,7 @@ namespace eventstore
 
 		private static object TryDeserializeEvent(Type eventType, ResolvedEvent resolvedEvent)
 		{
-			if (eventType == null)
+			if (eventType == default(Type))
 			{
 				return null;
 			}
@@ -62,6 +62,7 @@ namespace eventstore
 				resolvedEvent.Event.Created,
 				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 			};
+			Console.WriteLine(eventType);
 			var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);
 			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 		}
