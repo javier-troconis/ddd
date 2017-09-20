@@ -15,13 +15,13 @@ namespace eventstore
 {
 	public static class MessageHandlerExtensions
 	{
-		//private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
-		//	new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
-		//		.Memoize(
-		//			new MemoryCache(new MemoryCacheOptions()),
-		//			new MemoryCacheEntryOptions()
-		//				.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
-		//			(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
+		private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
+			new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
+				.Memoize(
+					new MemoryCache(new MemoryCacheOptions()),
+					new MemoryCacheEntryOptions()
+						.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
+					(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandler(this IMessageHandler subscriber)
@@ -48,6 +48,7 @@ namespace eventstore
 
 		private static object TryDeserializeEvent(Type eventType, ResolvedEvent resolvedEvent)
 		{
+			Console.WriteLine("deserlizing");
 			if (eventType == default(Type))
 			{
 				return null;
