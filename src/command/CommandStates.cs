@@ -1,11 +1,12 @@
-﻿using shared;
+﻿using command.contracts;
+using shared;
 
 namespace command
 {
 	public struct SubmitApplicationState :
-		IMessageHandler<ApplicationStartedV1, SubmitApplicationState>,
-		IMessageHandler<ApplicationStartedV2, SubmitApplicationState>,
-		IMessageHandler<ApplicationStartedV3, SubmitApplicationState>
+		IMessageHandler<IApplicationStartedV1, SubmitApplicationState>,
+		IMessageHandler<IApplicationStartedV2, SubmitApplicationState>,
+		IMessageHandler<IApplicationStartedV3, SubmitApplicationState>
 	{
 		public readonly bool ApplicationHasBeenStarted;
 
@@ -14,17 +15,17 @@ namespace command
 			ApplicationHasBeenStarted = applicationHasBeenStarted;
 		}
 
-		public SubmitApplicationState Handle(ApplicationStartedV1 message)
+		public SubmitApplicationState Handle(IApplicationStartedV1 message)
 		{
 			return new SubmitApplicationState(true);
 		}
 
-		public SubmitApplicationState Handle(ApplicationStartedV2 message)
+		public SubmitApplicationState Handle(IApplicationStartedV2 message)
 		{
 			return new SubmitApplicationState(true);
 		}
 
-		public SubmitApplicationState Handle(ApplicationStartedV3 message)
+		public SubmitApplicationState Handle(IApplicationStartedV3 message)
 		{
 			return new SubmitApplicationState(true);
 		}

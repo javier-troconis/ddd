@@ -48,7 +48,7 @@ namespace eventstore
 
 	public interface IEventStore
 	{
-		Task<object[]> ReadEventsForward(string streamName, long fromEventNumber = 0);
+		Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
 		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventDataSettings, EventDataSettings> configureEventDataSettings = null);
 		Task<WriteResult> WriteStreamMetadata(string streamName, long expectedMetadataStreamVersion, StreamMetadata metadata);
 	}
@@ -60,12 +60,6 @@ namespace eventstore
 		public EventStore(IEventStoreConnection eventStoreConnection)
 		{
 			_eventStoreConnection = eventStoreConnection;
-		}
-
-		public async Task<object[]> ReadEventsForward(string streamName, long fromEventNumber)
-		{
-            var resolvedEvents = await ReadResolvedEvents(streamName, fromEventNumber).ConfigureAwait(false);
-			return resolvedEvents.Select(DeserializeEvent).ToArray();
 		}
 
 		public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventDataSettings, EventDataSettings> configureEventDataSettings)
@@ -81,7 +75,7 @@ namespace eventstore
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
 		}
 
-		private async Task<IEnumerable<ResolvedEvent>> ReadResolvedEvents(string streamName, long fromEventNumber)
+		public async Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber)
 		{
 			const int defaultSliceSize = 10;
 
@@ -115,14 +109,6 @@ namespace eventstore
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, serializerSettings));
 			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventDataSettings.EventHeader, serializerSettings));
 			return new EventData(eventDataSettings.EventId, eventDataSettings.EventName, true, eventData, eventMetadata);
-		}
-
-		private static object DeserializeEvent(ResolvedEvent resolvedEvent)
-		{
-			var recordedEvent = resolvedEvent.Event;
-			var eventMetadata = JObject.Parse(Encoding.UTF8.GetString(recordedEvent.Metadata));
-			var eventClrTypeName = (string)eventMetadata.Property(EventHeaderKey.ClrType).Value;
-			return JsonConvert.DeserializeObject(Encoding.UTF8.GetString(recordedEvent.Data), Type.GetType(eventClrTypeName));
 		}
 
 		public Task<WriteResult> WriteStreamMetadata(string streamName, long expectedMetadataStreamVersion, StreamMetadata metadata)
