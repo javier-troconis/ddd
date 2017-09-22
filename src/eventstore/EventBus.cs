@@ -42,7 +42,8 @@ namespace eventstore
 		public EventBus RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint,
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
 		{
-			var subscriberResolvedEventHandler = MessageHandlerExtensions.CreateResolvedEventHandler(subscriber);
+			//move this to CreateSubscriptionResolvedEventHandler
+			var handleResolvedEvent = CreateSubscriberResolvedEventHandler(subscriber);
 			processEventHandling = processEventHandling ?? (x => x);
 
 			return new EventBus(_createConnection,
@@ -55,7 +56,7 @@ namespace eventstore
 							processEventHandling(
 								CreateSubscriptionResolvedEventHandler(
 									subscription, 
-									subscriberResolvedEventHandler))
+									handleResolvedEvent))
 									(resolvedEvent),
 						TimeSpan.FromSeconds(1),
 						getCheckpoint)
@@ -63,76 +64,96 @@ namespace eventstore
 				}));
 		}
 
-		public EventBus RegisterVolatileSubscriber<TSubscription>(TSubscription subscriber,
-			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscription : IMessageHandler
+		private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandler<TSubscriber>(TSubscriber subscriber) where TSubscriber : IMessageHandler
 		{
-			return RegisterVolatileSubscriber<TSubscription, TSubscription>(subscriber, processEventHandling);
-		}
-
-		public EventBus RegisterVolatileSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber,
-			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
-		{
-			var subscriberResolvedEventHandler = MessageHandlerExtensions.CreateResolvedEventHandler(subscriber);
-			processEventHandling = processEventHandling ?? (x => x);
-
-			return new EventBus(_createConnection,
-				_subscriptions.Concat(new Func<Task>[]
-				{
-					new VolatileSubscriber(
-						_createConnection,
-						typeof(TSubscription).GetEventStoreName(),
-						(subscription, resolvedEvent) =>
-							processEventHandling(
-									CreateSubscriptionResolvedEventHandler(
-										subscription,
-										subscriberResolvedEventHandler))
-								(resolvedEvent),
-						TimeSpan.FromSeconds(1))
-						.Start
-				}));
-		}
-
-		public EventBus RegisterPersistentSubscriber<TSubscription>(TSubscription subscriber,
-			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscription : IMessageHandler
-		{
-			return RegisterPersistentSubscriber<TSubscription, TSubscription>(subscriber, processEventHandling);
-		}
-
-		public EventBus RegisterPersistentSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber,
-			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
-		{
-			var subscriberResolvedEventHandler = MessageHandlerExtensions.CreateResolvedEventHandler(subscriber);
-			processEventHandling = processEventHandling ?? (x => x);
-
-			void EventHandlingSucceeded(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent)
+			return async resolvedEvent =>
 			{
-				subscription.Acknowledge(resolvedEvent);
-			}
-
-			void EventHandlingFailed(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent, Exception exception)
-			{
-				subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, exception.Message);
-			}
-
-			return new EventBus(_createConnection,
-				_subscriptions.Concat(new Func<Task>[]
-				{
-					new PersistentSubscriber(
-						_createConnection,
-						typeof(TSubscription).GetEventStoreName(),
-						typeof(TSubscriber).GetEventStoreName(),
-						(subscription, resolvedEvent) =>
-							processEventHandling(
-									CreateSubscriptionResolvedEventHandler(
-										subscription,
-										subscriberResolvedEventHandler, 
-										EventHandlingSucceeded,
-										EventHandlingFailed))
-								(resolvedEvent),
-						TimeSpan.FromSeconds(1))
-						.Start
-				}));
+				var handleResolvedEvent = subscriber.CreateResolvedEventHandler(Task.CompletedTask);
+				await handleResolvedEvent(resolvedEvent);
+				return resolvedEvent;
+			};
 		}
+
+		//public EventBus RegisterVolatileSubscriber<TSubscription>(TSubscription subscriber,
+		//	Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscription : IMessageHandler
+		//{
+		//	return RegisterVolatileSubscriber<TSubscription, TSubscription>(subscriber, processEventHandling);
+		//}
+
+		//public EventBus RegisterVolatileSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber,
+		//	Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
+		//{
+		//	async Task<ResolvedEvent> SubscriberResolvedEventHandler(ResolvedEvent resolvedEvent)
+		//	{
+		//		var handleResolvedEvent = subscriber.CreateResolvedEventHandler<Task>();
+		//		await handleResolvedEvent(resolvedEvent);
+		//		return resolvedEvent;
+		//	}
+		//	processEventHandling = processEventHandling ?? (x => x);
+
+		//	return new EventBus(_createConnection,
+		//		_subscriptions.Concat(new Func<Task>[]
+		//		{
+		//			new VolatileSubscriber(
+		//				_createConnection,
+		//				typeof(TSubscription).GetEventStoreName(),
+		//				(subscription, resolvedEvent) =>
+		//					processEventHandling(
+		//							CreateSubscriptionResolvedEventHandler(
+		//								subscription,
+		//								SubscriberResolvedEventHandler))
+		//						(resolvedEvent),
+		//				TimeSpan.FromSeconds(1))
+		//				.Start
+		//		}));
+		//}
+
+		//public EventBus RegisterPersistentSubscriber<TSubscription>(TSubscription subscriber,
+		//	Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscription : IMessageHandler
+		//{
+		//	return RegisterPersistentSubscriber<TSubscription, TSubscription>(subscriber, processEventHandling);
+		//}
+
+		//public EventBus RegisterPersistentSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber,
+		//	Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
+		//{
+		//	async Task<ResolvedEvent> SubscriberResolvedEventHandler(ResolvedEvent resolvedEvent)
+		//	{
+		//		var handleResolvedEvent = subscriber.CreateResolvedEventHandler<Task>();
+		//		await handleResolvedEvent(resolvedEvent);
+		//		return resolvedEvent;
+		//	}
+		//	processEventHandling = processEventHandling ?? (x => x);
+
+		//	void EventHandlingSucceeded(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent)
+		//	{
+		//		subscription.Acknowledge(resolvedEvent);
+		//	}
+
+		//	void EventHandlingFailed(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent, Exception exception)
+		//	{
+		//		subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, exception.Message);
+		//	}
+
+		//	return new EventBus(_createConnection,
+		//		_subscriptions.Concat(new Func<Task>[]
+		//		{
+		//			new PersistentSubscriber(
+		//				_createConnection,
+		//				typeof(TSubscription).GetEventStoreName(),
+		//				typeof(TSubscriber).GetEventStoreName(),
+		//				(subscription, resolvedEvent) =>
+		//					processEventHandling(
+		//							CreateSubscriptionResolvedEventHandler(
+		//								subscription,
+		//								SubscriberResolvedEventHandler, 
+		//								EventHandlingSucceeded,
+		//								EventHandlingFailed))
+		//						(resolvedEvent),
+		//				TimeSpan.FromSeconds(1))
+		//				.Start
+		//		}));
+		//}
 
 		public void Start()
 		{
