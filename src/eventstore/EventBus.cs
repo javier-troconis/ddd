@@ -42,8 +42,6 @@ namespace eventstore
 		public EventBus RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint,
 			Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
 		{
-			//move this to CreateSubscriptionResolvedEventHandler
-			var handleResolvedEvent = CreateSubscriberResolvedEventHandler(subscriber);
 			processEventHandling = processEventHandling ?? (x => x);
 
 			return new EventBus(_createConnection,
@@ -56,22 +54,12 @@ namespace eventstore
 							processEventHandling(
 								CreateSubscriptionResolvedEventHandler(
 									subscription, 
-									handleResolvedEvent))
+									subscriber))
 									(resolvedEvent),
 						TimeSpan.FromSeconds(1),
 						getCheckpoint)
 						.Start
 				}));
-		}
-
-		private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandler<TSubscriber>(TSubscriber subscriber) where TSubscriber : IMessageHandler
-		{
-			return async resolvedEvent =>
-			{
-				var handleResolvedEvent = subscriber.CreateResolvedEventHandler(Task.CompletedTask);
-				await handleResolvedEvent(resolvedEvent);
-				return resolvedEvent;
-			};
 		}
 
 		//public EventBus RegisterVolatileSubscriber<TSubscription>(TSubscription subscriber,
@@ -162,17 +150,19 @@ namespace eventstore
 
 		private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriptionResolvedEventHandler<TSubscription>(
 			TSubscription subscription,
-			Func<ResolvedEvent, Task<ResolvedEvent>> handleEvent,
+			IMessageHandler subscriber,
 			Action<TSubscription, ResolvedEvent> eventHandlingSucceeded = null,
 			Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed = null)
 		{
 			eventHandlingSucceeded = eventHandlingSucceeded ?? delegate { };
 			eventHandlingFailed = eventHandlingFailed ?? delegate { };
+			var handleResolvedEvent = subscriber.CreateResolvedEventHandler(Task.CompletedTask);
+
 			return async resolvedEvent =>
 			{
 				try
 				{
-					await handleEvent(resolvedEvent);
+					await handleResolvedEvent(resolvedEvent);
 				}
 				catch (Exception ex)
 				{
