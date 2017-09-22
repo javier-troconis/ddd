@@ -37,7 +37,11 @@ namespace query
 		        //		)
 		        .RegisterCatchupSubscriber(
 			        new Subscriber2(),
-			        () => Task.FromResult(default(long?))
+			        () => Task.FromResult(default(long?)//, 
+					//new Subscriber2Continuation().CreateResolvedEventHandler()
+					//.ToAsyncInput()
+					//.ComposeBackward
+					)
 		        );
 					//.RegisterPersistentSubscriber(
 					//		new Subscriber3()

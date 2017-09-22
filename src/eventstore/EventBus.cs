@@ -154,10 +154,10 @@ namespace eventstore
 			Action<TSubscription, ResolvedEvent> eventHandlingSucceeded = null,
 			Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed = null)
 		{
+			var handleResolvedEvent = subscriber.CreateResolvedEventHandler(Task.CompletedTask);
 			eventHandlingSucceeded = eventHandlingSucceeded ?? delegate { };
 			eventHandlingFailed = eventHandlingFailed ?? delegate { };
-			var handleResolvedEvent = subscriber.CreateResolvedEventHandler(Task.CompletedTask);
-
+			
 			return async resolvedEvent =>
 			{
 				try
