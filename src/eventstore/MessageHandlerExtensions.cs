@@ -15,15 +15,25 @@ namespace eventstore
 {
 	public static class MessageHandlerExtensions
 	{
-		//private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
-		//		new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
-		//			.Memoize(
-		//				new MemoryCache(new MemoryCacheOptions()),
-		//				new MemoryCacheEntryOptions()
-		//					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
-		//				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
+        //private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
+        //		new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
+        //			.Memoize(
+        //				new MemoryCache(new MemoryCacheOptions()),
+        //				new MemoryCacheEntryOptions()
+        //					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
+        //				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
-		public static Func<ResolvedEvent, TOut> CreateResolvedEventHandler<TOut>(this IMessageHandler subscriber, TOut unHandledResult)
+        public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandler(this IMessageHandler subscriber)
+        {
+            var handleResolvedEvent = subscriber.CreateResolvedEventHandler(resolvedEvent => Task.CompletedTask);
+            return async resolvedEvent => 
+            {
+                await handleResolvedEvent(resolvedEvent);
+                return resolvedEvent;
+            };
+        }
+
+        public static Func<ResolvedEvent, TOut> CreateResolvedEventHandler<TOut>(this IMessageHandler subscriber, Func<ResolvedEvent, TOut> getUnHandledResult)
 		{
 			var eventHandlingTypes = subscriber
 				.GetType()
@@ -37,7 +47,7 @@ namespace eventstore
 				var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
 				var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
 				var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
-				return recordedEvent != null ? RecordedEventHandler<TOut>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent) : unHandledResult;
+				return recordedEvent != null ? RecordedEventHandler<TOut>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent) : getUnHandledResult(resolvedEvent);
 			};
 		}
 

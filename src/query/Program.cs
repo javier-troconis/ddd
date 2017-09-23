@@ -31,22 +31,22 @@ namespace query
 
 			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
 
-	        var eventBus = new EventBus(connectionFactory.CreateConnection)
-		        //.RegisterVolatileSubscriber(
-		        //		new Subscriber1()
-		        //		)
+            var eventBus = new EventBus(connectionFactory.CreateConnection)
+                //.RegisterVolatileSubscriber(
+                //		new Subscriber1()
+                //		)
 
 
-                
-		        .RegisterCatchupSubscriber(
+
+                .RegisterCatchupSubscriber<Subscriber2>(
                     //todo: remove subscriber2 from here and pass it to the continuation, 
-                    new Subscriber2(),
-			        () => Task.FromResult(default(long?)//, 
-					//new Subscriber2Continuation().CreateResolvedEventHandler()
-					//.ToAsyncInput()
-					//.ComposeBackward
-					)
-		        );
+                    () => Task.FromResult(default(long?)),
+                    new Subscriber2().CreateResolvedEventHandler()
+                    //new Subscriber2Continuation().CreateResolvedEventHandler()
+                    //.ToAsyncInput()
+                    //.ComposeBackward
+                    )
+		        
 					//.RegisterPersistentSubscriber(
 					//		new Subscriber3()
 					//		)
@@ -55,7 +55,8 @@ namespace query
 					//		)
 					//.RegisterVolatileSubscriber<IPersistentSubscriptionsProvisioningRequests, PersistentSubscriptionsProvisioningRequestsHandler>(
 					//		new PersistentSubscriptionsProvisioningRequestsHandler(new PersistentSubscriptionProvisioner(persistentSubscriptionManager))
-					//		);
+					//		)
+                    ;
 
 			Parallel.For(1, 2, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
 

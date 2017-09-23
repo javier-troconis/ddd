@@ -33,28 +33,15 @@ namespace eventstore
             _subscriptions = subscriptions;
         }
 
-        public EventBus RegisterCatchupSubscriber<TSubscription>(TSubscription subscriber, Func<Task<long?>> getCheckpoint,
-            Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscription : IMessageHandler
-        {
-            return RegisterCatchupSubscriber<TSubscription, TSubscription>(subscriber, getCheckpoint, processEventHandling);
-        }
-
-        public EventBus RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint,
-            Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscriber : TSubscription where TSubscription : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscription>(Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent) where TSubscription : IMessageHandler
         {
             return new EventBus(_createConnection,
                 _subscriptions.Concat(new Func<Task>[]
                 {
                     new CatchUpSubscriber(
                         _createConnection,
-                        typeof(TSubscription).GetEventStoreName(),
-                        (subscription, resolvedEvent) =>
-                            CreateSubscriptionResolvedEventHandler(
-                                subscription,
-                                subscriber,
-                                processEventHandling ?? (x => x),
-                                delegate { },
-                                delegate { })(resolvedEvent),
+                        typeof(TSubscription).GetEventStoreName(),                     
+                        CreateSubscriptionResolvedEventHandler<EventStoreCatchUpSubscription>(handleResolvedEvent, delegate { }, delegate { }),
                         TimeSpan.FromSeconds(1),
                         getCheckpoint)
                         .Start
@@ -147,41 +134,25 @@ namespace eventstore
             Parallel.ForEach(_subscriptions, start => start());
         }
 
-        private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriptionResolvedEventHandler<TSubscription>(
-            TSubscription subscription,
-            IMessageHandler subscriber,
-            Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling,
+
+        private static Action<TSubscription, ResolvedEvent> CreateSubscriptionResolvedEventHandler<TSubscription>(
+            Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent,
             Action<TSubscription, ResolvedEvent> eventHandlingSucceeded,
             Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed)
         {
-            return 
-                new Func<ResolvedEvent, Task<ResolvedEvent>>(
-                    async resolvedEvent =>
-                    {
-                        var handleResolvedEvent = subscriber.CreateResolvedEventHandler(Task.CompletedTask);
-                        await handleResolvedEvent(resolvedEvent);
-                        return resolvedEvent;
-                    })
-                .PipeForward(processEventHandling)
-                .PipeForward(
-                    handleResolvedEvent =>
-                        new Func<ResolvedEvent, Task<ResolvedEvent>>(
-                            async resolvedEvent =>
-                            {
-                                try
-                                {
-                                    await handleResolvedEvent(resolvedEvent);
-                                }
-                                catch (Exception ex)
-                                {
-                                    eventHandlingFailed(subscription, resolvedEvent, ex);
-                                    throw;
-                                }
-                                eventHandlingSucceeded(subscription, resolvedEvent);
-                                return resolvedEvent;
-                            })
-                    );
-
+            return async (subscription, resolvedEvent) =>
+            {
+                try
+                {
+                    await handleResolvedEvent(resolvedEvent);
+                }
+                catch (Exception ex)
+                {
+                    eventHandlingFailed(subscription, resolvedEvent, ex);
+                    throw;
+                }
+                eventHandlingSucceeded(subscription, resolvedEvent);
+            };
         }
     }
 }
