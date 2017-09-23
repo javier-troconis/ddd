@@ -35,8 +35,12 @@ namespace query
 		        //.RegisterVolatileSubscriber(
 		        //		new Subscriber1()
 		        //		)
+
+
+                
 		        .RegisterCatchupSubscriber(
-			        new Subscriber2(),
+                    //todo: remove subscriber2 from here and pass it to the continuation, 
+                    new Subscriber2(),
 			        () => Task.FromResult(default(long?)//, 
 					//new Subscriber2Continuation().CreateResolvedEventHandler()
 					//.ToAsyncInput()
