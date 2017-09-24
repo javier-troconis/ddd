@@ -7,6 +7,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.Common.Log;
 
 using shared;
+using command.contracts;
 
 namespace query
 {
@@ -39,9 +40,8 @@ namespace query
 
 
                 .RegisterCatchupSubscriber<Subscriber2>(
-                    new Subscriber2()
-                        .ComposeForward(
-                            new Subscriber2Continuation()),
+                    new Subscriber2().ComposeForward(new Subscriber2Continuation())
+                    ,
                     //todo: remove subscriber2 from here and pass it to the continuation, 
                     () => Task.FromResult(default(long?))
                     

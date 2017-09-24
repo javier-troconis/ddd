@@ -23,27 +23,32 @@ namespace eventstore
         //					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
         //				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
-        public static IMessageHandler ComposeForward(this IMessageHandler from, IMessageHandler to)
+        public static IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler from, IMessageHandler to)
         {
-            return from
-                .CreateResolvedEventHandler()
-                .ComposeForward(
-                    to.CreateResolvedEventHandler().ToAsyncInput())
-                .CreateMessageHandler();
+            return from.CreateResolvedEventMessageHandler().ComposeForward<ResolvedEvent, Task<ResolvedEvent>, Task<ResolvedEvent>>(to.CreateResolvedEventMessageHandler().ToAsyncInput());
         }
 
-
-        public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandler(this IMessageHandler subscriber)
+        public static IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> ComposeBackward(this IMessageHandler to, IMessageHandler from)
         {
-            var handleResolvedEvent = subscriber.CreateResolvedEventHandler(resolvedEvent => Task.CompletedTask);
-            return async resolvedEvent =>
-            {
-                await handleResolvedEvent(resolvedEvent);
-                return resolvedEvent;
-            };
+            return from.ComposeForward(to);
         }
 
-        public static Func<ResolvedEvent, TOut> CreateResolvedEventHandler<TOut>(this IMessageHandler subscriber, Func<ResolvedEvent, TOut> getUnHandledResult)
+        public static IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventMessageHandler(this IMessageHandler subscriber)
+        {
+            var resolvedEventHandler = subscriber.CreateResolvedEventMessageHandler(resolvedEvent => Task.CompletedTask);
+
+            return
+                new Func<ResolvedEvent, Task<ResolvedEvent>>
+                (
+                    async resolvedEvent =>
+                    {
+                        await resolvedEventHandler.Handle(resolvedEvent);
+                        return resolvedEvent;
+                    }
+                ).CreateMessageHandler();
+        }
+
+        public static IMessageHandler<ResolvedEvent, TOut> CreateResolvedEventMessageHandler<TOut>(this IMessageHandler subscriber, Func<ResolvedEvent, TOut> getUnHandledResult)
 		{
 			var eventHandlingTypes = subscriber
 				.GetType()
@@ -51,14 +56,18 @@ namespace eventstore
 				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0])
 				.ToArray();
 
-			return resolvedEvent =>
-			{
-				var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-				var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
-				var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
-				var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
-				return recordedEvent != null ? RecordedEventHandler<TOut>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent) : getUnHandledResult(resolvedEvent);
-			};
+			return
+                new Func<ResolvedEvent, TOut>
+                (
+                    resolvedEvent =>
+                    {
+	                    var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+	                    var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
+	                    var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
+	                    var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
+	                    return recordedEvent != null ? RecordedEventHandler<TOut>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent) : getUnHandledResult(resolvedEvent);
+                    }
+                ).CreateMessageHandler();
 		}
 
 		private static object TryDeserializeEvent(Type eventType, ResolvedEvent resolvedEvent)
@@ -85,8 +94,8 @@ namespace eventstore
 		{
 			public static TOut HandleRecordedEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
 			{
-				var handler = (IMessageHandler<TRecordedEvent, TOut>)subscriber;
-				return handler.Handle(recordedEvent);
+                var handler = (IMessageHandler<TRecordedEvent, TOut>)subscriber;
+                return handler.Handle(recordedEvent);
 			}
 		}
 	}

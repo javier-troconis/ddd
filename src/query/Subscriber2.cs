@@ -32,11 +32,11 @@ namespace query
     }
 
 	public class Subscriber2Continuation :
-		IMessageHandler<IRecordedEvent<IApplicationStartedV3>, Task>
+		IMessageHandler<IRecordedEvent<IApplicationStartedV2>, Task>
 	{
-		public Task Handle(IRecordedEvent<IApplicationStartedV3> message)
+		public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber2Continuation)} - {message.EventStreamId} - {nameof(IApplicationStartedV3)} {message.EventId}");
+			Console.WriteLine($"{nameof(Subscriber2Continuation)} - {message.EventStreamId} - {nameof(IApplicationStartedV2)} {message.EventId}");
 			return Task.CompletedTask;
 		}
 	}

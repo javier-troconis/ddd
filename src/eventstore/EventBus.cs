@@ -37,6 +37,7 @@ namespace eventstore
         {
             //todo:move queue to CatchUpSubscriber
             var queue = new TaskQueue();
+            var 
             return new EventBus(_createConnection,
                 _subscriptions.Concat(new Func<Task>[]
                 {
@@ -141,7 +142,7 @@ namespace eventstore
 
 
         private static async Task HandleResolvedEvent<TSubscription>(
-            Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent,
+            IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> subscriber,
             Action<TSubscription, ResolvedEvent> eventHandlingSucceeded,
             Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed,
             TSubscription subscription,
@@ -149,7 +150,7 @@ namespace eventstore
         {
             try
             {
-                await handleResolvedEvent(resolvedEvent);
+                await subscriber.Handle(resolvedEvent);
             }
             catch (Exception ex)
             {

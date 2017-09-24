@@ -24,6 +24,18 @@ namespace shared
         //    return Equals(handler, null) ? subscriber : handler.Handle(message);
         //}
 
+        public static IMessageHandler<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this IMessageHandler<T1, Task<T2>> f)
+        {
+            Func<T1, Task<T2>> handler = f.Handle;
+            return new MessageHandler<Task<T1>, Task<T2>>(handler.ToAsyncInput());
+        }
+
+        public static IMessageHandler<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this IMessageHandler<T1, T2> f)
+        {
+            Func<T1, T2> handler = f.Handle;
+            return new MessageHandler<Task<T1>, Task<T2>>(handler.ToAsyncInput());
+        }
+
         public static ICompositeMessageHandler<T1, T3> ComposeForward<T1, T2, T3>(this IMessageHandler<T1, T2> @from, IMessageHandler<T2, T3> to)
         {
             return new CompositeMessageHandler<T1, T2, T3>(@from.Handle, to.Handle);
@@ -32,6 +44,21 @@ namespace shared
         public static ICompositeMessageHandler<T1, T3> ComposeBackward<T1, T2, T3>(this IMessageHandler<T2, T3> to, IMessageHandler<T1, T2> @from)
         {
             return ComposeForward(from, to);
+        }
+
+        private class MessageHandler<T1, T2> : IMessageHandler<T1, T2>
+        {
+            private readonly Func<T1, T2> _f;
+
+            public MessageHandler(Func<T1, T2> f)
+            {
+                _f = f;
+            }
+
+            public T2 Handle(T1 message)
+            {
+                return _f(message);
+            }
         }
 
         private class CompositeMessageHandler<T1, T2, T3> : ICompositeMessageHandler<T1, T3>
