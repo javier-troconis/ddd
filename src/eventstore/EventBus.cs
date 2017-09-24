@@ -41,7 +41,12 @@ namespace eventstore
                     new CatchUpSubscriber(
                         _createConnection,
                         typeof(TSubscription).GetEventStoreName(),                     
-                        CreateSubscriptionResolvedEventHandler<EventStoreCatchUpSubscription>(handleResolvedEvent, delegate { }, delegate { }),
+                        (subscription, resolvedEvent) => HandleResolvedEvent(
+                            handleResolvedEvent, 
+                            delegate { }, 
+                            delegate { }, 
+                            subscription, 
+                            resolvedEvent),
                         TimeSpan.FromSeconds(1),
                         getCheckpoint)
                         .Start
@@ -135,24 +140,23 @@ namespace eventstore
         }
 
 
-        private static Action<TSubscription, ResolvedEvent> CreateSubscriptionResolvedEventHandler<TSubscription>(
+        private static async void HandleResolvedEvent<TSubscription>(
             Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent,
             Action<TSubscription, ResolvedEvent> eventHandlingSucceeded,
-            Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed)
+            Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed,
+            TSubscription subscription,
+            ResolvedEvent resolvedEvent)
         {
-            return async (subscription, resolvedEvent) =>
+            try
             {
-                try
-                {
-                    await handleResolvedEvent(resolvedEvent);
-                }
-                catch (Exception ex)
-                {
-                    eventHandlingFailed(subscription, resolvedEvent, ex);
-                    throw;
-                }
-                eventHandlingSucceeded(subscription, resolvedEvent);
-            };
+                await handleResolvedEvent(resolvedEvent);
+            }
+            catch (Exception ex)
+            {
+                eventHandlingFailed(subscription, resolvedEvent, ex);
+                return;
+            }
+            eventHandlingSucceeded(subscription, resolvedEvent);
         }
     }
 }
