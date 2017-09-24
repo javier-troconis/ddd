@@ -85,5 +85,26 @@ namespace shared
 		{
 			return async x => f(await x);
 		}
-	}
+
+        public static IMessageHandler<T1, T2> CreateMessageHandler<T1, T2>(this Func<T1, T2> f)
+        {
+            return new MessageHandler<T1, T2>(f);
+        }
+
+        private class MessageHandler<T1, T2> : IMessageHandler<T1, T2>
+        {
+            private readonly Func<T1, T2> _f;
+
+            public MessageHandler(Func<T1, T2> f)
+            {
+                _f = f;
+            }
+
+            public T2 Handle(T1 message)
+            {
+                return _f(message);
+            }
+        }
+
+    }
 }

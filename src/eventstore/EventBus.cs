@@ -33,8 +33,9 @@ namespace eventstore
             _subscriptions = subscriptions;
         }
 
-        public EventBus RegisterCatchupSubscriber<TSubscription>(Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscription>(IMessageHandler subscriber, Func<Task<long?>> getCheckpoint,  Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
         {
+            //todo:move queue to CatchUpSubscriber
             var queue = new TaskQueue();
             return new EventBus(_createConnection,
                 _subscriptions.Concat(new Func<Task>[]
@@ -45,7 +46,7 @@ namespace eventstore
                         (subscription, resolvedEvent) => 
                             queue.SendToChannelAsync(
                                 getEventHandlingQueueKey == null ? string.Empty : getEventHandlingQueueKey(resolvedEvent), 
-                                () => HandleResolvedEvent(handleResolvedEvent, delegate { }, delegate { }, subscription, resolvedEvent)),
+                                () => HandleResolvedEvent(subscriber, delegate { }, delegate { }, subscription, resolvedEvent)),
                         TimeSpan.FromSeconds(1),
                         getCheckpoint)
                         .Start
