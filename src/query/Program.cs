@@ -31,9 +31,6 @@ namespace query
 
 			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
 
-            var queue = new TaskQueue();
-
-
             var eventBus = new EventBus(connectionFactory.CreateConnection)
                 //.RegisterVolatileSubscriber(
                 //		new Subscriber1()
@@ -44,13 +41,7 @@ namespace query
                 .RegisterCatchupSubscriber<Subscriber2>(
                     //todo: remove subscriber2 from here and pass it to the continuation, 
                     () => Task.FromResult(default(long?)),
-
-                    resolvedEvent => 
-                    {
-                        Func<Task> work = () => Task.CompletedTask;
-                        queue.SendToChannelAsync(() => )
-                    }
-                    //new Subscriber2().CreateResolvedEventHandler()
+                    new Subscriber2().CreateResolvedEventHandler()
                     //new Subscriber2Continuation().CreateResolvedEventHandler()
                     //.ToAsyncInput()
                     //.ComposeBackward

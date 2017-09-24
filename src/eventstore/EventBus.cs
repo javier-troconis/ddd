@@ -33,20 +33,19 @@ namespace eventstore
             _subscriptions = subscriptions;
         }
 
-        public EventBus RegisterCatchupSubscriber<TSubscription>(Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent) where TSubscription : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscription>(Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
         {
+            var queue = new TaskQueue();
             return new EventBus(_createConnection,
                 _subscriptions.Concat(new Func<Task>[]
                 {
                     new CatchUpSubscriber(
                         _createConnection,
                         typeof(TSubscription).GetEventStoreName(),                     
-                        (subscription, resolvedEvent) => HandleResolvedEvent(
-                            handleResolvedEvent, 
-                            delegate { }, 
-                            delegate { }, 
-                            subscription, 
-                            resolvedEvent),
+                        (subscription, resolvedEvent) => 
+                            queue.SendToChannelAsync(
+                                getEventHandlingQueueKey == null ? string.Empty : getEventHandlingQueueKey(resolvedEvent), 
+                                () => HandleResolvedEvent(handleResolvedEvent, delegate { }, delegate { }, subscription, resolvedEvent)),
                         TimeSpan.FromSeconds(1),
                         getCheckpoint)
                         .Start
@@ -140,7 +139,7 @@ namespace eventstore
         }
 
 
-        private static async void HandleResolvedEvent<TSubscription>(
+        private static async Task HandleResolvedEvent<TSubscription>(
             Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent,
             Action<TSubscription, ResolvedEvent> eventHandlingSucceeded,
             Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed,
