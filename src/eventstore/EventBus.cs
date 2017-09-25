@@ -33,8 +33,9 @@ namespace eventstore
             _subscriptions = subscriptions;
         }
 
-        public EventBus RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscription>(IMessageHandler subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
         {
+	        var handleResolvedEvent = subscriber.CreateResolvedEventHandle();
             //todo:move queue to CatchUpSubscriber
             var queue = new TaskQueue();
            

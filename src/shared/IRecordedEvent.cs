@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 
 namespace shared
 {
+
     public interface IRecordedEvent<out TData>
     {
 	    string OriginalStreamId { get; }
