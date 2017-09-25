@@ -33,11 +33,11 @@ namespace eventstore
             _subscriptions = subscriptions;
         }
 
-        public EventBus RegisterCatchupSubscriber<TSubscription>(IMessageHandler subscriber, Func<Task<long?>> getCheckpoint,  Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
         {
             //todo:move queue to CatchUpSubscriber
             var queue = new TaskQueue();
-            var 
+           
             return new EventBus(_createConnection,
                 _subscriptions.Concat(new Func<Task>[]
                 {
@@ -47,7 +47,7 @@ namespace eventstore
                         (subscription, resolvedEvent) => 
                             queue.SendToChannelAsync(
                                 getEventHandlingQueueKey == null ? string.Empty : getEventHandlingQueueKey(resolvedEvent), 
-                                () => HandleResolvedEvent(subscriber, delegate { }, delegate { }, subscription, resolvedEvent)),
+                                () => HandleResolvedEvent(handleResolvedEvent, delegate { }, delegate { }, subscription, resolvedEvent)),
                         TimeSpan.FromSeconds(1),
                         getCheckpoint)
                         .Start
@@ -142,7 +142,7 @@ namespace eventstore
 
 
         private static async Task HandleResolvedEvent<TSubscription>(
-            IMessageHandler<ResolvedEvent, Task<ResolvedEvent>> subscriber,
+	        Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent,
             Action<TSubscription, ResolvedEvent> eventHandlingSucceeded,
             Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed,
             TSubscription subscription,
@@ -150,7 +150,7 @@ namespace eventstore
         {
             try
             {
-                await subscriber.Handle(resolvedEvent);
+                await handleResolvedEvent(resolvedEvent);
             }
             catch (Exception ex)
             {
