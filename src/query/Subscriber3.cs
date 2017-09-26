@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using command.contracts;
 
 using shared;
+using eventstore;
 
 namespace query
 {
