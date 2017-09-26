@@ -33,9 +33,9 @@ namespace eventstore
             _subscriptions = subscriptions;
         }
 
-        public EventBus RegisterCatchupSubscriber<TSubscription>(IMessageHandler subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
+        public EventBus RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
         {
-	        var handleResolvedEvent = subscriber.CreateResolvedEventHandle();
+	        
             //todo:move queue to CatchUpSubscriber
             var queue = new TaskQueue();
            
@@ -54,6 +54,8 @@ namespace eventstore
                         .Start
                 }));
         }
+
+       
 
         //public EventBus RegisterVolatileSubscriber<TSubscription>(TSubscription subscriber,
         //	Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling = null) where TSubscription : IMessageHandler
@@ -143,7 +145,7 @@ namespace eventstore
 
 
         private static async Task HandleResolvedEvent<TSubscription>(
-	        Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent,
+            Func<ResolvedEvent, Task<ResolvedEvent>> handleResolvedEvent,
             Action<TSubscription, ResolvedEvent> eventHandlingSucceeded,
             Action<TSubscription, ResolvedEvent, Exception> eventHandlingFailed,
             TSubscription subscription,

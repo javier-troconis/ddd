@@ -33,7 +33,7 @@ namespace query
     }
 
 	public class Subscriber2Continuation :
-		IMessageHandler<IRecordedEvent<IApplicationStartedV2>, Task>
+        IMessageHandler<IRecordedEvent<IApplicationStartedV2>, Task>
 	{
 		public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 		{

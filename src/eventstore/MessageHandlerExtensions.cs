@@ -23,7 +23,7 @@ namespace eventstore
 		//					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
 		//				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
-		internal static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandle(this IMessageHandler subscriber)
+		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandle<TIn>(this IMessageHandler<IRecordedEvent<TIn>, Task> subscriber)
 		{
 			var handleResolvedEvent = subscriber.CreateResolvedEventHandle(resolvedEvent => Task.CompletedTask);
 
@@ -35,8 +35,8 @@ namespace eventstore
 				};
 		}
 
-		internal static Func<ResolvedEvent, TOut> CreateResolvedEventHandle<TOut>(this IMessageHandler subscriber, Func<ResolvedEvent, TOut> getUnHandledResult)
-		{
+		public static Func<ResolvedEvent, TOut> CreateResolvedEventHandle<TIn, TOut>(this IMessageHandler<TIn, TOut> subscriber, Func<ResolvedEvent, TOut> getUnHandledResult)
+        {
 			var eventHandlingTypes = subscriber
 				.GetType()
 				.GetMessageHandlerTypes()

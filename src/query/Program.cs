@@ -32,6 +32,7 @@ namespace query
 
 			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
 
+
             var eventBus = new EventBus(connectionFactory.CreateConnection)
                 //.RegisterVolatileSubscriber(
                 //		new Subscriber1()
@@ -40,7 +41,7 @@ namespace query
 
 
                 .RegisterCatchupSubscriber<Subscriber2>(
-					new Subscriber2()
+					new Subscriber2().CreateResolvedEventHandle<IApplicationStartedV1>()
                     ,
                     //todo: remove subscriber2 from here and pass it to the continuation, 
                     () => Task.FromResult(default(long?))

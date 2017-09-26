@@ -6,14 +6,14 @@ using System.Threading.Tasks;
 
 namespace eventstore
 {
-    public interface IRecordedEvent<out TData>
+    public interface IRecordedEvent<out TData> 
     {
         string OriginalStreamId { get; }
         long OriginalEventNumber { get; }
         string EventStreamId { get; }
         long EventNumber { get; }
-        Guid EventId { get; }
         DateTime Created { get; }
+        Guid EventId { get; }
         TData Data { get; }
     }
 }
