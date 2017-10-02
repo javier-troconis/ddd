@@ -41,7 +41,7 @@ namespace query
 
 
                 .RegisterCatchupSubscriber<Subscriber2>(
-					new Subscriber2().CreateResolvedEventHandle<IApplicationStartedV1>()
+			            new Subscriber2().CreateResolvedEventHandle()
                     ,
                     //todo: remove subscriber2 from here and pass it to the continuation, 
                     () => Task.FromResult(default(long?))
