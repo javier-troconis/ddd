@@ -40,7 +40,17 @@ namespace shared
 			return x => f2(f1(x));
 		}
 
+		public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, Task<T3>> f2)
+		{
+			return f1.ComposeForward(f2.ToAsyncInput());
+		}
+
 		public static Func<T1, T3> ComposeBackward<T1, T2, T3>(this Func<T2, T3> f1, Func<T1, T2> f2)
+		{
+			return f2.ComposeForward(f1);
+		}
+
+		public static Func<T1, Task<T3>> ComposeBackward<T1, T2, T3>(this Func<T2, Task<T3>> f1, Func<T1, Task<T2>> f2)
 		{
 			return f2.ComposeForward(f1);
 		}
@@ -85,26 +95,5 @@ namespace shared
 		{
 			return async x => f(await x);
 		}
-
-        public static IMessageHandler<T1, T2> CreateMessageHandler<T1, T2>(this Func<T1, T2> f)
-        {
-            return new MessageHandler<T1, T2>(f);
-        }
-
-        private class MessageHandler<T1, T2> : IMessageHandler<T1, T2>
-        {
-            private readonly Func<T1, T2> _f;
-
-            public MessageHandler(Func<T1, T2> f)
-            {
-                _f = f;
-            }
-
-            public T2 Handle(T1 message)
-            {
-                return _f(message);
-            }
-        }
-
     }
 }
