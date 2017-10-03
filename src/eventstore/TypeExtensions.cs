@@ -12,8 +12,8 @@ namespace eventstore
         {
             return subscriberType
 				.GetInterfaces()
-				.Where(i => i.IsGenericType 
-					&& i.GetGenericTypeDefinition() == typeof(IMessageHandler<,>));
+				.Where(i => 
+					i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMessageHandler<,>));
         }
 
         public static string GetStreamName(this Type entityType, Guid identity, string category = "")

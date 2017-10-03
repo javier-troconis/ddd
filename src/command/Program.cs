@@ -11,20 +11,20 @@ using shared;
 
 namespace command
 {
-    public class Program
-    {
-        public static void Main(string[] args)
-        {
-            var connectionFactory = new EventStoreConnectionFactory(
-                EventStoreSettings.ClusterDns,
-                EventStoreSettings.InternalHttpPort,
-                EventStoreSettings.Username,
-                EventStoreSettings.Password,
-	            x => x
-		            .WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)));
+	public class Program
+	{
+		public static void Main(string[] args)
+		{
+			var connectionFactory = new EventStoreConnectionFactory(
+				EventStoreSettings.ClusterDns,
+				EventStoreSettings.InternalHttpPort,
+				EventStoreSettings.Username,
+				EventStoreSettings.Password,
+				x => x
+					.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)));
 			var connection = connectionFactory.CreateConnection();
-            connection.ConnectAsync().Wait();
-            IEventStore eventStore = new eventstore.EventStore(connection);
+			connection.ConnectAsync().Wait();
+			IEventStore eventStore = new eventstore.EventStore(connection);
 
 			//while (true)
 			//{
@@ -62,30 +62,34 @@ namespace command
 			//    Console.WriteLine();
 			//}
 
-			//while (true)
-			//{
-			//	Task.Run(async () =>
-			//	{
-			//		var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
-			//		await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Command.StartApplicationV3());
-			//		Console.WriteLine("application started: " + streamName);
+			while (true)
+			{
+				Task.Run(async () =>
+				{
+					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
+					await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Command.StartApplicationV3());
+					Console.WriteLine("application started: " + streamName);
 
-			//		var events = await eventStore.ReadEventsForward(streamName);
-			//		var state = new SubmitApplicationState();
-					
-			//		//var state = events.Aggregate(
-			//		//	new SubmitApplicationState().CreateResolvedEventHandler(),
-			//		//	(state, @event) =>
-			//		//	{
-							
-			//		//	});
-			//		var newEvents = Command.SubmitApplicationV1(state, streamName);
-			//		await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
-			//		Console.WriteLine("application submitted: " + streamName);
+					var events = await eventStore.ReadEventsForward(streamName);
 
-			//		await Task.Delay(1000);
-			//	}).Wait();
-			//}
+					var state = events
+					  .Aggregate(
+						  new SubmitApplicationState(),
+						  (x, y) =>
+						  {
+							  var z = x.CreateResolvedEventHandle(resolvedEvent => default(SubmitApplicationState));
+							  var result = z(y);
+							  return Equals(result, default(SubmitApplicationState)) ? x : result;
+						  });
+
+					var newEvents = Command.SubmitApplicationV1(state, streamName);
+					await eventStore.WriteEvents(streamName, 0, newEvents);
+					//await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
+					Console.WriteLine("application submitted: " + streamName);
+
+					await Task.Delay(1000);
+				}).Wait();
+			}
 		}
-    }
+	}
 }
