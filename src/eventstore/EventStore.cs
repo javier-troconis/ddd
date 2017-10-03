@@ -69,7 +69,6 @@ namespace eventstore
 				.Select(@event =>
 					ConvertToEventData(@event, configureEventDataSettings(
 						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().Name.ToLower())
-							.SetEventHeader(EventHeaderKey.ClrType, @event.GetType().AssemblyQualifiedName)
 							.SetEventHeader(EventHeaderKey.Topics, @event.GetType().GetEventTopics())))
 				);
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
