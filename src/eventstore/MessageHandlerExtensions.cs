@@ -23,17 +23,27 @@ namespace eventstore
 		//					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
 		//				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
-		//public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateResolvedEventHandle(this IMessageHandler subscriber)
-		//{
-		//	var handleResolvedEvent = subscriber.CreateResolvedEventHandle(resolvedEvent => Task.CompletedTask);
+		public static Func<TSubscriber, ResolvedEvent, TResult> CreateSubscriberResolvedEventHandle<TSubscriber, TResult>(Func<TSubscriber, ResolvedEvent, TResult> getUnHandledResult) where TSubscriber : IMessageHandler
+		{
+			var handleableEventTypes = typeof(TSubscriber)
+				.GetMessageHandlerTypes()
+				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0])
+				.ToArray();
 
-		//	return
-		//		async resolvedEvent =>
-		//		{
-		//			await handleResolvedEvent(resolvedEvent);
-		//			return resolvedEvent;
-		//		};
-		//}
+			return
+				(subscriber, resolvedEvent) =>
+					{
+						var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+						var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
+						var eventType = topics
+							.Join(handleableEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y)
+							.FirstOrDefault();
+						var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
+						return recordedEvent == null
+							? getUnHandledResult(subscriber, resolvedEvent)
+							: RecordedEventHandler<TResult>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent);
+					};
+		}
 
 		public static Func<ResolvedEvent, TOut> CreateResolvedEventHandle<TOut>(this IMessageHandler subscriber, Func<ResolvedEvent, TOut> getUnHandledResult)
 		{
