@@ -71,8 +71,8 @@ namespace command
 					Console.WriteLine("application started: " + streamName);
 
 					var events = await eventStore.ReadEventsForward(streamName);
-					var aggrFnc = eventstore.MessageHandlerExtensions.CreateSubscriberResolvedEventHandle<SubmitApplicationState, SubmitApplicationState>((subscriber, resolvedEvent) => subscriber);
-					var state = events.Aggregate(new SubmitApplicationState(), (x, y) => aggrFnc(x, y));
+					var fnc = eventstore.MessageHandlerExtensions.CreateSubscriberResolvedEventHandle<SubmitApplicationState, SubmitApplicationState>((subscriber, resolvedEvent) => subscriber);
+					var state = events.Aggregate(new SubmitApplicationState(), fnc);
 
 					var newEvents = Command.SubmitApplicationV1(state, streamName);
 					await eventStore.WriteEvents(streamName, 0, newEvents);

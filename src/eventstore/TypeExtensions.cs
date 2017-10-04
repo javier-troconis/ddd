@@ -27,6 +27,7 @@ namespace eventstore
             return type.FullName.Replace('.', '_').Replace('+', '_').ToLower();
         }
 
+		// use full clr name, and deserialize using it, instead of relying on the subscriber handling types
 		public static IEnumerable<string> GetEventTopics(this Type eventType)
         {
 	        return eventType

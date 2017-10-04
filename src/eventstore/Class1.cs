@@ -12,12 +12,16 @@ namespace eventstore
 	{
 		public static implicit operator Func<ResolvedEvent, Task<ResolvedEvent>>(Class2 x)
 		{
-			var handleResolvedEvent = x.CreateResolvedEventHandle(resolvedEvent => Task.CompletedTask);
+			return CreateSubscriberResolvedEventHandle((dynamic)x);
+		}
 
+		private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandle<TSubscriber>(TSubscriber subscriber) where TSubscriber : IMessageHandler
+		{
+			var handleResolvedEvent = MessageHandlerExtensions.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
 			return
 				async resolvedEvent =>
 				{
-					await handleResolvedEvent(resolvedEvent);
+					await handleResolvedEvent(subscriber, resolvedEvent);
 					return resolvedEvent;
 				};
 		}

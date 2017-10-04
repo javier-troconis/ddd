@@ -13,7 +13,7 @@
 
 //	public static class ConflictResolutionStrategy
 //	{
-//		public static readonly TryResolveConflict IgnoreConflicts = delegate(IEnumerable<object> newEvents, IEnumerable<object> conflictingEvents, out IEnumerable<object> mergedEvents)
+//		public static readonly TryResolveConflict IgnoreConflicts = delegate (IEnumerable<object> newEvents, IEnumerable<object> conflictingEvents, out IEnumerable<object> mergedEvents)
 //		{
 //			mergedEvents = newEvents;
 //			return true;

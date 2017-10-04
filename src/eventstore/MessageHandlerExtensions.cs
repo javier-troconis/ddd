@@ -45,27 +45,6 @@ namespace eventstore
 					};
 		}
 
-		public static Func<ResolvedEvent, TOut> CreateResolvedEventHandle<TOut>(this IMessageHandler subscriber, Func<ResolvedEvent, TOut> getUnHandledResult)
-		{
-			var eventHandlingTypes = subscriber
-				.GetType()
-				.GetMessageHandlerTypes()
-				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0])
-				.ToArray();
-
-			return
-				resolvedEvent =>
-				{
-					var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-					var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
-					var eventType = topics.Join(eventHandlingTypes, x => x, x => x.GetEventStoreName(), (x, y) => y).FirstOrDefault();
-					var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
-					return recordedEvent == null
-							? getUnHandledResult(resolvedEvent)
-							: RecordedEventHandler<TOut>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent);
-				};
-		}
-
 		private static object TryDeserializeEvent(Type eventType, ResolvedEvent resolvedEvent)
 		{
 			if (eventType == default(Type))
