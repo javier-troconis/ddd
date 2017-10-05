@@ -32,7 +32,7 @@ namespace eventstore
         {
 	        return eventType
 		        .GetInterfaces()
-		        .Select(x => x.GetEventStoreName());
+		        .Select(x => x.AssemblyQualifiedName);
         }
     }
 }
