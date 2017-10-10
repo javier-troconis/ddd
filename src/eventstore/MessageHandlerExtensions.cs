@@ -15,63 +15,30 @@ namespace eventstore
 {
 	public static class MessageHandlerExtensions
 	{
-		//private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
-		//		new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
-		//			.Memoize(
-		//				new MemoryCache(new MemoryCacheOptions()),
-		//				new MemoryCacheEntryOptions()
-		//					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
-		//				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
-
-		public static Func<TSubscriber, ResolvedEvent, TResult> CreateSubscriberResolvedEventHandle<TSubscriber, TResult>(Func<TSubscriber, ResolvedEvent, TResult> getUnHandledResult) where TSubscriber : IMessageHandler
+		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward<TSubscriber1, TSubscriber2>(this TSubscriber1 s1, TSubscriber2 s2) where TSubscriber1 : IMessageHandler where TSubscriber2 : IMessageHandler
 		{
-			var handleableEventTypes = typeof(TSubscriber)
-				.GetMessageHandlerTypes()
-				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0])
-				.ToArray();
-
-			return
-				(subscriber, resolvedEvent) =>
+			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber1, Task>(delegate { return Task.CompletedTask; });
+			return ComposeForward
+				(
+					async resolvedEvent =>
 					{
-						var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-						var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<object[]>();
-						var eventType = topics
-							.Join(handleableEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y)
-							.FirstOrDefault();
-						var recordedEvent = TryDeserializeEvent(eventType, resolvedEvent);
-						return recordedEvent == null
-							? getUnHandledResult(subscriber, resolvedEvent)
-							: RecordedEventHandler<TResult>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent);
-					};
+						await handleResolvedEvent(s1, resolvedEvent);
+						return resolvedEvent;
+					},
+					s2
+				);
 		}
 
-		private static object TryDeserializeEvent(Type eventType, ResolvedEvent resolvedEvent)
+		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward<TSubscriber>(this Func<ResolvedEvent, Task<ResolvedEvent>> f, TSubscriber s) where TSubscriber : IMessageHandler
 		{
-			if (eventType == default(Type))
-			{
-				return null;
-			}
-			var recordedEvent = new
-			{
-				resolvedEvent.OriginalStreamId,
-				resolvedEvent.OriginalEventNumber,
-				resolvedEvent.Event.EventStreamId,
-				resolvedEvent.Event.EventNumber,
-				resolvedEvent.Event.EventId,
-				resolvedEvent.Event.Created,
-				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
-			};
-			var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);
-			return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
-		}
-
-		private static class RecordedEventHandler<TOut>
-		{
-			public static TOut HandleRecordedEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
-			{
-				var handler = (IMessageHandler<TRecordedEvent, TOut>)subscriber;
-				return handler.Handle(recordedEvent);
-			}
+			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
+			return f.ComposeForward
+				(async resolvedEvent =>
+					{
+						await handleResolvedEvent(s, resolvedEvent);
+						return resolvedEvent;
+					}
+				);
 		}
 	}
 

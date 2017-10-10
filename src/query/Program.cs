@@ -41,9 +41,8 @@ namespace query
 
 
                 .RegisterCatchupSubscriber<Subscriber2>(
-			            new Subscriber2().ComposeFowrard(fee2).
+			            new Subscriber2().ComposeForward(new Subscriber2Continuation())
                     ,
-                    //todo: remove subscriber2 from here and pass it to the continuation, 
                     () => Task.FromResult(default(long?))
                     
                     //new Subscriber2Continuation().CreateResolvedEventHandler()

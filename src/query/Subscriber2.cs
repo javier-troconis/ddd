@@ -8,7 +8,7 @@ using eventstore;
 
 namespace query
 {
-	public class Subscriber2 : Class2,
+	public class Subscriber2 :
         IMessageHandler<IRecordedEvent<IApplicationStartedV1>, Task>,
         IMessageHandler<IRecordedEvent<IApplicationStartedV3>, Task>,
         IMessageHandler<IRecordedEvent<IApplicationStartedV2>, Task>
