@@ -10,14 +10,14 @@ namespace eventstore
 		private readonly string _groupName;
 		private readonly Lazy<Task<IEventStoreConnection>> _connection;
 		private readonly string _streamName;
-		private readonly Action<EventStorePersistentSubscriptionBase, ResolvedEvent> _handleEvent;
+		private readonly Func<ResolvedEvent, Task> _handleEvent;
 		private readonly TimeSpan _reconnectDelay;
 
 		public PersistentSubscriber(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
 			string groupName,
-			Action<EventStorePersistentSubscriptionBase, ResolvedEvent> handleEvent,
+			Func<ResolvedEvent, Task> handleEvent,
 			TimeSpan reconnectDelay)
 		{
 			_connection = new Lazy<Task<IEventStoreConnection>>(
@@ -40,7 +40,7 @@ namespace eventstore
 				try
 				{
 					var connection = await _connection.Value;
-					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _groupName, _handleEvent, OnSubscriptionDropped, autoAck: false);
+					await connection.ConnectToPersistentSubscriptionAsync(_streamName, _groupName, OnEventAppeared, OnSubscriptionDropped, autoAck: false);
 					break;
 				}
 				catch
@@ -50,13 +50,25 @@ namespace eventstore
 			}
 		}
 
+		private async Task OnEventAppeared(EventStorePersistentSubscriptionBase subscription, ResolvedEvent resolvedEvent)
+		{
+			try
+			{
+				await _handleEvent(resolvedEvent);
+				subscription.Acknowledge(resolvedEvent);
+			}
+			catch (Exception ex)
+			{
+				subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
+			}
+		}
+
 		private async void OnSubscriptionDropped(EventStorePersistentSubscriptionBase subscription, SubscriptionDropReason reason, Exception exception)
 		{
-			if (reason == SubscriptionDropReason.UserInitiated)
+			if (reason != SubscriptionDropReason.UserInitiated)
 			{
-				return;
+				await Start();
 			}
-			await Start();
 		}
 	}
 }
