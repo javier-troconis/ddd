@@ -10,12 +10,12 @@ namespace eventstore
 		private readonly Lazy<Task<IEventStoreConnection>> _connection;
 		private readonly string _streamName;
 		private readonly TimeSpan _reconnectDelay;
-		private readonly Action<EventStoreSubscription, ResolvedEvent> _handleEvent;
+		private readonly Func<ResolvedEvent, Task> _handleEvent;
 
 		public VolatileSubscriber(
 			Func<IEventStoreConnection> createConnection,
 			string streamName,
-			Action<EventStoreSubscription, ResolvedEvent> handleEvent,
+			Func<ResolvedEvent, Task> handleEvent,
 			TimeSpan reconnectDelay)
 		{
 			_connection = new Lazy<Task<IEventStoreConnection>>(
@@ -37,7 +37,7 @@ namespace eventstore
 				try
 				{
 					var connection = await _connection.Value;
-					await connection.SubscribeToStreamAsync(_streamName, true, _handleEvent, OnSubscriptionDropped);
+					await connection.SubscribeToStreamAsync(_streamName, true, OnEventAppeared, OnSubscriptionDropped);
 					break;
 				}
 				catch
@@ -45,6 +45,11 @@ namespace eventstore
 					await Task.Delay(_reconnectDelay);
 				}
 			}
+		}
+
+		private Task OnEventAppeared(EventStoreSubscription subscription, ResolvedEvent resolvedEvent)
+		{
+			return _handleEvent(resolvedEvent);
 		}
 
 		private async void OnSubscriptionDropped(EventStoreSubscription subscription, SubscriptionDropReason reason, Exception exception)

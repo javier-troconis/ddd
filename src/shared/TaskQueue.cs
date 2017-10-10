@@ -16,7 +16,7 @@ namespace shared
     {
         private readonly ConcurrentDictionary<string, Lazy<Channel>> _channels = new ConcurrentDictionary<string, Lazy<Channel>>();
 
-        public Task<bool> SendToChannelAsync(string channelName, Func<Task> getTask, TaskSucceeded taskSucceeded = null, TaskFailed taskFailed = null)
+        public Task<bool> SendToChannel(string channelName, Func<Task> getTask, TaskSucceeded taskSucceeded = null, TaskFailed taskFailed = null)
         {
             var channel = _channels.GetOrAdd(channelName, new Lazy<Channel>(() => new Channel(channelName))).Value;
             return channel.SendAsync(

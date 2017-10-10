@@ -73,7 +73,7 @@ namespace eventstore
                                         .CheckPointAfter(TimeSpan.FromSeconds(1))
                                         .WithExtraStatistics()
                                     );
-                                return _provisioningTasksQueue.SendToChannelAsync(streamName,
+                                return _provisioningTasksQueue.SendToChannel(streamName,
                                     () =>_persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, subscriptionGroupName, persistentSubscriptionSettings));
                             }
                     })
