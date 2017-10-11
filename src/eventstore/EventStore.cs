@@ -16,31 +16,31 @@ namespace eventstore
 	public struct EventDataSettings
 	{ 
 		public readonly Guid EventId;
-		public readonly string EventName;
+		public readonly string EventType;
 		public readonly IReadOnlyDictionary<string, object> EventHeader;
 
-		private EventDataSettings(Guid eventId, string eventName, IReadOnlyDictionary<string, object> eventHeader)
+		private EventDataSettings(Guid eventId, string eventType, IReadOnlyDictionary<string, object> eventHeader)
 		{
 			EventId = eventId;
-			EventName = eventName;
+			EventType = eventType;
 			EventHeader = eventHeader;
 		}
 
 		public EventDataSettings SetEventId(Guid eventId)
 		{
-			return new EventDataSettings(eventId, EventName, EventHeader);
+			return new EventDataSettings(eventId, EventType, EventHeader);
 		}
 
-		public EventDataSettings SetEventName(string eventName)
+		public EventDataSettings SetEventType(string eventType)
 		{
-			return new EventDataSettings(EventId, eventName, EventHeader);
+			return new EventDataSettings(EventId, eventType, EventHeader);
 		}
 
 		public EventDataSettings SetEventHeader(string key, object value)
 		{
 			return new EventDataSettings(
 				EventId, 
-				EventName, 
+				EventType, 
 				new Dictionary<string, object>(
 					EventHeader.ToDictionary(x => x.Key, x => x.Value)
 						.MergeLeft(
@@ -57,13 +57,18 @@ namespace eventstore
 			return SetEventHeader(EventHeaderKey.CorrelationId, correlationId);
 		}
 
-		public static EventDataSettings Create(Guid eventId, string eventName, Guid correlationId)
+		internal static EventDataSettings Create(Guid eventId, string eventName, Guid correlationId, string[] topics)
 		{
 			return new EventDataSettings
 				(
 					eventId,
 					eventName,
-					new Dictionary<string, object>()
+					new Dictionary<string, object>
+					{
+						{
+							EventHeaderKey.Topics, topics
+						}
+					}
 				).SetCorrelationId(correlationId);
 		}
 	}
@@ -90,9 +95,7 @@ namespace eventstore
 			var eventData = events
 				.Select(@event =>
 					ConvertToEventData(@event, configureEventDataSettings(
-						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().Name.ToLower(), Guid.NewGuid())
-							.SetEventHeader(EventHeaderKey.Topics, @event.GetType().GetEventTopics())))
-				);
+						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().GetEventStoreName(), Guid.NewGuid(), @event.GetType().GetEventTopics()))));
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
 		}
 
@@ -129,7 +132,7 @@ namespace eventstore
 			};
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, serializerSettings));
 			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(eventDataSettings.EventHeader, serializerSettings));
-			return new EventData(eventDataSettings.EventId, eventDataSettings.EventName, true, eventData, eventMetadata);
+			return new EventData(eventDataSettings.EventId, eventDataSettings.EventType, true, eventData, eventMetadata);
 		}
 
 		public Task<WriteResult> WriteStreamMetadata(string streamName, long expectedMetadataStreamVersion, StreamMetadata metadata)

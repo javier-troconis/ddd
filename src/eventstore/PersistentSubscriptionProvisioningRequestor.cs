@@ -20,7 +20,8 @@ namespace eventstore
 		public Task RequestPersistentSubscriptionsProvisioning(string persistentSubscriptionName)
 		{
 			return _eventPublisher.PublishEvent(
-				new PersistentSubscriptionsProvisioningRequested(persistentSubscriptionName));
+				new PersistentSubscriptionsProvisioningRequested(persistentSubscriptionName), 
+				configureEventDataSettings: x => x.SetCorrelationId(Guid.NewGuid()));
 		}
 	}
 

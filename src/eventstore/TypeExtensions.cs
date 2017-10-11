@@ -8,12 +8,14 @@ namespace eventstore
 {
     internal static class TypeExtensions
     {
-        public static IEnumerable<Type> GetMessageHandlerTypes(this Type subscriberType)
+        public static Type[] GetMessageHandlerTypes(this Type subscriberType)
         {
             return subscriberType
 				.GetInterfaces()
-				.Where(i => 
-					i.IsGenericType && i.GetGenericTypeDefinition() == typeof(IMessageHandler<,>));
+				.Where(x => 
+					x.IsGenericType 
+						&& x.GetGenericTypeDefinition() == typeof(IMessageHandler<,>))
+				.ToArray();
         }
 
         public static string GetStreamName(this Type entityType, Guid identity, string category = "")
@@ -28,11 +30,12 @@ namespace eventstore
         }
 
 		// use full clr name, and deserialize using it, instead of relying on the subscriber handling types
-		public static IEnumerable<string> GetEventTopics(this Type eventType)
+		public static string[] GetEventTopics(this Type eventType)
         {
 	        return eventType
 		        .GetInterfaces()
-		        .Select(x => x.GetEventStoreName());
+		        .Select(x => x.GetEventStoreName())
+				.ToArray();
         }
     }
 }
