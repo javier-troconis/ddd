@@ -15,7 +15,7 @@ namespace query
     {
         public Task Handle(IRecordedEvent<IApplicationStartedV3> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber2)} - {message.EventStreamId} - {nameof(IApplicationStartedV3)} {message.EventId}");
+			Console.WriteLine($"{nameof(Subscriber2)} - {message.EventStreamId} - {nameof(IApplicationStartedV3)} {message.EventId} {message.CorrelationId}");
 			return Task.CompletedTask;
 		}
 

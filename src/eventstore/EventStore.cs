@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Dynamic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using shared;
 using EventStore.ClientAPI;
 
 using Newtonsoft.Json;
@@ -16,9 +17,9 @@ namespace eventstore
 	{ 
 		public readonly Guid EventId;
 		public readonly string EventName;
-		public readonly IDictionary<string, object> EventHeader;
+		public readonly IReadOnlyDictionary<string, object> EventHeader;
 
-		private EventDataSettings(Guid eventId, string eventName, IDictionary<string, object> eventHeader)
+		private EventDataSettings(Guid eventId, string eventName, IReadOnlyDictionary<string, object> eventHeader)
 		{
 			EventId = eventId;
 			EventName = eventName;
@@ -37,12 +38,38 @@ namespace eventstore
 
 		public EventDataSettings SetEventHeader(string key, object value)
 		{
-			return new EventDataSettings(EventId, EventName, new Dictionary<string, object>(EventHeader) { [key] = value });
+			return new EventDataSettings(
+				EventId, 
+				EventName, 
+				new Dictionary<string, object>(
+					EventHeader.ToDictionary(x => x.Key, x => x.Value)
+						.MergeLeft(
+							new Dictionary<string, object>
+							{
+								{
+									key, value
+								}
+							})));
 		}
 
-		public static EventDataSettings Create(Guid eventId, string eventName)
+		public EventDataSettings SetCorrelationId(Guid correlationId)
 		{
-			return new EventDataSettings(eventId, eventName, new Dictionary<string, object>());
+			return SetEventHeader(EventHeaderKey.CorrelationId, correlationId);
+		}
+
+		public static EventDataSettings Create(Guid eventId, string eventName, Guid correlationId)
+		{
+			return new EventDataSettings
+				(
+					eventId,
+					eventName,
+					new Dictionary<string, object>
+					{
+						{
+							EventHeaderKey.CorrelationId, correlationId
+						}
+					}
+				);
 		}
 	}
 
@@ -68,7 +95,7 @@ namespace eventstore
 			var eventData = events
 				.Select(@event =>
 					ConvertToEventData(@event, configureEventDataSettings(
-						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().Name.ToLower())
+						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().Name.ToLower(), Guid.NewGuid())
 							.SetEventHeader(EventHeaderKey.Topics, @event.GetType().GetEventTopics())))
 				);
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);

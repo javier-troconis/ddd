@@ -15,6 +15,9 @@ namespace command
 	{
 		public static void Main(string[] args)
 		{
+
+
+
 			var connectionFactory = new EventStoreConnectionFactory(
 				EventStoreSettings.ClusterDns,
 				EventStoreSettings.InternalHttpPort,
