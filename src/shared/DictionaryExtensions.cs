@@ -21,13 +21,12 @@ namespace shared
 			}
 		}
 
-	    public static IDictionary<TKey, TValue> MergeLeft<TKey, TValue>(this IDictionary<TKey, TValue> x, params IDictionary<TKey, TValue>[] others)
+	    public static IDictionary<TKey, TValue> Merge<TKey, TValue>(this IDictionary<TKey, TValue> x, IDictionary<TKey, TValue> y)
 	    {
-			return x
-				.Concat(others.SelectMany(y => y))
-				.Reverse()
-				.Distinct(new MyClass<TKey, TValue>())
-				.ToDictionary(y => y.Key, y => y.Value);
+		    return x
+				.Concat(y)
+			    .Distinct(new MyClass<TKey, TValue>())
+			    .ToDictionary(z => z.Key, z => z.Value);
 	    }
-    }
+	}
 }

@@ -42,14 +42,12 @@ namespace eventstore
 				EventId, 
 				EventType, 
 				new Dictionary<string, object>(
-					EventHeader.ToDictionary(x => x.Key, x => x.Value)
-						.MergeLeft(
-							new Dictionary<string, object>
-							{
-								{
-									key, value
-								}
-							})));
+					new Dictionary<string, object>
+					{
+						{
+							key, value
+						}
+					}.Merge(EventHeader.ToDictionary(x => x.Key, x => x.Value))));
 		}
 
 		public EventDataSettings SetCorrelationId(Guid correlationId)
