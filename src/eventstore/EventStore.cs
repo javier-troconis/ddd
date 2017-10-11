@@ -63,13 +63,8 @@ namespace eventstore
 				(
 					eventId,
 					eventName,
-					new Dictionary<string, object>
-					{
-						{
-							EventHeaderKey.CorrelationId, correlationId
-						}
-					}
-				);
+					new Dictionary<string, object>()
+				).SetCorrelationId(correlationId);
 		}
 	}
 
