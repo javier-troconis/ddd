@@ -15,26 +15,16 @@ namespace query
 	{
 		public static void Main(string[] args)
 		{
-			var projectionManager = new ProjectionManager(
-				EventStoreSettings.ClusterDns,
-				EventStoreSettings.ExternalHttpPort,
-				EventStoreSettings.Username,
-				EventStoreSettings.Password,
-				new ConsoleLogger());
-
-			var connectionFactory = new EventStoreConnectionFactory(
+			Func<IEventStoreConnection> createConnection = new EventStoreConnectionFactory(
 				EventStoreSettings.ClusterDns,
 				EventStoreSettings.InternalHttpPort,
 				EventStoreSettings.Username,
 				EventStoreSettings.Password,
-				x => x
-					.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)));
+				x => x.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)))
+					.CreateConnection;
 
-			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
-
-
-			var eventBus = EventBus.Start(
-				connectionFactory.CreateConnection, 
+			var eventBus1 = EventBus.Start(
+				createConnection, 
 				registry => registry
 						.RegisterVolatileSubscriber(
 							new Subscriber1()
@@ -47,14 +37,26 @@ namespace query
 							)
 						.RegisterPersistentSubscriber(
 							new Subscriber3()
-							)
-						.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
-							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))
-							)
-						.RegisterVolatileSubscriber<IPersistentSubscriptionsProvisioningRequests, PersistentSubscriptionsProvisioningRequestsHandler>(
-							new PersistentSubscriptionsProvisioningRequestsHandler(new PersistentSubscriptionProvisioner(persistentSubscriptionManager))
-							))
+						))
 					;
+
+			var eventBus2 = EventBus.Start(
+					createConnection,
+					registry => registry
+						.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
+							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(
+								new ProjectionManager(
+									EventStoreSettings.ClusterDns,
+									EventStoreSettings.ExternalHttpPort,
+									EventStoreSettings.Username,
+									EventStoreSettings.Password,
+									new ConsoleLogger())))
+						)
+						.RegisterVolatileSubscriber<IPersistentSubscriptionsProvisioningRequests, PersistentSubscriptionsProvisioningRequestsHandler>(
+							new PersistentSubscriptionsProvisioningRequestsHandler(new PersistentSubscriptionProvisioner(
+								new PersistentSubscriptionManager(createConnection)))
+						))
+				;
 
 			while (true) { };
 		}
