@@ -21,7 +21,7 @@ namespace eventstore
 	{
 		private readonly IEnumerable<Subscriber> _subscribers;
 
-		public EventBus(IEnumerable<Subscriber> subscribers)
+		private EventBus(IEnumerable<Subscriber> subscribers)
 		{
 			_subscribers = subscribers;
 		}
