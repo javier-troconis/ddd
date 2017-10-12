@@ -33,29 +33,28 @@ namespace query
 			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
 
 
-			var eventBus = new EventBus2(connectionFactory.CreateConnection)
-				.RegisterVolatileSubscriber(
-						new Subscriber1()
+			var eventBus = EventBus.Start(
+				connectionFactory.CreateConnection, 
+				eventBusRegistry => eventBusRegistry
+						.RegisterVolatileSubscriber(
+							new Subscriber1()
 						)
-				.RegisterCatchupSubscriber<Subscriber2>(
-						new Subscriber2()
-							.ComposeForward(
-								new Subscriber2Continuation()),
-						() => Task.FromResult(default(long?))
-						)
-				.RegisterPersistentSubscriber(
-					new Subscriber3()
-					)
-				.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
-					new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))
-					)
-				.RegisterVolatileSubscriber<IPersistentSubscriptionsProvisioningRequests, PersistentSubscriptionsProvisioningRequestsHandler>(
-					new PersistentSubscriptionsProvisioningRequestsHandler(new PersistentSubscriptionProvisioner(persistentSubscriptionManager))
-					)
+						.RegisterCatchupSubscriber<Subscriber2>(
+								new Subscriber2()
+									.ComposeForward(
+										new Subscriber2Continuation()),
+								() => Task.FromResult(default(long?))
+								)
+						.RegisterPersistentSubscriber(
+							new Subscriber3()
+							)
+						.RegisterPersistentSubscriber<ISubscriptionStreamsProvisioningRequests, SubscriptionStreamsProvisioningRequestsHandler>(
+							new SubscriptionStreamsProvisioningRequestsHandler(new SubscriptionStreamProvisioner(projectionManager))
+							)
+						.RegisterVolatileSubscriber<IPersistentSubscriptionsProvisioningRequests, PersistentSubscriptionsProvisioningRequestsHandler>(
+							new PersistentSubscriptionsProvisioningRequestsHandler(new PersistentSubscriptionProvisioner(persistentSubscriptionManager))
+							))
 					;
-
-			Parallel.For(1, 2, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x => await eventBus.Start());
-
 
 			while (true) { };
 		}
