@@ -33,7 +33,7 @@ namespace query
 			var persistentSubscriptionManager = new PersistentSubscriptionManager(connectionFactory.CreateConnection);
 
 
-			var eventBus = new EventBus(connectionFactory.CreateConnection)
+			var eventBus = new EventBus2(connectionFactory.CreateConnection)
 				.RegisterVolatileSubscriber(
 						new Subscriber1()
 						)
@@ -54,7 +54,7 @@ namespace query
 					)
 					;
 
-			Parallel.For(1, 2, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, x => eventBus.Start());
+			Parallel.For(1, 2, new ParallelOptions { MaxDegreeOfParallelism = Environment.ProcessorCount }, async x => await eventBus.Start());
 
 
 			while (true) { };

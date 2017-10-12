@@ -16,93 +16,100 @@ using shared;
 
 namespace eventstore
 {
-    public sealed class EventBus
-    {
-        private readonly IEnumerable<Func<Task>> _subscriptions;
-        private readonly Func<IEventStoreConnection> _createConnection;
+	public class EventBusHandle2
+	{
+		public readonly Action Stop;
 
-        public EventBus(Func<IEventStoreConnection> createConnection)
-            : this(createConnection, Enumerable.Empty<Func<Task>>())
-        {
+		internal EventBusHandle2(Action stop)
+		{
+			Stop = stop;
+		}
+	}
 
-        }
+	public sealed class EventBus2
+	{
+		private readonly IEnumerable<Func<Task<Subscriber>>> _subscriberStarters;
+		private readonly Func<IEventStoreConnection> _createConnection;
 
-        private EventBus(Func<IEventStoreConnection> createConnection, IEnumerable<Func<Task>> subscriptions)
-        {
-            _createConnection = createConnection;
-            _subscriptions = subscriptions;
-        }
+		public EventBus2(Func<IEventStoreConnection> createConnection) : this(createConnection, Enumerable.Empty<Func<Task<Subscriber>>>())
+		{
 
-	    public EventBus RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscriber : IMessageHandler
-	    {
-		    return RegisterCatchupSubscriber<TSubscriber, TSubscriber>(subscriber, getCheckpoint, getEventHandlingQueueKey);
+		}
 
-	    }
+		private EventBus2(Func<IEventStoreConnection> createConnection, IEnumerable<Func<Task<Subscriber>>> subscriberStarters)
+		{
+			_createConnection = createConnection;
+			_subscriberStarters = subscriberStarters;
+		}
 
-	    public EventBus RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler where TSubscriber : TSubscription
+		public EventBus2 RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscriber : IMessageHandler
+		{
+			return RegisterCatchupSubscriber<TSubscriber, TSubscriber>(subscriber, getCheckpoint, getEventHandlingQueueKey);
+
+		}
+
+		public EventBus2 RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler where TSubscriber : TSubscription
 		{
 			return RegisterCatchupSubscriber<TSubscription>
 			(
 				SubscriberResolvedEventHandleFactory
 					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
 					.Partial(subscriber),
-				getCheckpoint, 
+				getCheckpoint,
 				getEventHandlingQueueKey
 			);
 		}
 
-	    public EventBus RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
-        {  
-            return new EventBus(_createConnection,
-                _subscriptions.Concat(new Func<Task>[]
-                {
-                    new CatchUpSubscriber
-					(
-                        _createConnection,
-                        typeof(TSubscription).GetEventStoreName(),
-                        handleResolvedEvent,
-						getCheckpoint,
-                        getEventHandlingQueueKey ?? (resolvedEvent => string.Empty),
-                        TimeSpan.FromSeconds(1)
-                    ).Start
-                }));
-        }
-
-	    public EventBus RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber) where TSubscriber : IMessageHandler
-	    {
-		    return RegisterVolatileSubscriber<TSubscriber, TSubscriber>(subscriber);
-	    }
-
-	    public EventBus RegisterVolatileSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber) where TSubscription : IMessageHandler where TSubscriber : TSubscription
+		public EventBus2 RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
 		{
-			return RegisterVolatileSubscriber<TSubscription>
-				(
-					SubscriberResolvedEventHandleFactory
-						.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
-						.Partial(subscriber)
-				);
-		}
-
-		public EventBus RegisterVolatileSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
-		{
-			return new EventBus(_createConnection,
-				_subscriptions.Concat(new Func<Task>[]
+			return new EventBus2(_createConnection,
+				_subscriberStarters.Concat(new Func<Task<Subscriber>>[]
 				{
-					new VolatileSubscriber(
-						_createConnection,
-						typeof(TSubscription).GetEventStoreName(),
-						handleResolvedEvent,
-						TimeSpan.FromSeconds(1))
-						.Start
+					() => 
+						Subscriber.StartCatchUpSubscriber(
+							_createConnection, 
+							typeof(TSubscription).GetEventStoreName(), 
+							handleResolvedEvent, 
+							getCheckpoint, 
+							getEventHandlingQueueKey ?? (resolvedEvent => string.Empty))
+					
 				}));
 		}
 
-	    public EventBus RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber) where TSubscriber : IMessageHandler
-	    {
-		    return RegisterPersistentSubscriber<TSubscriber, TSubscriber>(subscriber);
-	    }
+		public EventBus2 RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber) where TSubscriber : IMessageHandler
+		{
+			return RegisterVolatileSubscriber<TSubscriber, TSubscriber>(subscriber);
+		}
 
-	    public EventBus RegisterPersistentSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber) where TSubscription : IMessageHandler where TSubscriber : TSubscription
+		public EventBus2 RegisterVolatileSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber) where TSubscription : IMessageHandler where TSubscriber : TSubscription
+		{
+			return RegisterVolatileSubscriber<TSubscription>
+			(
+				SubscriberResolvedEventHandleFactory
+					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
+					.Partial(subscriber)
+			);
+		}
+
+		public EventBus2 RegisterVolatileSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
+		{
+			return new EventBus2(_createConnection,
+				_subscriberStarters.Concat(new Func<Task<Subscriber>>[]
+				{
+					() => 
+						Subscriber.StartVolatileSubscriber(
+							_createConnection,
+							typeof(TSubscription).GetEventStoreName(),
+							handleResolvedEvent)
+				}));
+		}
+
+		public EventBus2 RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber) where TSubscriber : IMessageHandler
+		{
+			return RegisterPersistentSubscriber<TSubscriber, TSubscriber>(subscriber);
+		}
+
+		public EventBus2 RegisterPersistentSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber) where TSubscription : IMessageHandler where TSubscriber : TSubscription
 		{
 			return RegisterPersistentSubscriber<TSubscription, TSubscriber>
 			(
@@ -112,27 +119,24 @@ namespace eventstore
 			);
 		}
 
-		public EventBus RegisterPersistentSubscriber<TSubscription, TSubscriber>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
+		public EventBus2 RegisterPersistentSubscriber<TSubscription, TSubscriber>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
 		{
-			return new EventBus(_createConnection,
-				_subscriptions.Concat(new Func<Task>[]
+			return new EventBus2(_createConnection,
+				_subscriberStarters.Concat(new Func<Task<Subscriber>>[]
 				{
-					new PersistentSubscriber(
-						_createConnection,
-						typeof(TSubscription).GetEventStoreName(),
-						typeof(TSubscriber).GetEventStoreName(),
-						handleResolvedEvent,
-						TimeSpan.FromSeconds(1))
-						.Start
+					() => 
+						Subscriber.StartPersistentSubscriber(
+							_createConnection, 
+							typeof(TSubscription).GetEventStoreName(), 
+							typeof(TSubscriber).GetEventStoreName(), 
+							handleResolvedEvent)
 				}));
 		}
 
-		public void Start()
-        {
-            Parallel.ForEach(_subscriptions, start => start());
-        }
-
-
-   
-    }
+		public async Task<EventBusHandle2> Start()
+		{
+			var subscribers = await Task.WhenAll(_subscriberStarters.Select(x => x()));
+			return new EventBusHandle2(() => Parallel.ForEach(subscribers, x => x.Stop()));
+		}
+	}
 }

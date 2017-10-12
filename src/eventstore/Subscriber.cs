@@ -8,18 +8,16 @@ using shared;
 
 namespace eventstore
 {
-	public class SubscriberHandle
-	{
-		public readonly Action Stop;
+    public class Subscriber
+    {
+	    public readonly Action Stop;
 
-		internal SubscriberHandle(Action stop)
-		{
+		private Subscriber(Action stop)
+	    {
 			Stop = stop;
 		}
-	}
-    public static class Subscriber
-    {
-	    public static async Task<SubscriberHandle> StartCatchUpSubscriber(
+
+	    public static async Task<Subscriber> StartCatchUpSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    Func<ResolvedEvent, Task> handleEvent,
@@ -27,8 +25,9 @@ namespace eventstore
 		    Func<ResolvedEvent, string> getEventHandlingQueueKey)
 	    {
 			var queue = new TaskQueue();
-			var connection = createConnection();
+		    var connection = createConnection();
 		    var checkpoint = await getCheckpoint();
+		    await connection.ConnectAsync();
 			var s = connection.SubscribeToStreamFrom(
 				streamName, 
 				checkpoint, 
@@ -46,15 +45,21 @@ namespace eventstore
 				{
 					
 				});
-		    return new SubscriberHandle(s.Stop);
+		    return new Subscriber(
+			    () =>
+			    {
+				    s.Stop();
+					connection.Close();
+			    });
 		}
 
-	    public static async Task<SubscriberHandle> StartVolatileSubscriber(
+	    public static async Task<Subscriber> StartVolatileSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    Func<ResolvedEvent, Task> handleEvent)
 	    {
 		    var connection = createConnection();
+		    await connection.ConnectAsync();
 			var s = await connection.SubscribeToStreamAsync(
 				streamName, 
 				true,
@@ -63,17 +68,23 @@ namespace eventstore
 				{
 					
 				});
-			return new SubscriberHandle(s.Close);
+			return new Subscriber(
+				() =>
+				{
+					s.Close();
+					connection.Close();
+				});
 		}
 
-	    public static async Task<SubscriberHandle> StartPersistentSubscriber(
+	    public static async Task<Subscriber> StartPersistentSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    string groupName,
 		    Func<ResolvedEvent, Task> handleEvent)
 	    {
 			var connection = createConnection();
-		    var s = await connection.ConnectToPersistentSubscriptionAsync(
+		    await connection.ConnectAsync();
+			var s = await connection.ConnectToPersistentSubscriptionAsync(
 				streamName, 
 				groupName,
 				async (subscription, resolvedEvent) =>
@@ -93,9 +104,10 @@ namespace eventstore
 					
 				}, 
 				autoAck: false);
-		    return new SubscriberHandle(() =>
+		    return new Subscriber(() =>
 		    {
 				s.Stop(TimeSpan.FromSeconds(30));
+				connection.Close();
 		    });
 	    }
 
