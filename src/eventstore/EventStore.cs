@@ -55,12 +55,12 @@ namespace eventstore
 			return SetEventHeader(EventHeaderKey.CorrelationId, correlationId);
 		}
 
-		internal static EventDataSettings Create(Guid eventId, string eventName, Guid correlationId, string[] topics)
+		internal static EventDataSettings Create(Guid eventId, string eventType, Guid correlationId, string[] topics)
 		{
 			return new EventDataSettings
 				(
 					eventId,
-					eventName,
+					eventType,
 					new Dictionary<string, object>
 					{
 						{
