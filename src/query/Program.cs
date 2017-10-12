@@ -35,16 +35,16 @@ namespace query
 
 			var eventBus = EventBus.Start(
 				connectionFactory.CreateConnection, 
-				eventBusRegistry => eventBusRegistry
+				registry => registry
 						.RegisterVolatileSubscriber(
 							new Subscriber1()
 						)
 						.RegisterCatchupSubscriber<Subscriber2>(
-								new Subscriber2()
-									.ComposeForward(
-										new Subscriber2Continuation()),
-								() => Task.FromResult(default(long?))
-								)
+							new Subscriber2()
+								.ComposeForward(
+									new Subscriber2Continuation()),
+							() => Task.FromResult(default(long?))
+							)
 						.RegisterPersistentSubscriber(
 							new Subscriber3()
 							)

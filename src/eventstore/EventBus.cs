@@ -31,9 +31,9 @@ namespace eventstore
 			Parallel.ForEach(_subscribers, subscriber => subscriber.Stop());
 		}
 
-		public static async Task<EventBus> Start(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> registerSubscriber)
+		public static async Task<EventBus> Start(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> registerSubscribers)
 		{
-			var subscriberStarters = registerSubscriber(SubscriberRegistry.Create());
+			var subscriberStarters = registerSubscribers(SubscriberRegistry.Create());
 			var subscribers = await Task.WhenAll(subscriberStarters.Select(startSubscriber => startSubscriber(createConnection)));
 			return new EventBus(subscribers);
 		}
