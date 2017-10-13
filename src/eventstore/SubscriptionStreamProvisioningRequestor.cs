@@ -3,19 +3,10 @@ using System.Threading.Tasks;
 
 namespace eventstore
 {
-	public struct RequestSubscriptionStreamsProvisioningResult
-	{
-		public readonly Guid CorrelationId;
-
-		internal RequestSubscriptionStreamsProvisioningResult(Guid correlationId)
-		{
-			CorrelationId = correlationId;
-		}
-	}
-
+	
 	public interface ISubscriptionStreamProvisioningRequestor
 	{
-		Task<RequestSubscriptionStreamsProvisioningResult> RequestSubscriptionStreamsProvisioning(string subscriptionStreamName);
+		Task RequestSubscriptionStreamsProvisioning(Guid correlationId, string subscriptionStreamName);
 	}
 
 	
@@ -28,12 +19,11 @@ namespace eventstore
 			_eventPublisher = eventPublisher;
 		}
 
-		public async Task<RequestSubscriptionStreamsProvisioningResult> RequestSubscriptionStreamsProvisioning(string subscriptionStreamName)
+		public Task RequestSubscriptionStreamsProvisioning(Guid correlationId, string subscriptionStreamName)
 		{
-			var correlationId = Guid.NewGuid();
-			await _eventPublisher.PublishEvent(new SubscriptionStreamsProvisioningRequested(subscriptionStreamName),
-				configureEventDataSettings: x => x.SetCorrelationId(correlationId));
-			return new RequestSubscriptionStreamsProvisioningResult(correlationId);
+			return _eventPublisher.PublishEvent(
+				new SubscriptionStreamsProvisioningRequested(subscriptionStreamName),
+				x => x.SetCorrelationId(correlationId));
 		}
 	}
 }

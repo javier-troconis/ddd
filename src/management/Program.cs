@@ -49,11 +49,11 @@ namespace management
                         break;
                     case '2':
 						var persistentSubscriptionProvisioningRequestor = new PersistentSubscriptionProvisioningRequestor(eventPublisher);
-						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionsProvisioning("*");
+						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionsProvisioning(Guid.NewGuid(), "*");
                         break;
 					case '3':
 						var subscriptionStreamProvisioningRequestor = new SubscriptionStreamProvisioningRequestor(eventPublisher);
-						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamsProvisioning("*");
+						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamsProvisioning(Guid.NewGuid(), "*");
                         break;				
 					default:
                         return;

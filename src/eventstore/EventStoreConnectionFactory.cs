@@ -26,7 +26,7 @@ namespace eventstore
 		{
             var connectionSettings = (_configureConnection ?? (x => x))(
                 ConnectionSettings.Create()
-                .SetDefaultUserCredentials(new UserCredentials(_username, _password)));
+					.SetDefaultUserCredentials(new UserCredentials(_username, _password)));
 			var clusterSettings = ClusterSettings
 				.Create()
 				.DiscoverClusterViaDns()

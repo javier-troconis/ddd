@@ -62,8 +62,7 @@ namespace eventstore
                                     return Task.CompletedTask;
                                 }
                                 var streamName = typeof(TSubscription).GetEventStoreName();
-                                configurePersistentSubscription = configurePersistentSubscription ?? (x => x);
-                                var persistentSubscriptionSettings = configurePersistentSubscription(
+                                var persistentSubscriptionSettings = (configurePersistentSubscription ?? (x => x))(
                                     PersistentSubscriptionSettings
                                         .Create()
                                         .ResolveLinkTos()
