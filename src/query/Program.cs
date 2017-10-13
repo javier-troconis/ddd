@@ -31,9 +31,8 @@ namespace query
 						)
 						.RegisterCatchupSubscriber<Subscriber2>(
 							new Subscriber2()
-								.ComposeForward(
-									new Subscriber2Continuation()),
-							() => Task.FromResult(default(long?))
+								.ComposeForward(Checkpoint<Subscriber2>.WriteCheckpoint),
+							Checkpoint<Subscriber2>.ReadCheckpoint
 							)
 						.RegisterPersistentSubscriber(
 							new Subscriber3()

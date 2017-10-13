@@ -17,28 +17,29 @@ namespace eventstore
 	{
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward<TSubscriber1, TSubscriber2>(this TSubscriber1 s1, TSubscriber2 s2) where TSubscriber1 : IMessageHandler where TSubscriber2 : IMessageHandler
 		{
-			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber1, Task>(delegate { return Task.CompletedTask; });
+			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber2, Task>(delegate { return Task.CompletedTask; });
 			return ComposeForward
 				(
+					s1,
 					async resolvedEvent =>
 					{
-						await handleResolvedEvent(s1, resolvedEvent);
-						return resolvedEvent;
-					},
-					s2
-				);
-		}
-
-		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward<TSubscriber>(this Func<ResolvedEvent, Task<ResolvedEvent>> f, TSubscriber s) where TSubscriber : IMessageHandler
-		{
-			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
-			return f.ComposeForward
-				(async resolvedEvent =>
-					{
-						await handleResolvedEvent(s, resolvedEvent);
+						await handleResolvedEvent(s2, resolvedEvent);
 						return resolvedEvent;
 					}
 				);
+		}
+
+		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward<TSubscriber>(this TSubscriber s, Func<ResolvedEvent, Task<ResolvedEvent>> f) where TSubscriber : IMessageHandler
+		{
+			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
+			return FuncExtensions.ComposeForward(
+				new Func<ResolvedEvent, Task<ResolvedEvent>>(
+					async resolvedEvent =>
+					{
+						await handleResolvedEvent(s, resolvedEvent);
+						return resolvedEvent;
+					}), 
+				f);
 		}
 	}
 
