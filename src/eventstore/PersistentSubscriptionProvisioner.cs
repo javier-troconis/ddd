@@ -12,13 +12,13 @@ namespace eventstore
 {
     public interface IPersistentSubscriptionProvisioner
     {
-        IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
+        IPersistentSubscriptionProvisioner RegisterPersistentSubscription<TSubscription>(
             Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler;
 
-        IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
+        IPersistentSubscriptionProvisioner RegisterPersistentSubscription<TSubscription, TSubscriptionGroup>(
             Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription;
 
-        Task ProvisionPersistentSubscriptions(string targetSubscriptionGroupName = "*");
+        Task ProvisionPersistentSubscription(string targetSubscriptionGroupName = "*");
     }
 
     public class PersistentSubscriptionProvisioner : IPersistentSubscriptionProvisioner
@@ -41,13 +41,13 @@ namespace eventstore
             _provisioningTasks = provisioningTasks;
         }
 
-        public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription>(
+        public IPersistentSubscriptionProvisioner RegisterPersistentSubscription<TSubscription>(
             Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler
         {
-            return RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscription>(configurePersistentSubscription);
+            return RegisterPersistentSubscription<TSubscription, TSubscription>(configurePersistentSubscription);
         }
 
-        public IPersistentSubscriptionProvisioner RegisterPersistentSubscriptionProvisioning<TSubscription, TSubscriptionGroup>(
+        public IPersistentSubscriptionProvisioner RegisterPersistentSubscription<TSubscription, TSubscriptionGroup>(
             Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription
         {
             return new PersistentSubscriptionProvisioner(
@@ -77,7 +77,7 @@ namespace eventstore
             );
         }
 
-        public Task ProvisionPersistentSubscriptions(string targetSubscriptionGroupName)
+        public Task ProvisionPersistentSubscription(string targetSubscriptionGroupName)
         {
             return Task.WhenAll(_provisioningTasks.Select(x => x(targetSubscriptionGroupName)));
         }

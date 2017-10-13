@@ -29,8 +29,8 @@ namespace management
 			while (true)
             {
                 Console.WriteLine("1 - provision system streams");
-				Console.WriteLine("2 - request persistent subscriptions provisioning");
-				Console.WriteLine("3 - request subscription streams provisioning");
+				Console.WriteLine("2 - provision persistent subscriptions");
+				Console.WriteLine("3 - provision subscription streams");
 
                 var option = Console.ReadKey().KeyChar;
                 switch (option)
@@ -48,12 +48,12 @@ namespace management
 						systemStreamProvisioner.ProvisionSystemStreams();
                         break;
                     case '2':
-						var persistentSubscriptionProvisioningRequestor = new PersistentSubscriptionProvisioningRequestor(eventPublisher);
-						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionsProvisioning(Guid.NewGuid(), "*");
+						var persistentSubscriptionProvisioningRequestor = new ProvisionPersistentSubscriptionRequestor(eventPublisher);
+						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionProvision(Guid.NewGuid(), "*");
                         break;
 					case '3':
-						var subscriptionStreamProvisioningRequestor = new SubscriptionStreamProvisioningRequestor(eventPublisher);
-						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamsProvisioning(Guid.NewGuid(), "*");
+						var subscriptionStreamProvisioningRequestor = new ProvisionProvisionSubscriptionStreamRequestor(eventPublisher);
+						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamProvision(Guid.NewGuid(), "*");
                         break;				
 					default:
                         return;

@@ -9,8 +9,8 @@ namespace eventstore
 {
     public interface ISubscriptionStreamProvisioner
     {
-        ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler;
-        Task ProvisionSubscriptionStreams(string targetSubscriptionStreamName = "*");
+        ISubscriptionStreamProvisioner RegisterSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler;
+        Task ProvisionSubscriptionStream(string targetSubscriptionStreamName = "*");
     }
 
     public class SubscriptionStreamProvisioner : ISubscriptionStreamProvisioner
@@ -32,7 +32,7 @@ namespace eventstore
             _provisioningTasks = provisioningTasks;
         }
 
-        public ISubscriptionStreamProvisioner RegisterSubscriptionStreamProvisioning<TSubscription>() where TSubscription : IMessageHandler
+        public ISubscriptionStreamProvisioner RegisterSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler
         {
             // pull from specific streams ?
             const string queryTemplate =
@@ -82,7 +82,7 @@ fromAll()
             );
         }
 
-        public Task ProvisionSubscriptionStreams(string targetSubscriptionStreamName = "*")
+        public Task ProvisionSubscriptionStream(string targetSubscriptionStreamName = "*")
         {
             return Task.WhenAll(_provisioningTasks.Select(x => x(targetSubscriptionStreamName)));
         }

@@ -35,9 +35,9 @@ namespace eventstore
                 (
                     _topicStreamProvisioner.ProvisionTopicStream(),
                     _subscriptionStreamProvisioner
-                        .RegisterSubscriptionStreamProvisioning<IPersistentSubscriptionsProvisioningRequests>()
-                        .RegisterSubscriptionStreamProvisioning<ISubscriptionStreamsProvisioningRequests>()
-                        .ProvisionSubscriptionStreams()
+                        .RegisterSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
+                        .RegisterSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+                        .ProvisionSubscriptionStream()
                 );
 		}
 
