@@ -17,37 +17,28 @@ namespace eventstore
 	{
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s1, IMessageHandler s2)
 		{
-			return ComposeForward1((dynamic)s1, (dynamic)s2);
+			var s2Handle = CreateSubscriberResolvedEventHandle((dynamic) s2);
+			return MessageHandlerExtensions.ComposeForward
+			(
+				s1,
+				s2Handle
+			);
 		}
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s, Func<ResolvedEvent, Task<ResolvedEvent>> f)
 		{
-			return ComposeForward1((dynamic)s, f);
+			var sHandle = CreateSubscriberResolvedEventHandle((dynamic) s);
+			return FuncExtensions.ComposeForward(sHandle, f);
 		}
 
-		private static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward1<TSubscriber1, TSubscriber2>(TSubscriber1 s1, TSubscriber2 s2) where TSubscriber1 : IMessageHandler where TSubscriber2 : IMessageHandler
-		{
-			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber2, Task>(delegate { return Task.CompletedTask; });
-			return ComposeForward1
-			(
-				s1,
-				async resolvedEvent =>
-				{
-					await handleResolvedEvent(s2, resolvedEvent);
-					return resolvedEvent;
-				}
-			);
-		}
-
-		private static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward1<TSubscriber>(TSubscriber s, Func<ResolvedEvent, Task<ResolvedEvent>> f) where TSubscriber : IMessageHandler
+		private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandle<TSubscriber>(TSubscriber s) where TSubscriber : IMessageHandler
 		{
 			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
-			return new Func<ResolvedEvent, Task<ResolvedEvent>>(
-				async resolvedEvent =>
-				{
-					await handleResolvedEvent(s, resolvedEvent);
-					return resolvedEvent;
-				}).ComposeForward(f);
+			return async resolvedEvent =>
+			{
+				await handleResolvedEvent(s, resolvedEvent);
+				return resolvedEvent;
+			};
 		}
 	}
 
