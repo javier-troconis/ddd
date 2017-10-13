@@ -15,7 +15,6 @@ namespace eventstore
 
     public class SubscriptionStreamProvisioner : ISubscriptionStreamProvisioner
     {
-        private static readonly TaskQueue _provisioningTasksQueue = new TaskQueue();
         private readonly IProjectionManager _projectionManager;
         private readonly IEnumerable<Func<string, Task>> _provisioningTasks;
 
@@ -77,8 +76,7 @@ fromAll()
                                 var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
                                 var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
                                 var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionStreamName);
-                                return _provisioningTasksQueue.SendToChannel(subscriptionStreamName,
-                                    () => _projectionManager.CreateOrUpdateContinuousProjection(subscriptionStreamName, query));
+                                return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionStreamName, query);
                             }
                     })
             );

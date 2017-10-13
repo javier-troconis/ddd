@@ -23,7 +23,6 @@ namespace eventstore
 
     public class PersistentSubscriptionProvisioner : IPersistentSubscriptionProvisioner
     {
-        private static readonly TaskQueue _provisioningTasksQueue = new TaskQueue();
         private readonly IPersistentSubscriptionManager _persistentSubscriptionManager;
         private readonly IEnumerable<Func<string, Task>> _provisioningTasks;
 
@@ -73,8 +72,7 @@ namespace eventstore
                                         .CheckPointAfter(TimeSpan.FromSeconds(1))
                                         .WithExtraStatistics()
                                     );
-                                return _provisioningTasksQueue.SendToChannel(streamName,
-                                    () =>_persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, subscriptionGroupName, persistentSubscriptionSettings));
+                                return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, subscriptionGroupName, persistentSubscriptionSettings);
                             }
                     })
             );

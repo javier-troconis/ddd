@@ -3,9 +3,19 @@ using System.Threading.Tasks;
 
 namespace eventstore
 {
+	public struct RequestPersistentSubscriptionsProvisioningResult
+	{
+		public readonly Guid CorrelationId;
+
+		internal RequestPersistentSubscriptionsProvisioningResult(Guid correlationId)
+		{
+			CorrelationId = correlationId;
+		}
+	}
+
 	public interface IPersistentSubscriptionProvisioningRequestor
 	{
-		Task RequestPersistentSubscriptionsProvisioning(string persistentSubscriptionName);
+		Task<RequestPersistentSubscriptionsProvisioningResult> RequestPersistentSubscriptionsProvisioning(string persistentSubscriptionName);
 	}
 
 	public class PersistentSubscriptionProvisioningRequestor : IPersistentSubscriptionProvisioningRequestor
@@ -17,11 +27,13 @@ namespace eventstore
 			_eventPublisher = eventPublisher;
 		}
 
-		public Task RequestPersistentSubscriptionsProvisioning(string persistentSubscriptionName)
+		public async Task<RequestPersistentSubscriptionsProvisioningResult> RequestPersistentSubscriptionsProvisioning(string persistentSubscriptionName)
 		{
-			return _eventPublisher.PublishEvent(
+			var correlationId = Guid.NewGuid();
+			await _eventPublisher.PublishEvent(
 				new PersistentSubscriptionsProvisioningRequested(persistentSubscriptionName), 
-				configureEventDataSettings: x => x.SetCorrelationId(Guid.NewGuid()));
+				configureEventDataSettings: x => x.SetCorrelationId(correlationId));
+			return new RequestPersistentSubscriptionsProvisioningResult(correlationId);
 		}
 	}
 
