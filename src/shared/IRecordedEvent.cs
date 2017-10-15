@@ -10,7 +10,6 @@ namespace shared
 	    long EventNumber { get; }
 	    DateTime Created { get; }
 	    Guid EventId { get; }
-	    Guid CorrelationId { get; }
 	    TData Data { get; }
     }
 }

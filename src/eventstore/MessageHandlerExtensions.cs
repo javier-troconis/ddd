@@ -18,11 +18,7 @@ namespace eventstore
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s1, IMessageHandler s2)
 		{
 			var s2Handle = CreateSubscriberResolvedEventHandle((dynamic) s2);
-			return MessageHandlerExtensions.ComposeForward
-			(
-				s1,
-				s2Handle
-			);
+			return MessageHandlerExtensions.ComposeForward(s1, s2Handle);
 		}
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s, Func<ResolvedEvent, Task<ResolvedEvent>> f)

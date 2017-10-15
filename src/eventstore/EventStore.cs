@@ -55,7 +55,7 @@ namespace eventstore
 			return SetEventHeader(EventHeaderKey.CorrelationId, correlationId);
 		}
 
-		internal static EventDataSettings Create(Guid eventId, string eventType, Guid correlationId, string[] topics)
+		internal static EventDataSettings Create(Guid eventId, string eventType, string[] topics)
 		{
 			return new EventDataSettings
 				(
@@ -67,7 +67,7 @@ namespace eventstore
 							EventHeaderKey.Topics, topics
 						}
 					}
-				).SetCorrelationId(correlationId);
+				);
 		}
 	}
 
@@ -93,7 +93,7 @@ namespace eventstore
 			var eventData = events
 				.Select(@event =>
 					ConvertToEventData(@event, configureEventDataSettings(
-						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().GetEventStoreName(), Guid.NewGuid(), @event.GetType().GetEventTopics()))));
+						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().GetEventStoreName(), @event.GetType().GetEventTopics()))));
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
 		}
 

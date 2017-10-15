@@ -6,7 +6,7 @@ namespace eventstore
 	
 	public interface IProvisionSubscriptionStreamRequestor
 	{
-		Task RequestSubscriptionStreamProvision(Guid correlationId, string subscriptionStreamName);
+		Task RequestSubscriptionStreamProvision(string subscriptionStreamName);
 	}
 
 	
@@ -19,11 +19,10 @@ namespace eventstore
 			_eventPublisher = eventPublisher;
 		}
 
-		public Task RequestSubscriptionStreamProvision(Guid correlationId, string subscriptionStreamName)
+		public Task RequestSubscriptionStreamProvision(string subscriptionStreamName)
 		{
 			return _eventPublisher.PublishEvent(
-				new ProvisionSubscriptionStreamRequested(subscriptionStreamName),
-				x => x.SetCorrelationId(correlationId));
+				new ProvisionSubscriptionStreamRequested(subscriptionStreamName));
 		}
 	}
 }

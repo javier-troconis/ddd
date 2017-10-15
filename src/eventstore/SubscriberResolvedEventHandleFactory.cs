@@ -54,7 +54,6 @@ namespace eventstore
 			    resolvedEvent.Event.EventStreamId,
 			    resolvedEvent.Event.EventNumber,
 			    resolvedEvent.Event.EventId,
-				CorrelationId = Guid.Parse(eventMetadata[EventHeaderKey.CorrelationId].ToString()),
 			    resolvedEvent.Event.Created,
 			    Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 		    };

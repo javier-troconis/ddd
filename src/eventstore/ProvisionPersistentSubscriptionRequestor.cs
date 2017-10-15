@@ -5,7 +5,7 @@ namespace eventstore
 {
 	public interface IProvisionPersistentSubscriptionRequestor
 	{
-		Task RequestPersistentSubscriptionProvision(Guid correlationId, string persistentSubscriptionName);
+		Task RequestPersistentSubscriptionProvision(string persistentSubscriptionName);
 	}
 
 	public class ProvisionPersistentSubscriptionRequestor : IProvisionPersistentSubscriptionRequestor
@@ -17,11 +17,10 @@ namespace eventstore
 			_eventPublisher = eventPublisher;
 		}
 
-		public Task RequestPersistentSubscriptionProvision(Guid correlationId, string persistentSubscriptionName)
+		public Task RequestPersistentSubscriptionProvision(string persistentSubscriptionName)
 		{
 			return _eventPublisher.PublishEvent(
-				new ProvisionPersistentSubscriptionRequested(persistentSubscriptionName), 
-				x => x.SetCorrelationId(correlationId));
+				new ProvisionPersistentSubscriptionRequested(persistentSubscriptionName));
 		}
 	}
 
