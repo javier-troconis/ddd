@@ -21,6 +21,7 @@ namespace query
 		public Task Handle(IRecordedEvent<IProvisionSubscriptionStreamRequested> message)
 		{
 			return _subscriptionStreamProvisioner
+				.RegisterSubscriptionStream<EventBusController>()
 				.RegisterSubscriptionStream<Subscriber1>()
 				.RegisterSubscriptionStream<Subscriber2>()
 				.RegisterSubscriptionStream<Subscriber3>()

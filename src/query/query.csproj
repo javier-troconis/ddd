@@ -19,6 +19,7 @@
     <ProjectReference Include="..\shared\shared.csproj" />
     <ProjectReference Include="..\command.contracts\command.contracts.csproj" />
     <ProjectReference Include="..\eventstore\eventstore.csproj" />
+    <ProjectReference Include="..\management.contracts\management.contracts.csproj" />
   </ItemGroup>
 
  

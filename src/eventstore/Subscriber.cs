@@ -8,12 +8,12 @@ using shared;
 
 namespace eventstore
 {
-    public class Subscriber
+    public struct Subscriber
     {
 	    public readonly Action Stop;
-
+	    
 		private Subscriber(Action stop)
-	    {
+		{
 			Stop = stop;
 		}
 
@@ -104,11 +104,12 @@ namespace eventstore
 					
 				}, 
 				autoAck: false);
-		    return new Subscriber(() =>
-		    {
-				s.Stop(TimeSpan.FromSeconds(30));
-				connection.Close();
-		    });
+		    return new Subscriber(
+				() =>
+				{
+					s.Stop(TimeSpan.FromSeconds(30));
+					connection.Close();
+				});
 	    }
 
 

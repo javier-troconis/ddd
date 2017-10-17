@@ -1,12 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>management</Description>
+    <Description>management.contracts</Description>
     <Authors>jtroconis</Authors>
     <TargetFramework>net462</TargetFramework>
-    <AssemblyName>management</AssemblyName>
-    <OutputType>Exe</OutputType>
-    <PackageId>management</PackageId>
+    <AssemblyName>management.contracts</AssemblyName>
+    <PackageId>management.contracts</PackageId>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
@@ -14,8 +13,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\shared\shared.csproj" />
-    <ProjectReference Include="..\eventstore\eventstore.csproj" />
-    <ProjectReference Include="..\management.contracts\management.contracts.csproj" />
   </ItemGroup>
 
 

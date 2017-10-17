@@ -23,8 +23,8 @@ namespace query
 				x => x.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)))
 					.CreateConnection;
 
-			var eventBus1 = EventBus.Start(
-				createConnection, 
+			var consumerEventBus = EventBus.Start(
+				createConnection,
 				registry => registry
 						.RegisterVolatileSubscriber(
 							new Subscriber1()
@@ -40,9 +40,28 @@ namespace query
 						))
 					;
 
-			var eventBus2 = EventBus.Start(
+			var infrastructureEventBus = EventBus.Start(
 					createConnection,
 					registry => registry
+						//.RegisterVolatileSubscriber(
+						//	new EventBusController
+						//	(
+						//		createConnection,
+						//		SubscriberRegistry
+						//			.CreateSubscriberRegistry()
+						//				.RegisterVolatileSubscriber(
+						//					new Subscriber1()
+						//				)
+						//			.RegisterCatchupSubscriber<Subscriber2>(
+						//				new Subscriber2()
+						//					.ComposeForward(new Subscriber2Continuation())
+						//						.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
+						//				CheckpointReader<Subscriber2>.ReadCheckpoint
+						//			)
+						//			.RegisterPersistentSubscriber(
+						//				new Subscriber3()
+						//			)
+						//	))
 						.RegisterPersistentSubscriber<IProvisionSubscriptionStreamRequests, ProvisionSubscriptionStream>(
 							new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
 								new ProjectionManager(
