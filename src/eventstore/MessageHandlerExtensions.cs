@@ -29,10 +29,10 @@ namespace eventstore
 
 		private static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandle<TSubscriber>(TSubscriber s) where TSubscriber : IMessageHandler
 		{
-			var handleResolvedEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
+			var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
 			return async resolvedEvent =>
 			{
-				await handleResolvedEvent(s, resolvedEvent);
+				await handleEvent(s, resolvedEvent);
 				return resolvedEvent;
 			};
 		}

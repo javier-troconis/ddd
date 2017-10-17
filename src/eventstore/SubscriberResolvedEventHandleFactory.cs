@@ -32,7 +32,7 @@ namespace eventstore
 				    var recordedEvent = TryDeserializeEvent(candidateEventTypes, resolvedEvent);
 				    return recordedEvent == null
 					    ? getUnHandledResult(subscriber, resolvedEvent)
-					    : RecordedEventHandler<TResult>.HandleRecordedEvent(subscriber, (dynamic)recordedEvent);
+					    : EventHandler<TResult>.HandleEvent(subscriber, (dynamic)recordedEvent);
 			    };
 	    }
 
@@ -61,9 +61,9 @@ namespace eventstore
 		    return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 	    }
 
-	    private static class RecordedEventHandler<TOut>
+	    private static class EventHandler<TOut>
 	    {
-		    public static TOut HandleRecordedEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
+		    public static TOut HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
 		    {
 			    var handler = (IMessageHandler<TRecordedEvent, TOut>)subscriber;
 			    return handler.Handle(recordedEvent);

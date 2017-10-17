@@ -31,7 +31,7 @@ namespace management
                 Console.WriteLine("1 - provision system streams");
 				Console.WriteLine("2 - provision persistent subscriptions");
 				Console.WriteLine("3 - provision subscription streams");
-	            Console.WriteLine("4 - run re-provision subscription workflow");
+	            Console.WriteLine("4 - start re-provision subscription workflow");
 
 				var option = Console.ReadKey().KeyChar;
                 switch (option)

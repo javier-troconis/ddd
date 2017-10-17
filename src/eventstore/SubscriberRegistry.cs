@@ -9,25 +9,25 @@ using shared;
 
 namespace eventstore
 {
-	public struct SubscriberRegistryEntry
+	public struct SubscriberRegistration
 	{
 		public readonly string SubscriberName;
 		public readonly Func<Func<IEventStoreConnection>, Task<Subscriber>> StartSubscriber;
 
-		internal SubscriberRegistryEntry(string subscriberName, Func<Func<IEventStoreConnection>, Task<Subscriber>> startSubscriber)
+		internal SubscriberRegistration(string subscriberName, Func<Func<IEventStoreConnection>, Task<Subscriber>> startSubscriber)
 		{
 			SubscriberName = subscriberName;
 			StartSubscriber = startSubscriber;
 		}
 	}
 
-	public struct SubscriberRegistry : IEnumerable<SubscriberRegistryEntry>
+	public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
 	{
-		private readonly IEnumerable<SubscriberRegistryEntry> _createSubscribers;
+		private readonly IEnumerable<SubscriberRegistration> _subscriberRegistrations;
 
-		private SubscriberRegistry(IEnumerable<SubscriberRegistryEntry> createSubscribers)
+		private SubscriberRegistry(IEnumerable<SubscriberRegistration> subscriberRegistrations)
 		{
-			_createSubscribers = createSubscribers;
+			_subscriberRegistrations = subscriberRegistrations;
 		}
 
 		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscriber : IMessageHandler
@@ -37,29 +37,31 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterCatchupSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler where TSubscriber : TSubscription
 		{
-			return RegisterCatchupSubscriber<TSubscription>
-			(
+			var handleEvent = 
 				SubscriberResolvedEventHandleFactory
 					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
-					.Partial(subscriber),
+					.Partial(subscriber);
+			return RegisterCatchupSubscriber<TSubscription>
+			(
+				handleEvent,
 				getCheckpoint,
 				getEventHandlingQueueKey
 			);
 		}
 
-		public SubscriberRegistry RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
 		{
 			return new SubscriberRegistry(
-				_createSubscribers.Concat(new[]
+				_subscriberRegistrations.Concat(new[]
 				{
-					new SubscriberRegistryEntry
+					new SubscriberRegistration
 					(
 						typeof(TSubscription).GetEventStoreName(),
 						createConnection =>
 							Subscriber.StartCatchUpSubscriber(
 								createConnection,
 								typeof(TSubscription).GetEventStoreName(),
-								handleResolvedEvent,
+								handleEvent,
 								getCheckpoint,
 								getEventHandlingQueueKey ?? (resolvedEvent => string.Empty))
 					)
@@ -73,27 +75,29 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterVolatileSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber) where TSubscription : IMessageHandler where TSubscriber : TSubscription
 		{
-			return RegisterVolatileSubscriber<TSubscription>
-			(
+			var handleEvent = 
 				SubscriberResolvedEventHandleFactory
 					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
-					.Partial(subscriber)
+					.Partial(subscriber);
+			return RegisterVolatileSubscriber<TSubscription>
+			(
+				handleEvent
 			);
 		}
 
-		public SubscriberRegistry RegisterVolatileSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterVolatileSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleEvent) where TSubscription : IMessageHandler
 		{
 			return new SubscriberRegistry(
-				_createSubscribers.Concat(new []
+				_subscriberRegistrations.Concat(new []
 				{
-					new SubscriberRegistryEntry
+					new SubscriberRegistration
 					(
 						typeof(TSubscription).GetEventStoreName(),
 						createConnection =>
 							Subscriber.StartVolatileSubscriber(
 								createConnection,
 								typeof(TSubscription).GetEventStoreName(),
-								handleResolvedEvent)
+								handleEvent)
 					)
 				}));
 		}
@@ -105,20 +109,22 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription, TSubscriber>(TSubscriber subscriber) where TSubscription : IMessageHandler where TSubscriber : TSubscription
 		{
-			return RegisterPersistentSubscriber<TSubscription, TSubscriber>
-			(
+			var handleEvent =
 				SubscriberResolvedEventHandleFactory
 					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
-					.Partial(subscriber)
+					.Partial(subscriber);
+			return RegisterPersistentSubscriber<TSubscription, TSubscriber>
+			(
+				handleEvent
 			);
 		}
 
-		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription, TSubscriber>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription, TSubscriber>(Func<ResolvedEvent, Task> handleEvent) where TSubscription : IMessageHandler
 		{
 			return new SubscriberRegistry(
-				_createSubscribers.Concat(new []
+				_subscriberRegistrations.Concat(new []
 				{
-					new SubscriberRegistryEntry
+					new SubscriberRegistration
 					( 
 						typeof(TSubscriber).GetEventStoreName(),
 						createConnection =>
@@ -126,19 +132,19 @@ namespace eventstore
 								createConnection,
 								typeof(TSubscription).GetEventStoreName(),
 								typeof(TSubscriber).GetEventStoreName(),
-								handleResolvedEvent)
+								handleEvent)
 					)
 				}));
 		}
 
 		public static SubscriberRegistry CreateSubscriberRegistry()
 		{
-			return new SubscriberRegistry(Enumerable.Empty<SubscriberRegistryEntry>());
+			return new SubscriberRegistry(Enumerable.Empty<SubscriberRegistration>());
 		}
 
-		public IEnumerator<SubscriberRegistryEntry> GetEnumerator()
+		public IEnumerator<SubscriberRegistration> GetEnumerator()
 		{
-			return _createSubscribers.GetEnumerator();
+			return _subscriberRegistrations.GetEnumerator();
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()
