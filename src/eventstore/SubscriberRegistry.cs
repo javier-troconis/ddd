@@ -11,11 +11,11 @@ namespace eventstore
 {
 	public sealed class SubscriberRegistry : IEnumerable<Func<Func<IEventStoreConnection>, Task<Subscriber>>>
 	{
-		private readonly IEnumerable<Func<Func<IEventStoreConnection>, Task<Subscriber>>> _subscriberStarters;
+		private readonly IEnumerable<Func<Func<IEventStoreConnection>, Task<Subscriber>>> _createSubscribers;
 
-		private SubscriberRegistry(IEnumerable<Func<Func<IEventStoreConnection>, Task<Subscriber>>> subscriberStarters)
+		private SubscriberRegistry(IEnumerable<Func<Func<IEventStoreConnection>, Task<Subscriber>>> createSubscribers)
 		{
-			_subscriberStarters = subscriberStarters;
+			_createSubscribers = createSubscribers;
 		}
 
 		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscriber : IMessageHandler
@@ -38,7 +38,7 @@ namespace eventstore
 		public SubscriberRegistry RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
 		{
 			return new SubscriberRegistry(
-				_subscriberStarters.Concat(new Func<Func<IEventStoreConnection>, Task<Subscriber>>[]
+				_createSubscribers.Concat(new Func<Func<IEventStoreConnection>, Task<Subscriber>>[]
 				{
 					createConnection =>
 						Subscriber.StartCatchUpSubscriber(
@@ -69,7 +69,7 @@ namespace eventstore
 		public SubscriberRegistry RegisterVolatileSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
 		{
 			return new SubscriberRegistry(
-				_subscriberStarters.Concat(new Func<Func<IEventStoreConnection>, Task<Subscriber>>[]
+				_createSubscribers.Concat(new Func<Func<IEventStoreConnection>, Task<Subscriber>>[]
 				{
 					createConnection =>
 						Subscriber.StartVolatileSubscriber(
@@ -97,7 +97,7 @@ namespace eventstore
 		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription, TSubscriber>(Func<ResolvedEvent, Task> handleResolvedEvent) where TSubscription : IMessageHandler
 		{
 			return new SubscriberRegistry(
-				_subscriberStarters.Concat(new Func<Func<IEventStoreConnection>, Task<Subscriber>>[]
+				_createSubscribers.Concat(new Func<Func<IEventStoreConnection>, Task<Subscriber>>[]
 				{
 					createConnection =>
 						Subscriber.StartPersistentSubscriber(
@@ -115,7 +115,7 @@ namespace eventstore
 
 		public IEnumerator<Func<Func<IEventStoreConnection>, Task<Subscriber>>> GetEnumerator()
 		{
-			return _subscriberStarters.GetEnumerator();
+			return _createSubscribers.GetEnumerator();
 		}
 
 		IEnumerator IEnumerable.GetEnumerator()

@@ -10,7 +10,8 @@ using shared;
 
 namespace eventstore
 {
-    public interface IPersistentSubscriptionProvisioner
+	// todo:change this to follow the same pattern as the eventbus/subscriber registry
+	public interface IPersistentSubscriptionProvisioner
     {
         IPersistentSubscriptionProvisioner RegisterPersistentSubscription<TSubscription>(
             Func<PersistentSubscriptionSettingsBuilder, PersistentSubscriptionSettingsBuilder> configurePersistentSubscription = null) where TSubscription : IMessageHandler;

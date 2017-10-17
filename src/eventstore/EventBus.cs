@@ -33,8 +33,8 @@ namespace eventstore
 
 		public static async Task<EventBus> Start(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> registerSubscribers)
 		{
-			var subscriberStarters = registerSubscribers(SubscriberRegistry.Create());
-			var subscribers = await Task.WhenAll(subscriberStarters.Select(startSubscriber => startSubscriber(createConnection)));
+			var createSubscribers = registerSubscribers(SubscriberRegistry.Create());
+			var subscribers = await Task.WhenAll(createSubscribers.Select(createSubscriber => createSubscriber(createConnection)));
 			return new EventBus(subscribers);
 		}
 	}

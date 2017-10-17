@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace eventstore
 {
+	// todo:change this to follow the same pattern as the eventbus/subscriber registry
     public interface ISubscriptionStreamProvisioner
     {
         ISubscriptionStreamProvisioner RegisterSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler;
