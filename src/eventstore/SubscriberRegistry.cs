@@ -75,6 +75,7 @@ namespace eventstore
 
 	public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
 	{
+		//todo: this should be a dictionary (no duplicate registrations)
 		private readonly IEnumerable<SubscriberRegistration> _subscriberRegistrations;
 
 		private SubscriberRegistry(IEnumerable<SubscriberRegistration> subscriberRegistrations)
