@@ -21,6 +21,58 @@ namespace eventstore
 		}
 	}
 
+	public struct CatchupSubscriberRegistrationOptions
+	{
+		public readonly string SubscriptionStream;
+		public readonly Func<ResolvedEvent, string> GetEventHandlingQueueKey;
+
+		internal CatchupSubscriberRegistrationOptions(string subscriptionStream, Func<ResolvedEvent, string> getEventHandlingQueueKey)
+		{
+			SubscriptionStream = subscriptionStream;
+			GetEventHandlingQueueKey = getEventHandlingQueueKey;
+		}
+
+		public CatchupSubscriberRegistrationOptions SetEventHandlingQueueKey(Func<ResolvedEvent, string> getEventHandlingQueueKey)
+		{
+			return new CatchupSubscriberRegistrationOptions(SubscriptionStream, getEventHandlingQueueKey);
+		}
+
+		public CatchupSubscriberRegistrationOptions SetSubscriptionStream<TSubscriptionStream>() where TSubscriptionStream : IMessageHandler
+		{
+			return new CatchupSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreName(), GetEventHandlingQueueKey);
+		}
+	}
+
+	public struct VolatileSubscriberRegistrationOptions
+	{
+		public readonly string SubscriptionStream;
+
+		internal VolatileSubscriberRegistrationOptions(string subscriptionStream)
+		{
+			SubscriptionStream = subscriptionStream;
+		}
+
+		public VolatileSubscriberRegistrationOptions SetSubscriptionStream<TSubscriptionStream>() where TSubscriptionStream : IMessageHandler
+		{
+			return new VolatileSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreName());
+		}
+	}
+
+	public struct PersistentSubscriberRegistrationOptions
+	{
+		public readonly string SubscriptionStream;
+
+		internal PersistentSubscriberRegistrationOptions(string subscriptionStream)
+		{
+			SubscriptionStream = subscriptionStream;
+		}
+
+		public PersistentSubscriberRegistrationOptions SetSubscriptionStream<TSubscriptionStream>() where TSubscriptionStream : IMessageHandler
+		{
+			return new PersistentSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreName());
+		}
+	}
+
 	public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
 	{
 		private readonly IEnumerable<SubscriberRegistration> _subscriberRegistrations;
@@ -30,104 +82,103 @@ namespace eventstore
 			_subscriberRegistrations = subscriberRegistrations;
 		}
 
-		public SubscriberRegistry RegisterCatchupSubscriber<TSubscription>(TSubscription subscriber, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
 			var handleEvent =
 				SubscriberResolvedEventHandleFactory
-					.CreateSubscriberResolvedEventHandle<TSubscription, Task>(delegate { return Task.CompletedTask; })
+					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
 					.Partial(subscriber);
-			return RegisterCatchupSubscriber<TSubscription>
+			return RegisterCatchupSubscriber<TSubscriber>
 			(
 				handleEvent,
 				getCheckpoint,
-				getEventHandlingQueueKey
+				configureRegistration
 			);
 		}
 
-		public SubscriberRegistry RegisterCatchupSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleEvent, Func<Task<long?>> getCheckpoint, Func<ResolvedEvent, string> getEventHandlingQueueKey = null) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
+			var registrationConfiguration =
+				(configureRegistration ?? (x => x))(
+					new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => string.Empty));
 			return new SubscriberRegistry(
 				_subscriberRegistrations.Concat(new[]
 				{
 					new SubscriberRegistration
 					(
-						typeof(TSubscription).GetEventStoreName(),
+						typeof(TSubscriber).GetEventStoreName(),
 						createConnection =>
-							Subscriber.StartCatchUpSubscriber(
+							Subscriber.StartCatchUpSubscriber
+							(
 								createConnection,
-								typeof(TSubscription).GetEventStoreName(),
+								registrationConfiguration.SubscriptionStream,
 								handleEvent,
 								getCheckpoint,
-								getEventHandlingQueueKey ?? (resolvedEvent => string.Empty))
+								registrationConfiguration.GetEventHandlingQueueKey
+							)
 					)
 				}));
 		}
 
-		public SubscriberRegistry RegisterVolatileSubscriber<TSubscription>(TSubscription subscriber) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
 			var handleEvent =
 				SubscriberResolvedEventHandleFactory
-					.CreateSubscriberResolvedEventHandle<TSubscription, Task>(delegate { return Task.CompletedTask; })
+					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
 					.Partial(subscriber);
-			return RegisterVolatileSubscriber<TSubscription>
+			return RegisterVolatileSubscriber<TSubscriber>
 			(
-				handleEvent
+				handleEvent,
+				configureRegistration
 			);
 		}
 
-		public SubscriberRegistry RegisterVolatileSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleEvent) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
+			var registrationConfiguration =
+				(configureRegistration ?? (x => x))(
+					new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
 			return new SubscriberRegistry(
 				_subscriberRegistrations.Concat(new []
 				{
 					new SubscriberRegistration
 					(
-						typeof(TSubscription).GetEventStoreName(),
+						typeof(TSubscriber).GetEventStoreName(),
 						createConnection =>
 							Subscriber.StartVolatileSubscriber(
 								createConnection,
-								typeof(TSubscription).GetEventStoreName(),
+								registrationConfiguration.SubscriptionStream,
 								handleEvent)
 					)
 				}));
 		}
 
 
-		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription>(TSubscription subscriber) where TSubscription : IMessageHandler
-		{
-			return RegisterPersistentSubscriber<TSubscription, TSubscription>(subscriber);
-		}
-
-		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription, TSubscriptionGroup>(TSubscriptionGroup subscriber) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription
+		public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
 			var handleEvent =
 				SubscriberResolvedEventHandleFactory
-					.CreateSubscriberResolvedEventHandle<TSubscriptionGroup, Task>(delegate { return Task.CompletedTask; })
+					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
 					.Partial(subscriber);
-			return RegisterPersistentSubscriber<TSubscription, TSubscriptionGroup>
-			(
-				handleEvent
-			);
+			return RegisterPersistentSubscriber<TSubscriber>(handleEvent, configureRegistration);
 		}
 
-		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription>(Func<ResolvedEvent, Task> handleEvent) where TSubscription : IMessageHandler
+		public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
-			return RegisterPersistentSubscriber<TSubscription, TSubscription>(handleEvent);
-		}
-
-		public SubscriberRegistry RegisterPersistentSubscriber<TSubscription, TSubscriptionGroup>(Func<ResolvedEvent, Task> handleEvent) where TSubscription : IMessageHandler where TSubscriptionGroup : TSubscription
-		{
+			var registrationConfiguration =
+				(configureRegistration ?? (x => x))(
+					new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
 			return new SubscriberRegistry(
 				_subscriberRegistrations.Concat(new []
 				{
 					new SubscriberRegistration
 					( 
-						typeof(TSubscriptionGroup).GetEventStoreName(),
+						typeof(TSubscriber).GetEventStoreName(),
 						createConnection =>
 							Subscriber.StartPersistentSubscriber(
 								createConnection,
-								typeof(TSubscription).GetEventStoreName(),
-								typeof(TSubscriptionGroup).GetEventStoreName(),
+								registrationConfiguration.SubscriptionStream,
+								typeof(TSubscriber).GetEventStoreName(),
 								handleEvent)
 					)
 				}));

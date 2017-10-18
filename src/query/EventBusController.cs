@@ -31,6 +31,7 @@ namespace query
 
 		public Task Handle(IRecordedEvent<IStartSubscription> message)
 		{
+
 			return Task.CompletedTask;
 		}
 
