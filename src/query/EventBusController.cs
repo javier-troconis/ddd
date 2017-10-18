@@ -15,29 +15,22 @@ namespace query
     public class EventBusController :
 	    IMessageHandler<IRecordedEvent<IStartSubscription>, Task>,
 	    IMessageHandler<IRecordedEvent<IStopSubscription>, Task>
+    {
+	    private readonly EventBus1 _eventBus;
 
-	{
-		private readonly ConcurrentDictionary<string, Subscriber> _activeSubscribers = new ConcurrentDictionary<string, Subscriber>();
-		private readonly Func<IEventStoreConnection> _createConnection;
-		private readonly SubscriberRegistry _subscriberRegistry;
-		
-		public EventBusController(
-			Func<IEventStoreConnection> createConnection, 
-			SubscriberRegistry subscriberRegistry)
+		public EventBusController(EventBus1 eventBus)
 		{
-			_createConnection = createConnection;
-			_subscriberRegistry = subscriberRegistry;
+			_eventBus = eventBus;
 		}
 
 		public Task Handle(IRecordedEvent<IStartSubscription> message)
 		{
-
-			return Task.CompletedTask;
+			return _eventBus.StartSubscriber(message.Data.SubscriptionName);
 		}
 
 		public Task Handle(IRecordedEvent<IStopSubscription> message)
 		{
-			return Task.CompletedTask;
+			return _eventBus.StopSubscriber(message.Data.SubscriptionName);
 		}
 	}
 }

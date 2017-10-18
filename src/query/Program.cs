@@ -23,47 +23,43 @@ namespace query
 				x => x.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)))
 					.CreateConnection;
 
-			//var consumerEventBus = EventBus.Start(
-			//	createConnection,
-			//	registry => registry
-			//			.RegisterVolatileSubscriber(
-			//				new Subscriber1()
-			//			)
-			//			.RegisterCatchupSubscriber<Subscriber2>(
-			//				new Subscriber2()
-			//					.ComposeForward(new Subscriber2Continuation())
-			//						.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
-			//				CheckpointReader<Subscriber2>.ReadCheckpoint
-			//				)
-			//			.RegisterPersistentSubscriber(
-			//				new Subscriber3()
-			//			))
-			//		;
-
-			var infrastructureEventBus = 
+			var consumerEventBus = 
 				EventBus1.CreateEventBus
 				(
 					createConnection,
 					registry => registry
-						.RegisterVolatileSubscriber(
+						.RegisterVolatileSubscriber
+						(
+							new Subscriber1()
+						)
+						.RegisterCatchupSubscriber<Subscriber2>
+						(
+							new Subscriber2()
+								.ComposeForward(new Subscriber2Continuation())
+									.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
+							CheckpointReader<Subscriber2>.ReadCheckpoint
+						)
+						.RegisterPersistentSubscriber
+						(
+							new Subscriber3()
+						)
+				);
+			consumerEventBus
+				.StartAllSubscribers()
+				.Wait();
+
+			var infrastructureEventBus =
+				EventBus1.CreateEventBus
+				(
+					createConnection,
+					registry => registry
+						.RegisterVolatileSubscriber
+						(
 							new EventBusController
 							(
-								createConnection,
-								SubscriberRegistry
-									.CreateSubscriberRegistry()
-									.RegisterVolatileSubscriber(
-										new Subscriber1()
-									)
-									.RegisterCatchupSubscriber<Subscriber2>(
-										new Subscriber2()
-											.ComposeForward(new Subscriber2Continuation())
-											.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
-										CheckpointReader<Subscriber2>.ReadCheckpoint
-									)
-									.RegisterPersistentSubscriber(
-										new Subscriber3()
-									)
-							))
+								consumerEventBus
+							)
+						)
 						.RegisterPersistentSubscriber
 						(
 							new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
@@ -81,9 +77,10 @@ namespace query
 								new PersistentSubscriptionManager(createConnection))),
 							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
 						)
-					)
-					.StartAllSubscribers();
-				;
+				);
+			infrastructureEventBus
+				.StartAllSubscribers()
+				.Wait();
 
 			while (true) { };
 		}
