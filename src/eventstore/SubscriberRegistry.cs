@@ -84,9 +84,10 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
+			var handleEvent = subscriber.CreateSubscriberEventHandle();
 			return RegisterCatchupSubscriber<TSubscriber>
 			(
-				subscriber.CreateSubscriberResolvedEventHandle(),
+				handleEvent,
 				getCheckpoint,
 				configureRegistration
 			);
@@ -118,9 +119,10 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
+			var handleEvent = subscriber.CreateSubscriberEventHandle();
 			return RegisterVolatileSubscriber<TSubscriber>
 			(
-				subscriber.CreateSubscriberResolvedEventHandle(),
+				handleEvent,
 				configureRegistration
 			);
 		}
@@ -148,9 +150,10 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
+			var handleEvent = subscriber.CreateSubscriberEventHandle();
 			return RegisterPersistentSubscriber<TSubscriber>
 				(
-					subscriber.CreateSubscriberResolvedEventHandle(), 
+					handleEvent, 
 					configureRegistration
 				);
 		}

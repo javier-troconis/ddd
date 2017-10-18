@@ -17,17 +17,23 @@ namespace eventstore
 	{
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s1, IMessageHandler s2)
 		{
-			return MessageHandlerExtensions.ComposeForward(s1, CreateSubscriberResolvedEventHandle((dynamic)s2));
+			return MessageHandlerExtensions.ComposeForward(s1, CreateSubscriberEventHandle((dynamic)s2));
 		}
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s, Func<ResolvedEvent, Task<ResolvedEvent>> f)
 		{
-			return FuncExtensions.ComposeForward(CreateSubscriberResolvedEventHandle((dynamic)s), f);
+			return FuncExtensions.ComposeForward(CreateSubscriberEventHandle((dynamic)s), f);
 		}
 
-		internal static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberResolvedEventHandle<TSubscriber>(this TSubscriber s) where TSubscriber : IMessageHandler
+		internal static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberEventHandle<TSubscriber>(this TSubscriber s) where TSubscriber : IMessageHandler
 		{
-			var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
+			var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>
+				(
+					delegate
+					{
+						return Task.CompletedTask;
+					}
+				);
 			return async resolvedEvent =>
 			{
 				await handleEvent(s, resolvedEvent);
