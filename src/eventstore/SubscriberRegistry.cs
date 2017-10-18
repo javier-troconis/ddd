@@ -84,13 +84,9 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
-			var handleEvent =
-				SubscriberResolvedEventHandleFactory
-					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
-					.Partial(subscriber);
 			return RegisterCatchupSubscriber<TSubscriber>
 			(
-				handleEvent,
+				subscriber.CreateSubscriberResolvedEventHandle(),
 				getCheckpoint,
 				configureRegistration
 			);
@@ -122,13 +118,9 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
-			var handleEvent =
-				SubscriberResolvedEventHandleFactory
-					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
-					.Partial(subscriber);
 			return RegisterVolatileSubscriber<TSubscriber>
 			(
-				handleEvent,
+				subscriber.CreateSubscriberResolvedEventHandle(),
 				configureRegistration
 			);
 		}
@@ -156,11 +148,11 @@ namespace eventstore
 
 		public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
 		{
-			var handleEvent =
-				SubscriberResolvedEventHandleFactory
-					.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; })
-					.Partial(subscriber);
-			return RegisterPersistentSubscriber<TSubscriber>(handleEvent, configureRegistration);
+			return RegisterPersistentSubscriber<TSubscriber>
+				(
+					subscriber.CreateSubscriberResolvedEventHandle(), 
+					configureRegistration
+				);
 		}
 
 		public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
