@@ -16,9 +16,9 @@ namespace query
 	    IMessageHandler<IRecordedEvent<IStartSubscription>, Task>,
 	    IMessageHandler<IRecordedEvent<IStopSubscription>, Task>
     {
-	    private readonly EventBus1 _eventBus;
+	    private readonly EventBus _eventBus;
 
-		public EventBusController(EventBus1 eventBus)
+		public EventBusController(EventBus eventBus)
 		{
 			_eventBus = eventBus;
 		}

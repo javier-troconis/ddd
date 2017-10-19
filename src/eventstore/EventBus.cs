@@ -19,34 +19,12 @@ namespace eventstore
 {
 	public sealed class EventBus
 	{
-		private readonly IEnumerable<Subscriber> _subscribers;
-
-		private EventBus(IEnumerable<Subscriber> subscribers)
-		{
-			_subscribers = subscribers;
-		}
-
-		public void Stop()
-		{
-			Parallel.ForEach(_subscribers, subscriber => subscriber.Stop());
-		}
-
-		public static async Task<EventBus> Start(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> registerSubscribers)
-		{
-			var subscriberRegistry = registerSubscribers(SubscriberRegistry.CreateSubscriberRegistry());
-			var subscribers = await Task.WhenAll(subscriberRegistry.Select(entry => entry.StartSubscriber(createConnection)));
-			return new EventBus(subscribers);
-		}
-	}
-
-	public sealed class EventBus1
-	{
 		private readonly List<KeyValuePair<string, Subscriber>> _connectedSubscribers = new List<KeyValuePair<string, Subscriber>>();
 		private readonly TaskQueue _queue = new TaskQueue();
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly SubscriberRegistry _subscriberRegistry;
 
-		private EventBus1(
+		private EventBus(
 			Func<IEventStoreConnection> createConnection,
 			SubscriberRegistry subscriberRegistry)
 		{
@@ -138,10 +116,10 @@ namespace eventstore
 			await tcs.Task;
 		}
 
-		public static EventBus1 CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> registerSubscribers)
+		public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> registerSubscribers)
 		{
 			var subscriberRegistry = registerSubscribers(SubscriberRegistry.CreateSubscriberRegistry());
-			return new EventBus1(createConnection, subscriberRegistry);
+			return new EventBus(createConnection, subscriberRegistry);
 		}
 	}
 }

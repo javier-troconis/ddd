@@ -24,7 +24,7 @@ namespace query
 					.CreateConnection;
 
 			var consumerEventBus = 
-				EventBus1.CreateEventBus
+				EventBus.CreateEventBus
 				(
 					createConnection,
 					registry => registry
@@ -49,7 +49,7 @@ namespace query
 				.Wait();
 
 			var infrastructureEventBus =
-				EventBus1.CreateEventBus
+				EventBus.CreateEventBus
 				(
 					createConnection,
 					registry => registry
