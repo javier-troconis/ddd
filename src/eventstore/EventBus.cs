@@ -48,9 +48,9 @@ namespace eventstore
 			_subscriberRegistry = subscriberRegistry;
 		}
 
-		public async Task<ISet<SubscriberStatus>> StopSubscriber(string subscriberName)
+		public async Task<IEnumerable<SubscriberStatus>> StopSubscriber(string subscriberName)
 		{
-			var tsc = new TaskCompletionSource<ISet<SubscriberStatus>>();
+			var tsc = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				() =>
 				{
@@ -65,9 +65,9 @@ namespace eventstore
 			return await tsc.Task;
 		}
 
-		public async Task<ISet<SubscriberStatus>> StopAllSubscribers()
+		public async Task<IEnumerable<SubscriberStatus>> StopAllSubscribers()
 		{
-			var tcs = new TaskCompletionSource<ISet<SubscriberStatus>>();
+			var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				() => 
 				{
@@ -85,9 +85,9 @@ namespace eventstore
 			return await tcs.Task;
 		}
 
-		public async Task<ISet<SubscriberStatus>> StartSubscriber(string subscriberName)
+		public async Task<IEnumerable<SubscriberStatus>> StartSubscriber(string subscriberName)
 		{
-			var tcs = new TaskCompletionSource<ISet<SubscriberStatus>>();
+			var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				async () =>
 				{
@@ -101,9 +101,9 @@ namespace eventstore
 			return await tcs.Task;
 		}
 
-		public async Task<ISet<SubscriberStatus>> StartAllSubscribers()
+		public async Task<IEnumerable<SubscriberStatus>> StartAllSubscribers()
 		{
-			var tcs = new TaskCompletionSource<ISet<SubscriberStatus>>();
+			var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				async () =>
 				{
@@ -125,7 +125,7 @@ namespace eventstore
 			return await tcs.Task;
 		}
 
-		private ISet<SubscriberStatus> GetSubscriberStatuses()
+		private IEnumerable<SubscriberStatus> GetSubscriberStatuses()
 		{
 			return new HashSet<SubscriberStatus>(
 				_subscriberRegistry

@@ -27,21 +27,19 @@ namespace query
 
 		public async Task Handle(IRecordedEvent<IStartSubscription> message)
 		{
-			var subscriberName = message.Data.SubscriptionName;
-			var subscriberStatuses = await _eventBus.StartSubscriber(subscriberName);
-			if (subscriberStatuses.Contains(new SubscriberStatus(subscriberName, ConnectionStatus.Connected)))
+			var subscriberStatuses = await _eventBus.StartSubscriber(message.Data.SubscriptionName);
+			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Connected)))
 			{
-				await _eventPublisher.PublishEvent(new SubscriptionStarted(subscriberName));
+				await _eventPublisher.PublishEvent(new SubscriptionStarted(message.Data.SubscriptionName));
 			}
 		}
 
 		public async Task Handle(IRecordedEvent<IStopSubscription> message)
 		{
-			var subscriberName = message.Data.SubscriptionName;
-			var subscriberStatuses = await _eventBus.StopSubscriber(subscriberName);
-			if (subscriberStatuses.Contains(new SubscriberStatus(subscriberName, ConnectionStatus.Disconnected)))
+			var subscriberStatuses = await _eventBus.StopSubscriber(message.Data.SubscriptionName);
+			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Disconnected)))
 			{
-				await _eventPublisher.PublishEvent(new SubscriptionStopped(subscriberName));
+				await _eventPublisher.PublishEvent(new SubscriptionStopped(message.Data.SubscriptionName));
 			}
 		}
 	}
