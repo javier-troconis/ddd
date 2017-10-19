@@ -21,8 +21,8 @@ namespace shared
             var channel = _channels.GetOrAdd(channelName, new Lazy<Channel>(() => new Channel(channelName))).Value;
             return channel.SendAsync(
                 getTask,
-                c => Task.Run(() => taskSucceeded?.Invoke(c)),
-                (c, ex) => Task.Run(() => taskFailed?.Invoke(c, ex)));
+                c => taskSucceeded?.Invoke(c),
+                (c, ex) => taskFailed?.Invoke(c, ex));
         }
 
         public void CancelChannel(string channelName)
