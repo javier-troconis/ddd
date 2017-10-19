@@ -42,17 +42,15 @@ namespace eventstore
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly IReadOnlyDictionary<string, StartSubscriber> _subscriberRegistry;
 
-		private EventBus(
-			Func<IEventStoreConnection> createConnection,
-            IReadOnlyDictionary<string, StartSubscriber> subscriberRegistry)
+		private EventBus(Func<IEventStoreConnection> createConnection, IReadOnlyDictionary<string, StartSubscriber> subscriberRegistry)
 		{
 			_createConnection = createConnection;
 			_subscriberRegistry = subscriberRegistry;
 		}
 
-		public async Task<IEnumerable<SubscriberStatus>> StopSubscriber(string subscriberName)
+		public async Task<ISet<SubscriberStatus>> StopSubscriber(string subscriberName)
 		{
-			var tsc = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
+			var tsc = new TaskCompletionSource<ISet<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				() =>
 				{
@@ -67,9 +65,9 @@ namespace eventstore
 			return await tsc.Task;
 		}
 
-		public async Task<IEnumerable<SubscriberStatus>> StopAllSubscribers()
+		public async Task<ISet<SubscriberStatus>> StopAllSubscribers()
 		{
-			var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
+			var tcs = new TaskCompletionSource<ISet<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				() => 
 				{
@@ -87,9 +85,9 @@ namespace eventstore
 			return await tcs.Task;
 		}
 
-		public async Task<IEnumerable<SubscriberStatus>> StartSubscriber(string subscriberName)
+		public async Task<ISet<SubscriberStatus>> StartSubscriber(string subscriberName)
 		{
-			var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
+			var tcs = new TaskCompletionSource<ISet<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				async () =>
 				{
@@ -103,9 +101,9 @@ namespace eventstore
 			return await tcs.Task;
 		}
 
-		public async Task<IEnumerable<SubscriberStatus>> StartAllSubscribers()
+		public async Task<ISet<SubscriberStatus>> StartAllSubscribers()
 		{
-			var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
+			var tcs = new TaskCompletionSource<ISet<SubscriberStatus>>();
 			await _queue.SendToChannel(
 				async () =>
 				{
@@ -127,16 +125,17 @@ namespace eventstore
 			return await tcs.Task;
 		}
 
-		private IEnumerable<SubscriberStatus> GetSubscriberStatuses()
+		private ISet<SubscriberStatus> GetSubscriberStatuses()
 		{
-			return _subscriberRegistry
-				.Select(
-					subscriberRegistration => new 
-						SubscriberStatus
-						(
-							subscriberRegistration.Key,
-							_connectedSubscribers.ContainsKey(subscriberRegistration.Key) ? ConnectionStatus.Connected : ConnectionStatus.Disconnected
-						));
+			return new HashSet<SubscriberStatus>(
+				_subscriberRegistry
+					.Select(
+						subscriberRegistration => new 
+							SubscriberStatus
+							(
+								subscriberRegistration.Key,
+								_connectedSubscribers.ContainsKey(subscriberRegistration.Key) ? ConnectionStatus.Connected : ConnectionStatus.Disconnected
+							)));
 		}
 
 		public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, IReadOnlyDictionary<string, StartSubscriber>> configureSubscribersRegistry)

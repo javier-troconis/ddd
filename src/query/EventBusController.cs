@@ -17,20 +17,32 @@ namespace query
 	    IMessageHandler<IRecordedEvent<IStopSubscription>, Task>
     {
 	    private readonly EventBus _eventBus;
+	    private readonly IEventPublisher _eventPublisher;
 
-		public EventBusController(EventBus eventBus)
+	    public EventBusController(EventBus eventBus, IEventPublisher eventPublisher)
+	    {
+		    _eventBus = eventBus;
+		    _eventPublisher = eventPublisher;
+	    }
+
+		public async Task Handle(IRecordedEvent<IStartSubscription> message)
 		{
-			_eventBus = eventBus;
+			var subscriberName = message.Data.SubscriptionName;
+			var subscriberStatuses = await _eventBus.StartSubscriber(subscriberName);
+			if (subscriberStatuses.Contains(new SubscriberStatus(subscriberName, ConnectionStatus.Connected)))
+			{
+				await _eventPublisher.PublishEvent(new SubscriptionStarted(subscriberName));
+			}
 		}
 
-		public Task Handle(IRecordedEvent<IStartSubscription> message)
+		public async Task Handle(IRecordedEvent<IStopSubscription> message)
 		{
-			return _eventBus.StartSubscriber(message.Data.SubscriptionName);
-		}
-
-		public Task Handle(IRecordedEvent<IStopSubscription> message)
-		{
-			return _eventBus.StopSubscriber(message.Data.SubscriptionName);
+			var subscriberName = message.Data.SubscriptionName;
+			var subscriberStatuses = await _eventBus.StopSubscriber(subscriberName);
+			if (subscriberStatuses.Contains(new SubscriberStatus(subscriberName, ConnectionStatus.Disconnected)))
+			{
+				await _eventPublisher.PublishEvent(new SubscriptionStopped(subscriberName));
+			}
 		}
 	}
 }
