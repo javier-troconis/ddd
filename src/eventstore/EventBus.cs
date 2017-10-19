@@ -13,7 +13,7 @@ using ImpromptuInterface;
 
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
+using System.Collections.ObjectModel;
 
 namespace eventstore
 {
@@ -22,11 +22,11 @@ namespace eventstore
 		private readonly Dictionary<string, Subscriber> _connectedSubscribers = new Dictionary<string, Subscriber>();
 		private readonly TaskQueue _queue = new TaskQueue();
 		private readonly Func<IEventStoreConnection> _createConnection;
-		private readonly SubscriberRegistry _subscriberRegistry;
+		private readonly IReadOnlyDictionary<string, StartSubscriber> _subscriberRegistry;
 
 		private EventBus(
 			Func<IEventStoreConnection> createConnection,
-			SubscriberRegistry subscriberRegistry)
+            IReadOnlyDictionary<string, StartSubscriber> subscriberRegistry)
 		{
 			_createConnection = createConnection;
 			_subscriberRegistry = subscriberRegistry;
@@ -107,9 +107,9 @@ namespace eventstore
 			await tcs.Task;
 		}
 
-		public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> registerSubscribers)
+		public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, ReadOnlyDictionary<string, StartSubscriber>> registerSubscribers)
 		{
-			var subscriberRegistry = registerSubscribers(SubscriberRegistry.CreateSubscriberRegistry());
+            var subscriberRegistry = registerSubscribers(SubscriberRegistry.CreateSubscriberRegistry());
 			return new EventBus(createConnection, subscriberRegistry);
 		}
 	}

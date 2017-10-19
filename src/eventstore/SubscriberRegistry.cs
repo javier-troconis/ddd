@@ -64,11 +64,13 @@ namespace eventstore
 		}
 	}
 
-    public class SubscriberRegistry : ReadOnlyDictionary<string, StartSubscriber>
+    public struct SubscriberRegistry
     {
-        private SubscriberRegistry(IDictionary<string, StartSubscriber> subscriberRegistrations) : base(subscriberRegistrations)
-        {
+        private readonly IDictionary<string, StartSubscriber> _subscriberRegistrations;
 
+        private SubscriberRegistry(IDictionary<string, StartSubscriber> subscriberRegistrations)
+        {
+            _subscriberRegistrations = subscriberRegistrations;
         }
 
         public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
@@ -104,7 +106,7 @@ namespace eventstore
                                     )
                             }
                         }
-                    .Merge(this)
+                    .Merge(_subscriberRegistrations)
                 );
         }
 
@@ -138,7 +140,7 @@ namespace eventstore
                                     )
                             }
                         }
-                    .Merge(this)
+                    .Merge(_subscriberRegistrations)
                 );
         }
 
@@ -174,8 +176,13 @@ namespace eventstore
                                     )
                             }
                         }
-                    .Merge(this)
+                    .Merge(_subscriberRegistrations)
                 );
+        }
+
+        public static implicit operator ReadOnlyDictionary<string, StartSubscriber> (SubscriberRegistry subscriberRegistry)
+        {
+            return new ReadOnlyDictionary<string, StartSubscriber>(subscriberRegistry._subscriberRegistrations);
         }
 
         public static SubscriberRegistry CreateSubscriberRegistry()
