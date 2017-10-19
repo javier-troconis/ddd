@@ -26,4 +26,9 @@ namespace management
 
 		public string SubscriptionName { get; }
 	}
+
+	internal struct RestartSubscriberWorflowStarted : IRestartSubscriberWorflowStarted
+	{
+
+	}
 }

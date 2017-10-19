@@ -1,16 +1,10 @@
-﻿using System;
-using System.Collections.Concurrent;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+﻿using System.Linq;
 using System.Threading.Tasks;
-using command.contracts;
 using eventstore;
-using EventStore.ClientAPI;
 using management.contracts;
 using shared;
 
-namespace query
+namespace management
 {
 	internal struct SubscriptionStarted : ISubscriptionStarted
 	{
@@ -50,7 +44,10 @@ namespace query
 			var subscriberStatuses = await _eventBus.StartSubscriber(message.Data.SubscriptionName);
 			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Connected)))
 			{
-				await _eventPublisher.PublishEvent(new SubscriptionStarted(message.Data.SubscriptionName));
+				await _eventPublisher.PublishEvent(
+					new SubscriptionStarted(message.Data.SubscriptionName), 
+					x => x
+						.SetCorrelationId(message.EventId));
 			}
 		}
 
@@ -59,7 +56,10 @@ namespace query
 			var subscriberStatuses = await _eventBus.StopSubscriber(message.Data.SubscriptionName);
 			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Disconnected)))
 			{
-				await _eventPublisher.PublishEvent(new SubscriptionStopped(message.Data.SubscriptionName));
+				await _eventPublisher.PublishEvent(
+					new SubscriptionStopped(message.Data.SubscriptionName),
+					x => x
+						.SetCorrelationId(message.EventId));
 			}
 		}
 	}

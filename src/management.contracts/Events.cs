@@ -21,4 +21,9 @@ namespace management.contracts
 	{
 		string SubscriptionName { get; }
 	}
+
+	public interface IRestartSubscriberWorflowStarted
+	{
+		
+	}
 }

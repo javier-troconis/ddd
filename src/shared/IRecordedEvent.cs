@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace shared
 {
@@ -10,6 +11,7 @@ namespace shared
 	    long EventNumber { get; }
 	    DateTime Created { get; }
 	    Guid EventId { get; }
-	    TData Data { get; }
+	    IReadOnlyDictionary<string, object> Metadata { get; }
+		TData Data { get; }
     }
 }
