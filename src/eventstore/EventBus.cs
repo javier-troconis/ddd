@@ -36,7 +36,6 @@ namespace eventstore
 		{
 			var tsc = new TaskCompletionSource<bool>();
 			await _queue.SendToChannel(
-				string.Empty,
 				() => Task.Run(() =>
 				{
                     if (_connectedSubscribers.TryGetValue(subscriberName, out Subscriber subscriber))
@@ -53,7 +52,6 @@ namespace eventstore
 		{
 			var tsc = new TaskCompletionSource<bool>();
 			await _queue.SendToChannel(
-				string.Empty,
 				() => Task.Run(() =>
 				{
 					_connectedSubscribers
@@ -73,7 +71,6 @@ namespace eventstore
 		{
 			var tcs = new TaskCompletionSource<bool>();
 			await _queue.SendToChannel(
-				string.Empty,
 				async () =>
 				{
                     if (_subscriberRegistry.TryGetValue(subscriberName, out StartSubscriber startSubscriber) && !_connectedSubscribers.ContainsKey(subscriberName))
@@ -90,7 +87,6 @@ namespace eventstore
 		{
 			var tcs = new TaskCompletionSource<bool>();
 			await _queue.SendToChannel(
-				string.Empty,
 				async () =>
 				{
                     var notConnectedSubscriberNames = _subscriberRegistry.Select(x => x.Key).Except(_connectedSubscribers.Select(x => x.Key));

@@ -37,8 +37,8 @@ namespace eventstore
 					var channelName = getEventHandlingQueueKey(resolvedEvent);
 					return queue.SendToChannel
 					(
-						channelName,
-						() => handleEvent(resolvedEvent)
+						() => handleEvent(resolvedEvent),
+                        channelName
 					);
 				}, 
 				subscriptionDropped: (subscription, dropReason, exception) =>

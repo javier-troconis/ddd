@@ -86,7 +86,7 @@ namespace eventstore
         {
             var registrationConfiguration =
                 (configureRegistration ?? (x => x))(
-                    new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => string.Empty));
+                    new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => "default"));
             return new SubscriberRegistry
                 (
                     new Dictionary<string, StartSubscriber>

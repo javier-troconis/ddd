@@ -47,7 +47,7 @@ fromAll()
     }});";
 
 			var query = string.Format(queryTemplate, queryName);
-            return _provisioningTasksQueue.SendToChannel(queryName, () => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query));
+            return _provisioningTasksQueue.SendToChannel(() => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query), queryName);
         }
     }
 }
