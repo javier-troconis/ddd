@@ -19,7 +19,7 @@ namespace eventstore
 {
 	public sealed class EventBus
 	{
-		private readonly List<KeyValuePair<string, Subscriber>> _connectedSubscribers = new List<KeyValuePair<string, Subscriber>>();
+		private readonly Dictionary<string, Subscriber> _connectedSubscribers = new Dictionary<string, Subscriber>();
 		private readonly TaskQueue _queue = new TaskQueue();
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly SubscriberRegistry _subscriberRegistry;
@@ -39,16 +39,12 @@ namespace eventstore
 				string.Empty,
 				() => Task.Run(() =>
 				{
-					_connectedSubscribers
-						.Where(x => x.Key == subscriberName)
-						.ToList()
-						.ForEach(
-							x =>
-							{
-								x.Value.Stop();
-								_connectedSubscribers.Remove(x);
-							});
-					tsc.SetResult(true);
+                    if (_connectedSubscribers.TryGetValue(subscriberName, out Subscriber subscriber))
+                    {
+                        subscriber.Stop();
+                        _connectedSubscribers.Remove(subscriberName);
+                    }
+                    tsc.SetResult(true);
 				}));
 			await tsc.Task;
 		}
@@ -61,11 +57,12 @@ namespace eventstore
 				() => Task.Run(() =>
 				{
 					_connectedSubscribers
+                        .ToList()
 						.ForEach(
 							x =>
 							{
 								x.Value.Stop();
-								_connectedSubscribers.Remove(x);
+								_connectedSubscribers.Remove(x.Key);
 							});
 					tsc.SetResult(true);
 				}));
@@ -79,17 +76,12 @@ namespace eventstore
 				string.Empty,
 				async () =>
 				{
-					var subscribers =
-						await Task.WhenAll
-						(
-							_subscriberRegistry.Where(x => x.SubscriberName == subscriberName)
-								.Select
-								(
-									async x => new KeyValuePair<string, Subscriber>(x.SubscriberName, await x.StartSubscriber(_createConnection))
-								)
-						);
-					_connectedSubscribers.AddRange(subscribers);
-					tcs.SetResult(true);
+                    if (_subscriberRegistry.TryGetValue(subscriberName, out StartSubscriber startSubscriber) && !_connectedSubscribers.ContainsKey(subscriberName))
+                    {
+                        var subscriber = await startSubscriber(_createConnection);
+                        _connectedSubscribers.Add(subscriberName, subscriber);
+                    }
+                    tcs.SetResult(true);
 				});
 			await tcs.Task;
 		}
@@ -101,16 +93,19 @@ namespace eventstore
 				string.Empty,
 				async () =>
 				{
-					var subscribers =
-						await Task.WhenAll
-						(
-							_subscriberRegistry
-								.Select
-								(
-									async x => new KeyValuePair<string, Subscriber>(x.SubscriberName, await x.StartSubscriber(_createConnection))
-								)
-						);
-					_connectedSubscribers.AddRange(subscribers);
+                    var notConnectedSubscriberNames = _subscriberRegistry.Select(x => x.Key).Except(_connectedSubscribers.Select(x => x.Key));
+                    await Task.WhenAll
+                    (
+                        notConnectedSubscriberNames
+                            .Select
+                            (
+                                async subscriberName => 
+                                {
+                                    var subscriber = await _subscriberRegistry[subscriberName](_createConnection);
+                                    _connectedSubscribers.Add(subscriberName, subscriber);
+                                }
+                            )
+                    );
 					tcs.SetResult(true);
 				});
 			await tcs.Task;

@@ -6,20 +6,11 @@ using System.Text;
 using System.Threading.Tasks;
 using EventStore.ClientAPI;
 using shared;
+using System.Collections.ObjectModel;
 
 namespace eventstore
 {
-	public struct SubscriberRegistration
-	{
-		public readonly string SubscriberName;
-		public readonly Func<Func<IEventStoreConnection>, Task<Subscriber>> StartSubscriber;
-
-		internal SubscriberRegistration(string subscriberName, Func<Func<IEventStoreConnection>, Task<Subscriber>> startSubscriber)
-		{
-			SubscriberName = subscriberName;
-			StartSubscriber = startSubscriber;
-		}
-	}
+    public delegate Task<Subscriber> StartSubscriber(Func<IEventStoreConnection> createConnection);
 
 	public struct CatchupSubscriberRegistrationOptions
 	{
@@ -73,126 +64,123 @@ namespace eventstore
 		}
 	}
 
-	public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
-	{
-		//todo: this should be a dictionary (no duplicate registrations)
-		private readonly IEnumerable<SubscriberRegistration> _subscriberRegistrations;
+    public class SubscriberRegistry : ReadOnlyDictionary<string, StartSubscriber>
+    {
+        private SubscriberRegistry(IDictionary<string, StartSubscriber> subscriberRegistrations) : base(subscriberRegistrations)
+        {
 
-		private SubscriberRegistry(IEnumerable<SubscriberRegistration> subscriberRegistrations)
-		{
-			_subscriberRegistrations = subscriberRegistrations;
-		}
+        }
 
-		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
-		{
-			var handleEvent = subscriber.CreateSubscriberEventHandle();
-			return RegisterCatchupSubscriber<TSubscriber>
-			(
-				handleEvent,
-				getCheckpoint,
-				configureRegistration
-			);
-		}
+        public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
+        {
+            var handleEvent = subscriber.CreateSubscriberEventHandle();
+            return RegisterCatchupSubscriber<TSubscriber>
+            (
+                handleEvent,
+                getCheckpoint,
+                configureRegistration
+            );
+        }
 
-		public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
-		{
-			var registrationConfiguration =
-				(configureRegistration ?? (x => x))(
-					new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => string.Empty));
-			return new SubscriberRegistry(
-				_subscriberRegistrations.Concat(new[]
-				{
-					new SubscriberRegistration
-					(
-						typeof(TSubscriber).GetEventStoreName(),
-						createConnection =>
-							Subscriber.StartCatchUpSubscriber
-							(
-								createConnection,
-								registrationConfiguration.SubscriptionStream,
-								handleEvent,
-								getCheckpoint,
-								registrationConfiguration.GetEventHandlingQueueKey
-							)
-					)
-				}));
-		}
+        public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
+        {
+            var registrationConfiguration =
+                (configureRegistration ?? (x => x))(
+                    new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => string.Empty));
+            return new SubscriberRegistry
+                (
+                    new Dictionary<string, StartSubscriber>
+                        {
+                            {
+                                typeof(TSubscriber).GetEventStoreName(),
+                                createConnection =>
+                                    Subscriber.StartCatchUpSubscriber
+                                    (
+                                        createConnection,
+                                        registrationConfiguration.SubscriptionStream,
+                                        handleEvent,
+                                        getCheckpoint,
+                                        registrationConfiguration.GetEventHandlingQueueKey
+                                    )
+                            }
+                        }
+                    .Merge(this)
+                );
+        }
 
-		public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
-		{
-			var handleEvent = subscriber.CreateSubscriberEventHandle();
-			return RegisterVolatileSubscriber<TSubscriber>
-			(
-				handleEvent,
-				configureRegistration
-			);
-		}
+        public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
+        {
+            var handleEvent = subscriber.CreateSubscriberEventHandle();
+            return RegisterVolatileSubscriber<TSubscriber>
+            (
+                handleEvent,
+                configureRegistration
+            );
+        }
 
-		public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
-		{
-			var registrationConfiguration =
-				(configureRegistration ?? (x => x))(
-					new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
-			return new SubscriberRegistry(
-				_subscriberRegistrations.Concat(new []
-				{
-					new SubscriberRegistration
-					(
-						typeof(TSubscriber).GetEventStoreName(),
-						createConnection =>
-							Subscriber.StartVolatileSubscriber(
-								createConnection,
-								registrationConfiguration.SubscriptionStream,
-								handleEvent)
-					)
-				}));
-		}
+        public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
+        {
+            var registrationConfiguration =
+                (configureRegistration ?? (x => x))(
+                    new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
+            return new SubscriberRegistry
+                (
+                     new Dictionary<string, StartSubscriber>
+                        {
+                            {
+                                typeof(TSubscriber).GetEventStoreName(),
+                                createConnection =>
+                                    Subscriber.StartVolatileSubscriber
+                                    (
+                                        createConnection,
+                                        registrationConfiguration.SubscriptionStream,
+                                        handleEvent
+                                    )
+                            }
+                        }
+                    .Merge(this)
+                );
+        }
 
 
-		public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
-		{
-			var handleEvent = subscriber.CreateSubscriberEventHandle();
-			return RegisterPersistentSubscriber<TSubscriber>
-				(
-					handleEvent, 
-					configureRegistration
-				);
-		}
+        public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
+        {
+            var handleEvent = subscriber.CreateSubscriberEventHandle();
+            return RegisterPersistentSubscriber<TSubscriber>
+                (
+                    handleEvent,
+                    configureRegistration
+                );
+        }
 
-		public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
-		{
-			var registrationConfiguration =
-				(configureRegistration ?? (x => x))(
-					new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
-			return new SubscriberRegistry(
-				_subscriberRegistrations.Concat(new []
-				{
-					new SubscriberRegistration
-					( 
-						typeof(TSubscriber).GetEventStoreName(),
-						createConnection =>
-							Subscriber.StartPersistentSubscriber(
-								createConnection,
-								registrationConfiguration.SubscriptionStream,
-								typeof(TSubscriber).GetEventStoreName(),
-								handleEvent)
-					)
-				}));
-		}
+        public SubscriberRegistry RegisterPersistentSubscriber<TSubscriber>(Func<ResolvedEvent, Task> handleEvent, Func<PersistentSubscriberRegistrationOptions, PersistentSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
+        {
+            var registrationConfiguration =
+                (configureRegistration ?? (x => x))(
+                    new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
+            return new SubscriberRegistry
+                (
+                     new Dictionary<string, StartSubscriber>
+                        {
+                            {
+                                typeof(TSubscriber).GetEventStoreName(),
+                                createConnection =>
+                                    Subscriber.StartPersistentSubscriber
+                                    (
+                                        createConnection,
+                                        registrationConfiguration.SubscriptionStream,
+                                        typeof(TSubscriber).GetEventStoreName(),
+                                        handleEvent
+                                    )
+                            }
+                        }
+                    .Merge(this)
+                );
+        }
 
-		public static SubscriberRegistry CreateSubscriberRegistry()
-		{
-			return new SubscriberRegistry(Enumerable.Empty<SubscriberRegistration>());
-		}
-
-		public IEnumerator<SubscriberRegistration> GetEnumerator()
-		{
-			return _subscriberRegistrations.GetEnumerator();
-		}
-
-		IEnumerator IEnumerable.GetEnumerator()
-		{
-			return GetEnumerator();
-		}
-	}
+        public static SubscriberRegistry CreateSubscriberRegistry()
+        {
+            return new SubscriberRegistry(new Dictionary<string, StartSubscriber>());
+        }
+    }
 }
