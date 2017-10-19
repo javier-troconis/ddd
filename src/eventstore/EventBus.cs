@@ -54,16 +54,15 @@ namespace eventstore
 		{
 			var tsc = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
 			await _queue.SendToChannel(
-				() => Task.Run(
-					() =>
+				() =>
+				{
+					if (_connectedSubscribers.TryGetValue(subscriberName, out Subscriber subscriber))
 					{
-						if (!_connectedSubscribers.TryGetValue(subscriberName, out Subscriber subscriber))
-						{
-							return;
-						}
 						subscriber.Stop();
 						_connectedSubscribers.Remove(subscriberName);
-					}), 
+					}
+					return Task.CompletedTask;
+				}, 
 				taskSucceeded: x => tsc.SetResult(GetSubscriberStatuses()));
 			return await tsc.Task;
 		}
@@ -72,17 +71,18 @@ namespace eventstore
 		{
 			var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
 			await _queue.SendToChannel(
-				() => Task.Run(() =>
-					{
-						_connectedSubscribers
-							.ToList()
-							.ForEach(
-								x =>
-								{
-									x.Value.Stop();
-									_connectedSubscribers.Remove(x.Key);
-								});
-					}), 
+				() => 
+				{
+					_connectedSubscribers
+						.ToList()
+						.ForEach(
+							x =>
+							{
+								x.Value.Stop();
+								_connectedSubscribers.Remove(x.Key);
+							});
+					return Task.CompletedTask;
+				}, 
 				taskSucceeded: x => tcs.SetResult(GetSubscriberStatuses()));
 			return await tcs.Task;
 		}
@@ -131,11 +131,11 @@ namespace eventstore
 		{
 			return _subscriberRegistry
 				.Select(
-					x => new 
+					subscriberRegistration => new 
 						SubscriberStatus
 						(
-							x.Key,
-							_connectedSubscribers.ContainsKey(x.Key) ? ConnectionStatus.Connected : ConnectionStatus.Disconnected
+							subscriberRegistration.Key,
+							_connectedSubscribers.ContainsKey(subscriberRegistration.Key) ? ConnectionStatus.Connected : ConnectionStatus.Disconnected
 						));
 		}
 
