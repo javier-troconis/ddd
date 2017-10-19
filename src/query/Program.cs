@@ -23,6 +23,10 @@ namespace query
 				x => x.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)))
 					.CreateConnection;
 
+			var connection = createConnection();
+			connection.ConnectAsync().Wait();
+			IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
+
 			var consumerEventBus = 
 				EventBus.CreateEventBus
 				(
@@ -44,9 +48,6 @@ namespace query
 							new Subscriber3()
 						)
 				);
-			consumerEventBus
-				.StartAllSubscribers()
-				.Wait();
 
 			var infrastructureEventBus =
 				EventBus.CreateEventBus
@@ -57,7 +58,8 @@ namespace query
 						(
 							new EventBusController
 							(
-								consumerEventBus
+								consumerEventBus,
+								eventPublisher
 							)
 						)
 						.RegisterPersistentSubscriber

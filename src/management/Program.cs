@@ -31,7 +31,9 @@ namespace management
                 Console.WriteLine("1 - provision system streams");
 				Console.WriteLine("2 - provision persistent subscriptions");
 				Console.WriteLine("3 - provision subscription streams");
-	            Console.WriteLine("4 - start re-provision subscription workflow");
+	            Console.WriteLine("4 - start subscriber");
+	            Console.WriteLine("5 - stop subscriber");
+				Console.WriteLine("6 - re-provision subscription");
 
 				var option = Console.ReadKey().KeyChar;
                 switch (option)
@@ -55,7 +57,15 @@ namespace management
 					case '3':
 						var subscriptionStreamProvisioningRequestor = new ProvisionProvisionSubscriptionStreamRequestor(eventPublisher);
 						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamProvision("*");
-                        break;				
+                        break;
+	                case '4':
+		                eventPublisher.PublishEvent(new StartSubscription("query_subscriber3"));
+		                break;
+					case '5':
+						eventPublisher.PublishEvent(new StopSubscription("query_subscriber3"));
+						break;
+	                case '6':
+		                break;
 					default:
                         return;
                 }

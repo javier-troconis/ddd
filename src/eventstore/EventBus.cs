@@ -40,9 +40,9 @@ namespace eventstore
 		private readonly Dictionary<string, Subscriber> _connectedSubscribers = new Dictionary<string, Subscriber>();
 		private readonly TaskQueue _queue = new TaskQueue();
 		private readonly Func<IEventStoreConnection> _createConnection;
-		private readonly IReadOnlyDictionary<string, StartSubscriber> _subscriberRegistry;
+		private readonly ReadOnlyDictionary<string, StartSubscriber> _subscriberRegistry;
 
-		private EventBus(Func<IEventStoreConnection> createConnection, IReadOnlyDictionary<string, StartSubscriber> subscriberRegistry)
+		private EventBus(Func<IEventStoreConnection> createConnection, ReadOnlyDictionary<string, StartSubscriber> subscriberRegistry)
 		{
 			_createConnection = createConnection;
 			_subscriberRegistry = subscriberRegistry;
@@ -138,7 +138,7 @@ namespace eventstore
 							)));
 		}
 
-		public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, IReadOnlyDictionary<string, StartSubscriber>> configureSubscribersRegistry)
+		public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscribersRegistry)
 		{
 			var subscriberRegistry = configureSubscribersRegistry(SubscriberRegistry.CreateSubscriberRegistry());
 			return new EventBus(createConnection, subscriberRegistry);
