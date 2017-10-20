@@ -47,7 +47,7 @@ namespace management
 				await _eventPublisher.PublishEvent
 					(
 						new SubscriptionStarted(message.Body.SubscriptionName),
-						x => message.Metadata.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.EventId)
+						x => message.Header.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.Header.EventId)
 					);
 			}
 		}
@@ -60,7 +60,7 @@ namespace management
 				await _eventPublisher.PublishEvent
 					(
 						new SubscriptionStopped(message.Body.SubscriptionName),
-						x => message.Metadata.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.EventId)
+						x => message.Header.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.Header.EventId)
 					);
 			}
 		}

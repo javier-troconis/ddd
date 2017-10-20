@@ -23,7 +23,7 @@ namespace management
 
 		public async Task Handle(IRecordedEvent<ISubscriptionStopped> message)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
+			if (!message.Header.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
 			{
 				return;
 			}
