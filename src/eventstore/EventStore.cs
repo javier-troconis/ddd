@@ -16,35 +16,29 @@ namespace eventstore
 	public class EventHeader : ReadOnlyDictionary<string, object>
 	{ 
 		public readonly Guid EventId;
-		public readonly string EventType;
 		public readonly Guid? CorrelationId;
-		public readonly string[] Topics;
 
-		private EventHeader(Guid eventId, string eventType, Guid? correlationId, string[] topics, IDictionary<string, object> customValues) : base(customValues)
+		private EventHeader(Guid eventId, Guid? correlationId, IDictionary<string, object> customValues) : base(customValues)
 		{
 			EventId = eventId;
-			EventType = eventType;
 			CorrelationId = correlationId;
-			Topics = topics;
 		}
 
 		public EventHeader SetEventId(Guid eventId)
 		{
-			return new EventHeader(eventId, EventType, CorrelationId, Topics, this.Copy());
+			return new EventHeader(eventId, CorrelationId, this.Copy());
 		}
 
 		public EventHeader SetEventType(string eventType)
 		{
-			return new EventHeader(EventId, eventType, CorrelationId, Topics, this.Copy());
+			return new EventHeader(EventId, CorrelationId, this.Copy());
 		}
 
 		public EventHeader SetEntry(string key, object value)
 		{
 			return new EventHeader(
 				EventId, 
-				EventType,
 				CorrelationId,
-				Topics,
 				new Dictionary<string, object>
 				(
 					new Dictionary<string, object>
@@ -58,17 +52,15 @@ namespace eventstore
 
 		public EventHeader SetCorrelationId(Guid correlationId)
 		{
-			return new EventHeader(EventId, EventType, correlationId, Topics, this.Copy());
+			return new EventHeader(EventId, correlationId, this.Copy());
 		}
 
-		internal static EventHeader Create(Guid eventId, string eventType, string[] topics)
+		internal static EventHeader Create(Guid eventId)
 		{
 			return new EventHeader
 				(
 					eventId,
-					eventType,
 					null,
-					topics,
 					new Dictionary<string, object>()
 				);
 		}
@@ -103,9 +95,7 @@ namespace eventstore
 							(
 								EventHeader.Create
 								(
-									Guid.NewGuid(), 
-									@event.GetType().GetEventStoreName(), 
-									@event.GetType().GetEventTopics()
+									Guid.NewGuid()
 								)
 							)
 						)
@@ -149,13 +139,13 @@ namespace eventstore
 				new Dictionary<string, object>
 				{
 					{
-						EventHeaderKey.Topics, header.Topics
+						EventHeaderKey.Topics, @event.GetType().GetEventTopics()
 					},
 					{
 						EventHeaderKey.CorrelationId, header.CorrelationId
 					}
 				}.Merge(header), serializerSettings));
-			return new EventData(header.EventId, header.EventType, true, eventData, eventMetadata);
+			return new EventData(header.EventId, @event.GetType().GetEventStoreName(), true, eventData, eventMetadata);
 		}
 
 		public Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata)
