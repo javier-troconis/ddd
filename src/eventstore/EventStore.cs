@@ -16,29 +16,26 @@ namespace eventstore
 	public class EventHeader : ReadOnlyDictionary<string, object>
 	{ 
 		public readonly Guid EventId;
-		public readonly Guid? CorrelationId;
 
-		private EventHeader(Guid eventId, Guid? correlationId, IDictionary<string, object> customValues) : base(customValues)
+		private EventHeader(Guid eventId, IDictionary<string, object> values) : base(values)
 		{
 			EventId = eventId;
-			CorrelationId = correlationId;
 		}
 
 		public EventHeader SetEventId(Guid eventId)
 		{
-			return new EventHeader(eventId, CorrelationId, this);
+			return new EventHeader(eventId, this);
 		}
 
-		public EventHeader SetCorrelationId(Guid? correlationId)
+		public EventHeader SetCorrelationId(Guid correlationId)
 		{
-			return new EventHeader(EventId, correlationId, this);
+			return SetEntry(EventHeaderKey.CorrelationId, correlationId);
 		}
 
 		public EventHeader SetEntry(string key, object value)
 		{
 			return new EventHeader(
 				EventId, 
-				CorrelationId,
 				new Dictionary<string, object>
 				(
 					new Dictionary<string, object>
@@ -50,13 +47,17 @@ namespace eventstore
 				);
 		}
 
-		internal static EventHeader Create(Guid eventId)
+		internal static EventHeader Create(Guid eventId, string[] topics)
 		{
 			return new EventHeader
 				(
 					eventId,
-					null,
-					new Dictionary<string, object>()
+					new Dictionary<string, object>
+					{
+						{
+							EventHeaderKey.Topics, topics
+						}
+					}
 				);
 		}
 	}
@@ -90,7 +91,8 @@ namespace eventstore
 							(
 								EventHeader.Create
 								(
-									Guid.NewGuid()
+									Guid.NewGuid(),
+									@event.GetType().GetEventTopics()
 								)
 							)
 						)
@@ -123,7 +125,7 @@ namespace eventstore
 			return resolvedEvents;
 		}
 
-		private static EventData ConvertToEventData(object @event, EventHeader header)
+		private static EventData ConvertToEventData(object @event, EventHeader eventHeader)
 		{
 			var serializerSettings = new JsonSerializerSettings
 			{
@@ -134,19 +136,11 @@ namespace eventstore
 			(
 				JsonConvert.SerializeObject
 				(
-					new Dictionary<string, object>
-					{
-						{
-							EventHeaderKey.Topics, @event.GetType().GetEventTopics()
-						},
-						{
-							EventHeaderKey.CorrelationId, header.CorrelationId
-						}
-					}.Merge(header),
+					eventHeader,
 					serializerSettings
 				)
 			);
-			return new EventData(header.EventId, @event.GetType().GetEventStoreName(), true, eventData, eventMetadata);
+			return new EventData(eventHeader.EventId, @event.GetType().GetEventStoreName(), true, eventData, eventMetadata);
 		}
 
 		public Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata)
