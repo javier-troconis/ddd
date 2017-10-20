@@ -28,5 +28,11 @@ namespace shared
 			    .Distinct(new MyClass<TKey, TValue>())
 			    .ToDictionary(z => z.Key, z => z.Value);
 	    }
+
+	    public static IDictionary<TKey, TValue> Copy<TKey, TValue>(this IDictionary<TKey, TValue> x)
+	    {
+		    return x
+			    .ToDictionary(z => z.Key, z => z.Value);
+	    }
 	}
 }

@@ -8,7 +8,7 @@ namespace eventstore
 {
 	public interface IEventPublisher
 	{
-		Task PublishEvent(object @event, Func<EventDataSettings, EventDataSettings> configureEventDataSettings = null, TimeSpan? maxAge = null);
+		Task PublishEvent(object @event, Func<EventHeader, EventHeader> configureEventHeader = null, TimeSpan? maxAge = null);
 	}
 
 	public class EventPublisher : IEventPublisher
@@ -20,7 +20,7 @@ namespace eventstore
 			_eventStore = eventStore;
 		}
 
-		public Task PublishEvent(object @event, Func<EventDataSettings, EventDataSettings> configureEventDataSettings, TimeSpan? maxAge)
+		public Task PublishEvent(object @event, Func<EventHeader, EventHeader> configureEventHeader, TimeSpan? maxAge)
 		{
 			var streamName = @event
 				.GetType()
@@ -34,7 +34,7 @@ namespace eventstore
 						StreamMetadata.Create(
 							maxAge: maxAge)
 							),
-				_eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, new[] { @event }, configureEventDataSettings)
+				_eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, new[] { @event }, configureEventHeader)
 			);
 		}
 	}

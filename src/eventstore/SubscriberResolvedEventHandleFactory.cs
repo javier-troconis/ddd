@@ -80,7 +80,7 @@ namespace eventstore
 
 	    internal class RecordedEventHeader : Dictionary<string, object>, IRecordedEventHeader
 	    {
-		    public RecordedEventHeader(IDictionary<string, object> header) : base(header)
+		    public RecordedEventHeader(IDictionary<string, object> customValues) : base(customValues)
 		    {
 		
 		    }

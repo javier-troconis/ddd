@@ -28,13 +28,13 @@ namespace management
 				return;
 			}
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StartSubscriber(message.Body.SubscriberName), x => x.SetEventHeader(EventHeaderKey.WorkflowId, workflowId));
+			await eventPublisher.PublishEvent(new StartSubscriber(message.Body.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, workflowId));
 		}
 
 		public async Task Handle(IRecordedEvent<IRunReconnectSubscriberWorkflow> message)
 		{
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StopSubscriber(message.Body.SubscriberName), x => x.SetEventHeader(EventHeaderKey.WorkflowId, message.Body.WorkflowId));
+			await eventPublisher.PublishEvent(new StopSubscriber(message.Body.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, message.Body.WorkflowId));
 		}
 	}
 }
