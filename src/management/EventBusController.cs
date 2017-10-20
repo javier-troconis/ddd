@@ -41,12 +41,12 @@ namespace management
 
 		public async Task Handle(IRecordedEvent<IStartSubscription> message)
 		{
-			var subscriberStatuses = await _eventBus.StartSubscriber(message.Data.SubscriptionName);
-			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Connected)))
+			var subscriberStatuses = await _eventBus.StartSubscriber(message.Body.SubscriptionName);
+			if (subscriberStatuses.Contains(new SubscriberStatus(message.Body.SubscriptionName, ConnectionStatus.Connected)))
 			{
 				await _eventPublisher.PublishEvent
 					(
-						new SubscriptionStarted(message.Data.SubscriptionName),
+						new SubscriptionStarted(message.Body.SubscriptionName),
 						x => message.Metadata.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.EventId)
 					);
 			}
@@ -54,12 +54,12 @@ namespace management
 
 		public async Task Handle(IRecordedEvent<IStopSubscription> message)
 		{
-			var subscriberStatuses = await _eventBus.StopSubscriber(message.Data.SubscriptionName);
-			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Disconnected)))
+			var subscriberStatuses = await _eventBus.StopSubscriber(message.Body.SubscriptionName);
+			if (subscriberStatuses.Contains(new SubscriberStatus(message.Body.SubscriptionName, ConnectionStatus.Disconnected)))
 			{
 				await _eventPublisher.PublishEvent
 					(
-						new SubscriptionStopped(message.Data.SubscriptionName),
+						new SubscriptionStopped(message.Body.SubscriptionName),
 						x => message.Metadata.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.EventId)
 					);
 			}

@@ -22,7 +22,7 @@ namespace management
                         .WithMaxRetriesOf(0)
                         .PreferDispatchToSingle()
                     )
-				.ProvisionPersistentSubscription(message.Data.PersistentSubscriptionGroup);
+				.ProvisionPersistentSubscription(message.Body.PersistentSubscriptionGroup);
 		}
 	}
 }

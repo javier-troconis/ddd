@@ -115,7 +115,8 @@ namespace management
 						eventPublisher.PublishEvent(new StopSubscription("query_subscriber3"));
 						break;
 	                case '6':
-						eventPublisher.PublishEvent(new StartReconnectSubscriberWorkflow());
+		                var workflowId = Guid.NewGuid();
+						eventPublisher.PublishEvent(new StartReconnectSubscriberWorkflow(workflowId));
 						break;
 					default:
                         return;

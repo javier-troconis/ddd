@@ -18,7 +18,7 @@ namespace management
 			return _subscriptionStreamProvisioner
 				.RegisterSubscriptionStream<EventBusController>()
 				.RegisterSubscriptionStream<ReconnectSubscriberWorkflow>()
-				.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
+				.ProvisionSubscriptionStream(message.Body.SubscriptionStream);
 		}
 	}
 }

@@ -29,11 +29,6 @@ namespace management.contracts
 
 	public interface IStartReconnectSubscriberWorkflow
 	{
-
-	}
-
-	public interface IWorkflowStepExecuted
-	{
-		string WorkflowStepName { get; }
+		Guid WorkflowId { get; }
 	}
 }

@@ -29,16 +29,11 @@ namespace management
 
 	internal struct StartReconnectSubscriberWorkflow : IStartReconnectSubscriberWorkflow
 	{
-
-	}
-
-	internal struct WorkflowStepExecuted : IWorkflowStepExecuted
-	{
-		public WorkflowStepExecuted(string workflowStepName)
+		public StartReconnectSubscriberWorkflow(Guid workflowId)
 		{
-			WorkflowStepName = workflowStepName;
+			WorkflowId = workflowId;
 		}
 
-		public string WorkflowStepName { get; }
+		public Guid WorkflowId { get; }
 	}
 }
