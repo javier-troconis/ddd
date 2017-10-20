@@ -109,14 +109,14 @@ namespace management
 						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamProvision("*");
                         break;
 	                case '4':
-		                eventPublisher.PublishEvent(new StartSubscription("query_subscriber3"));
+		                eventPublisher.PublishEvent(new StartSubscriber("query_subscriber3"));
 		                break;
 					case '5':
-						eventPublisher.PublishEvent(new StopSubscription("query_subscriber3"));
+						eventPublisher.PublishEvent(new StopSubscriber("query_subscriber3"));
 						break;
 	                case '6':
 		                var workflowId = Guid.NewGuid();
-						eventPublisher.PublishEvent(new StartReconnectSubscriberWorkflow(workflowId));
+						eventPublisher.PublishEvent(new RunReconnectSubscriberWorkflow(workflowId, "query_subscriber3"));
 						break;
 					default:
                         return;

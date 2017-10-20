@@ -7,33 +7,35 @@ using management.contracts;
 
 namespace management
 {
-    internal struct StartSubscription : IStartSubscription 
+    internal struct StartSubscriber : IStartSubscriber 
     {
-	    public StartSubscription(string subscriptionName)
+	    public StartSubscriber(string subscriberName)
 	    {
-		    SubscriptionName = subscriptionName;
+		    SubscriberName = subscriberName;
 	    }
 
-	    public string SubscriptionName { get; }
+	    public string SubscriberName { get; }
     }
 
-	internal struct StopSubscription : IStopSubscription
+	internal struct StopSubscriber : IStopSubscriber
 	{
-		public StopSubscription(string subscriptionName)
+		public StopSubscriber(string subscriberName)
 		{
-			SubscriptionName = subscriptionName;
+			SubscriberName = subscriberName;
 		}
 
-		public string SubscriptionName { get; }
+		public string SubscriberName { get; }
 	}
 
-	internal struct StartReconnectSubscriberWorkflow : IStartReconnectSubscriberWorkflow
+	internal struct RunReconnectSubscriberWorkflow : IRunReconnectSubscriberWorkflow
 	{
-		public StartReconnectSubscriberWorkflow(Guid workflowId)
+		public RunReconnectSubscriberWorkflow(Guid workflowId, string subscriberName)
 		{
 			WorkflowId = workflowId;
+			SubscriberName = subscriberName;
 		}
 
 		public Guid WorkflowId { get; }
+		public string SubscriberName { get; }
 	}
 }

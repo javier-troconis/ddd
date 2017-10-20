@@ -2,24 +2,24 @@
 
 namespace management.contracts
 {
-	public interface IStopSubscription
+	public interface IStopSubscriber
 	{
-		string SubscriptionName { get; }
+		string SubscriberName { get; }
 	}
 
-	public interface ISubscriptionStopped
+	public interface ISubscriberStopped
 	{
-		string SubscriptionName { get; }
+		string SubscriberName { get; }
 	}
 
-	public interface IStartSubscription
+	public interface IStartSubscriber
 	{
-		string SubscriptionName { get; }
+		string SubscriberName { get; }
 	}
 
-	public interface ISubscriptionStarted
+	public interface ISubscriberStarted
 	{
-		string SubscriptionName { get; }
+		string SubscriberName { get; }
 	}
 
 	//public interface IStartWorkflow<TWorkflow>
@@ -27,8 +27,9 @@ namespace management.contracts
 	//	Guid WorkflowId { get; }
 	//}
 
-	public interface IStartReconnectSubscriberWorkflow
+	public interface IRunReconnectSubscriberWorkflow
 	{
 		Guid WorkflowId { get; }
+		string SubscriberName { get; }
 	}
 }

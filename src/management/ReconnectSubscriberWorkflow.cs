@@ -11,8 +11,8 @@ using shared;
 namespace management
 {
 	public class ReconnectSubscriberWorkflow :
-	    IMessageHandler<IRecordedEvent<IStartReconnectSubscriberWorkflow>, Task>,
-		IMessageHandler<IRecordedEvent<ISubscriptionStopped>, Task>
+	    IMessageHandler<IRecordedEvent<IRunReconnectSubscriberWorkflow>, Task>,
+		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>
 	{
 		private readonly IEventStore _eventStore;
 
@@ -21,20 +21,20 @@ namespace management
 			_eventStore = eventStore;
 		}
 
-		public async Task Handle(IRecordedEvent<ISubscriptionStopped> message)
+		public async Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
 			if (!message.Header.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
 			{
 				return;
 			}
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StartSubscription("query_subscriber3"), x => x.SetEventHeader(EventHeaderKey.WorkflowId, workflowId));
+			await eventPublisher.PublishEvent(new StartSubscriber(message.Body.SubscriberName), x => x.SetEventHeader(EventHeaderKey.WorkflowId, workflowId));
 		}
 
-		public async Task Handle(IRecordedEvent<IStartReconnectSubscriberWorkflow> message)
+		public async Task Handle(IRecordedEvent<IRunReconnectSubscriberWorkflow> message)
 		{
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StopSubscription("query_subscriber3"), x => x.SetEventHeader(EventHeaderKey.WorkflowId, message.Body.WorkflowId));
+			await eventPublisher.PublishEvent(new StopSubscriber(message.Body.SubscriberName), x => x.SetEventHeader(EventHeaderKey.WorkflowId, message.Body.WorkflowId));
 		}
 	}
 }

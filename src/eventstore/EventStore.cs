@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 namespace eventstore
 {
 	public struct EventDataSettings
-	{
+	{ 
 		public readonly Guid EventId;
 		public readonly string EventType;
 		public readonly IReadOnlyDictionary<string, object> EventHeader;
@@ -39,8 +39,8 @@ namespace eventstore
 		public EventDataSettings SetEventHeader(string key, object value)
 		{
 			return new EventDataSettings(
-				EventId,
-				EventType,
+				EventId, 
+				EventType, 
 				new Dictionary<string, object>
 				(
 					new Dictionary<string, object>
@@ -102,8 +102,8 @@ namespace eventstore
 							(
 								EventDataSettings.Create
 								(
-									Guid.NewGuid(),
-									@event.GetType().GetEventStoreName(),
+									Guid.NewGuid(), 
+									@event.GetType().GetEventStoreName(), 
 									@event.GetType().GetEventTopics()
 								)
 							)
