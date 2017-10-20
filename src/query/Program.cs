@@ -32,10 +32,10 @@ namespace query
 				(
 					createConnection,
 					registry => registry
-						.RegisterVolatileSubscriber
-						(
-							new Subscriber1()
-						)
+						//.RegisterVolatileSubscriber
+						//(
+						//	new Subscriber1()
+						//)
 						.RegisterCatchupSubscriber<Subscriber2>
 						(
 							new Subscriber2()
@@ -43,10 +43,10 @@ namespace query
 									.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
 							CheckpointReader<Subscriber2>.ReadCheckpoint
 						)
-						.RegisterPersistentSubscriber
-						(
-							new Subscriber3()
-						)
+						//.RegisterPersistentSubscriber
+						//(
+						//	new Subscriber3()
+						//)
 				);
 
 			var infrastructureEventBus =
@@ -62,17 +62,17 @@ namespace query
 								eventPublisher
 							)
 						)
-						.RegisterPersistentSubscriber
-						(
-							new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
-								new ProjectionManager(
-									EventStoreSettings.ClusterDns,
-									EventStoreSettings.ExternalHttpPort,
-									EventStoreSettings.Username,
-									EventStoreSettings.Password,
-									new ConsoleLogger()))),
-							x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
-						)
+						//.RegisterPersistentSubscriber
+						//(
+						//	new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
+						//		new ProjectionManager(
+						//			EventStoreSettings.ClusterDns,
+						//			EventStoreSettings.ExternalHttpPort,
+						//			EventStoreSettings.Username,
+						//			EventStoreSettings.Password,
+						//			new ConsoleLogger()))),
+						//	x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+						//)
 						.RegisterVolatileSubscriber
 						(
 							new ProvisionPersistentSubscription(new PersistentSubscriptionProvisioner(

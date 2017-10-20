@@ -28,52 +28,55 @@ namespace management
             IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
 
 
-	        var consumerEventBus =
-		        EventBus.CreateEventBus
-		        (
-			        createConnection,
-			        registry => registry
-				        .RegisterPersistentSubscriber
-				        (
-					        new ReconnectSubscriberWorkflow(new eventstore.EventStore(connection))
-				        )
-		        );
+			//      var consumerEventBus =
+			//       EventBus.CreateEventBus
+			//       (
+			//        createConnection,
+			//        registry => registry
+			//	        .RegisterPersistentSubscriber
+			//	        (
+			//		        new ReconnectSubscriberWorkflow(new eventstore.EventStore(connection))
+			//	        )
+			//       );
 
+			//      consumerEventBus
+			//	.StartAllSubscribers()
+			//	.Wait();
 
 			var infrastructureEventBus =
-		        EventBus.CreateEventBus
-		        (
-			        createConnection,
-			        registry => registry
-				        .RegisterVolatileSubscriber
-				        (
-					        new EventBusController
-					        (
-						        consumerEventBus,
-						        eventPublisher
-					        )
-				        )
-				        .RegisterPersistentSubscriber
-				        (
-					        new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
-						        new ProjectionManager(
-							        EventStoreSettings.ClusterDns,
-							        EventStoreSettings.ExternalHttpPort,
-							        EventStoreSettings.Username,
-							        EventStoreSettings.Password,
-							        new ConsoleLogger()))),
-					        x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
-				        )
-				        .RegisterVolatileSubscriber
-				        (
-					        new ProvisionPersistentSubscription(new PersistentSubscriptionProvisioner(
-						        new PersistentSubscriptionManager(createConnection))),
-					        x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
-				        )
-		        );
-	        infrastructureEventBus
-		        .StartAllSubscribers()
-		        .Wait();
+				EventBus.CreateEventBus
+				(
+					createConnection,
+					registry => registry
+						//.RegisterVolatileSubscriber
+						//(
+						//	new EventBusController
+						//	(
+						//		consumerEventBus,
+						//		eventPublisher
+						//	)
+						//)
+						//.RegisterPersistentSubscriber
+						//(
+						//	new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
+						//		new ProjectionManager(
+						//			EventStoreSettings.ClusterDns,
+						//			EventStoreSettings.ExternalHttpPort,
+						//			EventStoreSettings.Username,
+						//			EventStoreSettings.Password,
+						//			new ConsoleLogger()))),
+						//	x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+						//)
+						.RegisterVolatileSubscriber
+						(
+							new ProvisionPersistentSubscription(new PersistentSubscriptionProvisioner(
+								new PersistentSubscriptionManager(createConnection))),
+							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
+						)
+				);
+			infrastructureEventBus
+				.StartAllSubscribers()
+				.Wait();
 
 
 			while (true)
@@ -109,14 +112,14 @@ namespace management
 						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamProvision("*");
                         break;
 	                case '4':
-		                eventPublisher.PublishEvent(new StartSubscriber("query_subscriber3"));
+		                eventPublisher.PublishEvent(new StartSubscriber("query_subscriber2"));
 		                break;
 					case '5':
-						eventPublisher.PublishEvent(new StopSubscriber("query_subscriber3"));
+						eventPublisher.PublishEvent(new StopSubscriber("query_subscriber2"));
 						break;
 	                case '6':
 		                var workflowId = Guid.NewGuid();
-						eventPublisher.PublishEvent(new RunReconnectSubscriberWorkflow(workflowId, "query_subscriber3"));
+						eventPublisher.PublishEvent(new StartReconnectSubscriberWorkflow(workflowId, "query_subscriber2"));
 						break;
 					default:
                         return;
