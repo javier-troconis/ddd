@@ -26,12 +26,12 @@ namespace eventstore
 
 		public EventHeader SetEventId(Guid eventId)
 		{
-			return new EventHeader(eventId, CorrelationId, this.Copy());
+			return new EventHeader(eventId, CorrelationId, this);
 		}
 
-		public EventHeader SetEventType(string eventType)
+		public EventHeader SetCorrelationId(Guid? correlationId)
 		{
-			return new EventHeader(EventId, CorrelationId, this.Copy());
+			return new EventHeader(EventId, correlationId, this);
 		}
 
 		public EventHeader SetEntry(string key, object value)
@@ -48,11 +48,6 @@ namespace eventstore
 						}
 					}.Merge(this))
 				);
-		}
-
-		public EventHeader SetCorrelationId(Guid correlationId)
-		{
-			return new EventHeader(EventId, correlationId, this.Copy());
 		}
 
 		internal static EventHeader Create(Guid eventId)
@@ -135,16 +130,22 @@ namespace eventstore
 				TypeNameHandling = TypeNameHandling.None
 			};
 			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, serializerSettings));
-			var eventMetadata = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(
-				new Dictionary<string, object>
-				{
+			var eventMetadata = Encoding.UTF8.GetBytes
+			(
+				JsonConvert.SerializeObject
+				(
+					new Dictionary<string, object>
 					{
-						EventHeaderKey.Topics, @event.GetType().GetEventTopics()
-					},
-					{
-						EventHeaderKey.CorrelationId, header.CorrelationId
-					}
-				}.Merge(header), serializerSettings));
+						{
+							EventHeaderKey.Topics, @event.GetType().GetEventTopics()
+						},
+						{
+							EventHeaderKey.CorrelationId, header.CorrelationId
+						}
+					}.Merge(header),
+					serializerSettings
+				)
+			);
 			return new EventData(header.EventId, @event.GetType().GetEventStoreName(), true, eventData, eventMetadata);
 		}
 
