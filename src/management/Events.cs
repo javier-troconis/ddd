@@ -27,8 +27,18 @@ namespace management
 		public string SubscriptionName { get; }
 	}
 
-	internal struct RestartSubscriberWorflowStarted : IRestartSubscriberWorflowStarted
+	internal struct StartReconnectSubscriberWorkflow : IStartReconnectSubscriberWorkflow
 	{
 
+	}
+
+	internal struct WorkflowStepExecuted : IWorkflowStepExecuted
+	{
+		public WorkflowStepExecuted(string workflowStepName)
+		{
+			WorkflowStepName = workflowStepName;
+		}
+
+		public string WorkflowStepName { get; }
 	}
 }

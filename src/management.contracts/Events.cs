@@ -22,8 +22,18 @@ namespace management.contracts
 		string SubscriptionName { get; }
 	}
 
-	public interface IRestartSubscriberWorflowStarted
+	//public interface IStartWorkflow<TWorkflow>
+	//{
+	//	Guid WorkflowId { get; }
+	//}
+
+	public interface IStartReconnectSubscriberWorkflow
 	{
-		
+
+	}
+
+	public interface IWorkflowStepExecuted
+	{
+		string WorkflowStepName { get; }
 	}
 }

@@ -11,6 +11,7 @@ namespace shared
 	    long EventNumber { get; }
 	    DateTime Created { get; }
 	    Guid EventId { get; }
+	    Guid? CorrelationId { get; }
 	    IReadOnlyDictionary<string, object> Metadata { get; }
 		TData Data { get; }
     }

@@ -50,7 +50,11 @@ namespace query
 			var subscriberStatuses = await _eventBus.StartSubscriber(message.Data.SubscriptionName);
 			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Connected)))
 			{
-				await _eventPublisher.PublishEvent(new SubscriptionStarted(message.Data.SubscriptionName));
+				await _eventPublisher.PublishEvent
+					(
+						new SubscriptionStarted(message.Data.SubscriptionName),
+						x => message.Metadata.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.EventId)
+					);
 			}
 		}
 
@@ -59,7 +63,11 @@ namespace query
 			var subscriberStatuses = await _eventBus.StopSubscriber(message.Data.SubscriptionName);
 			if (subscriberStatuses.Contains(new SubscriberStatus(message.Data.SubscriptionName, ConnectionStatus.Disconnected)))
 			{
-				await _eventPublisher.PublishEvent(new SubscriptionStopped(message.Data.SubscriptionName));
+				await _eventPublisher.PublishEvent
+					(
+						new SubscriptionStopped(message.Data.SubscriptionName),
+						x => message.Metadata.Aggregate(x, (y, z) => y.SetEventHeader(z.Key, z.Value)).SetCorrelationId(message.EventId)
+					);
 			}
 		}
 	}

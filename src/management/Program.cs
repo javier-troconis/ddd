@@ -35,7 +35,7 @@ namespace management
 			        registry => registry
 				        .RegisterPersistentSubscriber
 				        (
-					        new RestartSubscriberWorkflow(new eventstore.EventStore(connection))
+					        new ReconnectSubscriberWorkflow(new eventstore.EventStore(connection))
 				        )
 		        );
 
@@ -115,16 +115,7 @@ namespace management
 						eventPublisher.PublishEvent(new StopSubscription("query_subscriber3"));
 						break;
 	                case '6':
-		                var workflowId = Guid.NewGuid();
-		                IEventStore eventStore = new eventstore.EventStore(connection);
-		                eventStore.WriteEvents(
-							"restart_subscriber_workflow_" + workflowId.ToString("N"),
-			                ExpectedVersion.NoStream, 
-							new object[]
-							{
-								new RestartSubscriberWorflowStarted()
-							}).Wait();
-						eventPublisher.PublishEvent(new StopSubscription("query_subscriber3"), x => x.SetEventId(workflowId));
+						eventPublisher.PublishEvent(new StartReconnectSubscriberWorkflow());
 						break;
 					default:
                         return;

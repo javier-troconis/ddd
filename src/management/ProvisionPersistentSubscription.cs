@@ -16,7 +16,7 @@ namespace management
 		public Task Handle(IRecordedEvent<IProvisionPersistentSubscriptionRequested> message)
 		{
 			return _persistentSubscriptionProvisioner
-				.RegisterPersistentSubscription<RestartSubscriberWorkflow>()
+				.RegisterPersistentSubscription<ReconnectSubscriberWorkflow>()
 				.RegisterPersistentSubscription<IProvisionSubscriptionStreamRequests, ProvisionSubscriptionStream>(
 					x => x
                         .WithMaxRetriesOf(0)

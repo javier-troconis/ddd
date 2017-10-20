@@ -14,7 +14,7 @@ using Newtonsoft.Json.Linq;
 namespace eventstore
 {
 	public struct EventDataSettings
-	{ 
+	{
 		public readonly Guid EventId;
 		public readonly string EventType;
 		public readonly IReadOnlyDictionary<string, object> EventHeader;
@@ -39,15 +39,17 @@ namespace eventstore
 		public EventDataSettings SetEventHeader(string key, object value)
 		{
 			return new EventDataSettings(
-				EventId, 
-				EventType, 
-				new Dictionary<string, object>(
+				EventId,
+				EventType,
+				new Dictionary<string, object>
+				(
 					new Dictionary<string, object>
 					{
 						{
 							key, value
 						}
-					}.Merge(EventHeader.ToDictionary(x => x.Key, x => x.Value))));
+					}.Merge(EventHeader.ToDictionary(x => x.Key, x => x.Value)))
+				);
 		}
 
 		public EventDataSettings SetCorrelationId(Guid correlationId)
@@ -75,7 +77,7 @@ namespace eventstore
 	{
 		Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
 		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventDataSettings, EventDataSettings> configureEventDataSettings = null);
-		Task<WriteResult> WriteStreamMetadata(string streamName, long expectedMetadataStreamVersion, StreamMetadata metadata);
+		Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata);
 	}
 
 	public class EventStore : IEventStore
@@ -89,11 +91,24 @@ namespace eventstore
 
 		public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventDataSettings, EventDataSettings> configureEventDataSettings)
 		{
-			configureEventDataSettings = configureEventDataSettings ?? (x => x);
 			var eventData = events
-				.Select(@event =>
-					ConvertToEventData(@event, configureEventDataSettings(
-						EventDataSettings.Create(Guid.NewGuid(), @event.GetType().GetEventStoreName(), @event.GetType().GetEventTopics()))));
+				.Select
+				(
+					@event =>
+						ConvertToEventData
+						(
+							@event,
+							(configureEventDataSettings ?? (x => x))
+							(
+								EventDataSettings.Create
+								(
+									Guid.NewGuid(),
+									@event.GetType().GetEventStoreName(),
+									@event.GetType().GetEventTopics()
+								)
+							)
+						)
+				);
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
 		}
 
@@ -133,9 +148,9 @@ namespace eventstore
 			return new EventData(eventDataSettings.EventId, eventDataSettings.EventType, true, eventData, eventMetadata);
 		}
 
-		public Task<WriteResult> WriteStreamMetadata(string streamName, long expectedMetadataStreamVersion, StreamMetadata metadata)
+		public Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata)
 		{
-			return _eventStoreConnection.SetStreamMetadataAsync(streamName, expectedMetadataStreamVersion, metadata);
+			return _eventStoreConnection.SetStreamMetadataAsync(streamName, streamExpectedVersion, metadata);
 		}
 	}
 }
