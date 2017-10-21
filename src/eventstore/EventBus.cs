@@ -44,22 +44,22 @@ namespace eventstore
 
         private class ConnectedSubscriber : ISubscriber
         {
+            public readonly Action Stop;
+
             public ConnectedSubscriber(Action stop)
             {
                 Stop = stop;
             }
-
-            public Action Stop { get; }
         }
 
         private class NotConnectedSubscriber : ISubscriber
         {
+            public readonly StartSubscriber Start;
+
             public NotConnectedSubscriber(StartSubscriber start)
             {
                 Start = start;
             }
-
-            public StartSubscriber Start { get; }
         }
 
 
@@ -94,7 +94,31 @@ namespace eventstore
             //	}, 
             //	taskSucceeded: x => tsc.SetResult(GetSubscriberStatuses()));
             //return await tsc.Task;
-            throw new NotImplementedException();
+            //throw new NotImplementedException();
+            if (!_subscribers.TryGetValue(subscriberName, out ISubscriber subscriber) || subscriber is NotConnectedSubscriber)
+            {
+                return await Task.FromResult(GetSubscriberStatuses());
+            }
+
+            var tsc = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
+
+            await _queue.SendToChannel(
+                () =>
+                {
+                    var connectedSubscriber = (ConnectedSubscriber)_subscribers[subscriberName];
+                    connectedSubscriber.Stop();
+                    _subscribers[subscriberName] = (ISubscriber)new NotConnectedSubscriber(_subscriberRegistry[subscriberName]);
+                    //if (_connectedSubscribers.TryGetValue(subscriberName, out Subscriber subscriber))
+                    //{
+                    //    subscriber.Stop();
+                    //    _connectedSubscribers.Remove(subscriberName);
+                    //}
+                    return Task.CompletedTask;
+                },
+                channelName: subscriberName,
+                taskSucceeded: x => tsc.SetResult(GetSubscriberStatuses()));
+            return await tsc.Task;
+
         }
 
         public async Task<IEnumerable<SubscriberStatus>> StopAllSubscribers()
