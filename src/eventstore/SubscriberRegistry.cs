@@ -64,7 +64,19 @@ namespace eventstore
 		}
 	}
 
-    public struct SubscriberRegistry
+    public struct SubscriberRegistration
+    {
+        public readonly string SubscriberName;
+        public readonly StartSubscriber StartSubscriber;
+
+        public SubscriberRegistration(string subscriberName, StartSubscriber startSubscriber)
+        {
+            SubscriberName = subscriberName;
+            StartSubscriber = startSubscriber;
+        }
+    }
+
+    public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
     {
         private readonly IDictionary<string, StartSubscriber> _subscriberRegistrations;
 
@@ -180,14 +192,21 @@ namespace eventstore
                 );
         }
 
-        public static implicit operator ReadOnlyDictionary<string, StartSubscriber> (SubscriberRegistry subscriberRegistry)
-        {
-            return new ReadOnlyDictionary<string, StartSubscriber>(subscriberRegistry._subscriberRegistrations);
-        }
-
         public static SubscriberRegistry CreateSubscriberRegistry()
         {
             return new SubscriberRegistry(new Dictionary<string, StartSubscriber>());
+        }
+
+        public IEnumerator<SubscriberRegistration> GetEnumerator()
+        {
+            return _subscriberRegistrations
+                .Select(x => new SubscriberRegistration(x.Key, x.Value))
+                .GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return GetEnumerator();
         }
     }
 }

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -25,6 +26,11 @@ namespace shared
                 var result = await x;
                 return result.Passed;
             });
+        }
+
+        public static IReadOnlyDictionary<TKey, TValue> ToReadOnlyDictionary<T, TKey, TValue>(this IEnumerable<T> seq, Func<T, TKey> selectKey, Func<T, TValue> selectValue)
+        {
+            return new ReadOnlyDictionary<TKey, TValue>(seq.ToDictionary(selectKey, selectValue));
         }
     }
 }
