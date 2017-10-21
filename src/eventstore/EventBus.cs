@@ -23,7 +23,7 @@ namespace eventstore
 		Disconnected
 	}
 
-	public struct SubscriberStatus
+	public class SubscriberStatus
 	{
 		public readonly string Name;
 		public readonly ConnectionStatus ConnectionStatus;
@@ -37,182 +37,128 @@ namespace eventstore
 
 	public sealed class EventBus
 	{
-        private interface ISubscriber
+        private struct Subscriber
         {
+            private readonly Func<Task<Action>> _start;
+            private Action _stop;
+            private ConnectionStatus _status;
 
-        }
-
-        private class ConnectedSubscriber : ISubscriber
-        {
-            public readonly Action Stop;
-
-            public ConnectedSubscriber(Action stop)
+            public Subscriber(Func<Task<Action>> start)
             {
-                Stop = stop;
+                _start = start;
+                _stop = () => { };
+                _status = ConnectionStatus.Disconnected;
+            }
+
+            public async Task Start()
+            {
+                _stop = await _start();
+                _status = ConnectionStatus.Connected;
+            }
+
+            public void Stop()
+            {
+                _stop();
+                _status = ConnectionStatus.Disconnected;
+            }
+
+            public ConnectionStatus Status
+            {
+                get
+                {
+                    return _status;
+                }
             }
         }
 
-        private class NotConnectedSubscriber : ISubscriber
-        {
-            public readonly StartSubscriber Start;
-
-            public NotConnectedSubscriber(StartSubscriber start)
-            {
-                Start = start;
-            }
-        }
-
-
-        //private readonly Dictionary<string, Subscriber> _connectedSubscribers = new Dictionary<string, Subscriber>();
         private readonly TaskQueue _queue = new TaskQueue();
 		private readonly Func<IEventStoreConnection> _createConnection;
-		private readonly IReadOnlyDictionary<string, StartSubscriber> _subscriberRegistry;
-        private readonly IReadOnlyDictionary<string, ISubscriber> _subscribers;
+        private readonly IReadOnlyDictionary<string, Subscriber> _subscribers;
 
 		private EventBus(
             Func<IEventStoreConnection> createConnection, 
-            IReadOnlyDictionary<string, StartSubscriber> subscriberRegistry, 
-            IReadOnlyDictionary<string, ISubscriber> subscribers)
+            IReadOnlyDictionary<string, Subscriber> subscribers)
 		{
 			_createConnection = createConnection;
-			_subscriberRegistry = subscriberRegistry;
             _subscribers = subscribers;
 		}
 
-		public async Task<IEnumerable<SubscriberStatus>> StopSubscriber(string subscriberName)
+		public async Task<SubscriberStatus> StopSubscriber(string subscriberName)
 		{
-            //var tsc = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
-            //await _queue.SendToChannel(
-            //	() =>
-            //	{
-            //		if (_connectedSubscribers.TryGetValue(subscriberName, out Subscriber subscriber))
-            //		{
-            //			subscriber.Stop();
-            //			_connectedSubscribers.Remove(subscriberName);
-            //		}
-            //		return Task.CompletedTask;
-            //	}, 
-            //	taskSucceeded: x => tsc.SetResult(GetSubscriberStatuses()));
-            //return await tsc.Task;
-            //throw new NotImplementedException();
-            if (!_subscribers.TryGetValue(subscriberName, out ISubscriber subscriber) || subscriber is NotConnectedSubscriber)
+            if (!_subscribers.TryGetValue(subscriberName, out Subscriber subscriber))
             {
-                return await Task.FromResult(GetSubscriberStatuses());
+                return await Task.FromResult(default(SubscriberStatus));
             }
 
-            var tsc = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
+            var tsc = new TaskCompletionSource<SubscriberStatus>();
 
-            await _queue.SendToChannel(
-                () =>
-                {
-                    var connectedSubscriber = (ConnectedSubscriber)_subscribers[subscriberName];
-                    connectedSubscriber.Stop();
-                    _subscribers[subscriberName] = (ISubscriber)new NotConnectedSubscriber(_subscriberRegistry[subscriberName]);
-                    //if (_connectedSubscribers.TryGetValue(subscriberName, out Subscriber subscriber))
-                    //{
-                    //    subscriber.Stop();
-                    //    _connectedSubscribers.Remove(subscriberName);
-                    //}
-                    return Task.CompletedTask;
-                },
-                channelName: subscriberName,
-                taskSucceeded: x => tsc.SetResult(GetSubscriberStatuses()));
+            await _queue.SendToChannel
+                (
+                    () =>
+                    {
+                        if (_subscribers[subscriberName].Status == ConnectionStatus.Connected)
+                        {
+                            _subscribers[subscriberName].Stop();
+                        }
+                        return Task.CompletedTask;
+                    },
+                    channelName: subscriberName,
+                    taskSucceeded: x => tsc.SetResult(new SubscriberStatus(subscriberName, ConnectionStatus.Disconnected))
+                );
             return await tsc.Task;
-
         }
 
         public async Task<IEnumerable<SubscriberStatus>> StopAllSubscribers()
 		{
-            //var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
-            //await _queue.SendToChannel(
-            //	() => 
-            //	{
-            //		_connectedSubscribers
-            //			.ToList()
-            //			.ForEach(
-            //				x =>
-            //				{
-            //					x.Value.Stop();
-            //					_connectedSubscribers.Remove(x.Key);
-            //				});
-            //		return Task.CompletedTask;
-            //	}, 
-            //	taskSucceeded: x => tcs.SetResult(GetSubscriberStatuses()));
-            //return await tcs.Task;
-            throw new NotImplementedException();
+            return await Task.WhenAll(_subscribers.Select(x => StopSubscriber(x.Key)));
         }
 
-		public async Task<IEnumerable<SubscriberStatus>> StartSubscriber(string subscriberName)
+		public async Task<SubscriberStatus> StartSubscriber(string subscriberName)
 		{
-            //var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
-            //await _queue.SendToChannel(
-            //	async () =>
-            //	{
-            //                 if (_subscriberRegistry.TryGetValue(subscriberName, out StartSubscriber startSubscriber) && !_connectedSubscribers.ContainsKey(subscriberName))
-            //                 {
-            //                     var subscriber = await startSubscriber(_createConnection);
-            //                     _connectedSubscribers.Add(subscriberName, subscriber);
-            //                 }
-            //	},
-            //	taskSucceeded: x => tcs.SetResult(GetSubscriberStatuses()));
-            //return await tcs.Task;
-            throw new NotImplementedException();
+            if (!_subscribers.TryGetValue(subscriberName, out Subscriber subscriber))
+            {
+                return await Task.FromResult(default(SubscriberStatus));
+            }
+
+            var tsc = new TaskCompletionSource<SubscriberStatus>();
+
+            await _queue.SendToChannel
+                (
+                    async () =>
+                    {
+                        if (_subscribers[subscriberName].Status == ConnectionStatus.Disconnected)
+                        {
+                            await _subscribers[subscriberName].Start();
+                        }
+                    },
+                    channelName: subscriberName,
+                    taskSucceeded: x => tsc.SetResult(new SubscriberStatus(subscriberName, ConnectionStatus.Connected))
+                );
+            return await tsc.Task;
         }
 
 		public async Task<IEnumerable<SubscriberStatus>> StartAllSubscribers()
 		{
-            //var tcs = new TaskCompletionSource<IEnumerable<SubscriberStatus>>();
-            //await _queue.SendToChannel(
-            //	async () =>
-            //	{
-            //                 var notConnectedSubscriberNames = _subscriberRegistry.Select(x => x.Key).Except(_connectedSubscribers.Select(x => x.Key));
-            //                 await Task.WhenAll
-            //                 (
-            //                     notConnectedSubscriberNames
-            //                         .Select
-            //                         (
-            //                             async subscriberName => 
-            //                             {
-            //                                 var subscriber = await _subscriberRegistry[subscriberName](_createConnection);
-            //                                 _connectedSubscribers.Add(subscriberName, subscriber);
-            //                             }
-            //                         )
-            //                 );
-            //	},
-            //	taskSucceeded: x => tcs.SetResult(GetSubscriberStatuses()));
-            //return await tcs.Task;
-            throw new NotImplementedException();
+            return await Task.WhenAll(_subscribers.Select(x => StartSubscriber(x.Key)));
         }
-
-		private IEnumerable<SubscriberStatus> GetSubscriberStatuses()
-		{
-            //return new HashSet<SubscriberStatus>(
-            //	_subscriberRegistry
-            //		.Select(
-            //			subscriberRegistration => new 
-            //				SubscriberStatus
-            //				(
-            //					subscriberRegistration.Key,
-            //					_connectedSubscribers.ContainsKey(subscriberRegistration.Key) ? ConnectionStatus.Connected : ConnectionStatus.Disconnected
-            //				)));
-            throw new NotImplementedException();
-		}
 
 		public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscribersRegistry)
 		{
-            var subscriberRegistry = SubscriberRegistry.CreateSubscriberRegistry()
-                .ToReadOnlyDictionary
-                (
-                    x => x.SubscriberName, 
-                    x => x.StartSubscriber
-                );
+            var subscriberRegistry = configureSubscribersRegistry(SubscriberRegistry.CreateSubscriberRegistry());
             var subscribers = subscriberRegistry
                 .ToReadOnlyDictionary
                 (
-                    x => x.Key, 
-                    x => (ISubscriber)new NotConnectedSubscriber(x.Value)
+                    x => x.SubscriberName, 
+                    x => new Subscriber
+                    (
+                        async () =>
+                        {
+                            var subscriber = await x.StartSubscriber(createConnection);
+                            return subscriber.Stop;
+                        }
+                    )
                 );
-            return new EventBus(createConnection, subscriberRegistry, subscribers);
+            return new EventBus(createConnection, subscribers);
 		}
 	}
 }
