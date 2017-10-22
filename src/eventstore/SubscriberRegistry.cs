@@ -66,13 +66,13 @@ namespace eventstore
 
     public struct SubscriberRegistration
     {
-        public readonly string SubscriberName;
-        public readonly ConnectSubscriber StartSubscriber;
+        public readonly string Name;
+        public readonly ConnectSubscriber Connect;
 
-        public SubscriberRegistration(string subscriberName, ConnectSubscriber startSubscriber)
+        public SubscriberRegistration(string name, ConnectSubscriber connect)
         {
-            SubscriberName = subscriberName;
-            StartSubscriber = startSubscriber;
+            Name = name;
+            Connect = connect;
         }
     }
 

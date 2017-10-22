@@ -89,8 +89,7 @@ namespace eventstore
                         NotConnectedSubscriber notConnectedSubscriber;
                         if ((notConnectedSubscriber = _subscribers[subscriberName] as NotConnectedSubscriber) != null)
                         {
-                            var subscriberConnection = await notConnectedSubscriber.Connect(_createConnection);
-                            _subscribers[subscriberName] = new ConnectedSubscriber(subscriberConnection.Disconnect);
+                            _subscribers[subscriberName] = await notConnectedSubscriber.Connect(_createConnection);
                         }
                         
                     },
@@ -115,16 +114,16 @@ namespace eventstore
                     subscriberRegistry
                         .ToReadOnlyDictionary
                         (
-                            x => x.SubscriberName,
-                            x => x.StartSubscriber
+                            x => x.Name,
+                            x => x.Connect
                         ),
                     subscriberRegistry
                         .ToDictionary
                         (
-                            x => x.SubscriberName,
+                            x => x.Name,
                             x => (ISubscriber)new NotConnectedSubscriber
                             (
-                                x.StartSubscriber
+                                x.Connect
                             )
                         )
                 );
@@ -137,21 +136,32 @@ namespace eventstore
 
         private class ConnectedSubscriber : ISubscriber
         {
-            public readonly Action Disconnect;
+            private readonly SubscriberConnection _connection;
 
-            public ConnectedSubscriber(Action disconnect)
+            public ConnectedSubscriber(SubscriberConnection connection)
             {
-                Disconnect = disconnect;
+                _connection = connection;
+            }
+
+            public void Disconnect()
+            {
+                _connection.Disconnect();
             }
         }
 
         private class NotConnectedSubscriber : ISubscriber
         {
-            public readonly ConnectSubscriber Connect;
+            private readonly ConnectSubscriber _connect;
 
             public NotConnectedSubscriber(ConnectSubscriber connect)
             {
-                Connect = connect;
+                _connect = connect;
+            }
+
+            public async Task<ConnectedSubscriber> Connect(Func<IEventStoreConnection> createConnection)
+            {
+                var connection = await _connect(createConnection);
+                return new ConnectedSubscriber(connection);
             }
         }
     }
