@@ -13,52 +13,58 @@ using Newtonsoft.Json.Linq;
 
 namespace eventstore
 {
-	public class EventHeader : ReadOnlyDictionary<string, object>
+	public struct EventHeader
 	{ 
 		public readonly Guid EventId;
-
-		private EventHeader(Guid eventId, IDictionary<string, object> values) : base(values)
+        public readonly string EventType;
+        public readonly IReadOnlyDictionary<string, object> CustomValues;
+  
+		private EventHeader(Guid eventId, string eventType, IReadOnlyDictionary<string, object> customValues)
 		{
 			EventId = eventId;
+            EventType = eventType;
+            CustomValues = customValues;
 		}
 
 		public EventHeader SetEventId(Guid eventId)
 		{
-			return new EventHeader(eventId, this);
+			return new EventHeader(eventId, EventType, CustomValues);
 		}
 
 		public EventHeader SetCorrelationId(Guid correlationId)
 		{
-			return SetEntry(EventHeaderKey.CorrelationId, correlationId);
+            return SetEntry(EventHeaderKey.CorrelationId, correlationId);
 		}
 
 		public EventHeader SetEntry(string key, object value)
 		{
 			return new EventHeader(
-				EventId, 
-				new Dictionary<string, object>
+				EventId,
+                EventType,
+                new Dictionary<string, object>
 				(
 					new Dictionary<string, object>
 					{
 						{
 							key, value
 						}
-					}.Merge(this))
+					}.Merge(CustomValues.ToDictionary(x => x.Key, x => x.Value)))
 				);
 		}
 
-		internal static EventHeader Create(Guid eventId, string[] topics)
+		internal static EventHeader Create(Guid eventId, string eventType, string[] topics)
 		{
-			return new EventHeader
-				(
-					eventId,
-					new Dictionary<string, object>
-					{
-						{
-							EventHeaderKey.Topics, topics
-						}
-					}
-				);
+            return new EventHeader
+                (
+                    eventId,
+                    eventType,
+                    new Dictionary<string, object>
+                    {
+                        {
+                            EventHeaderKey.Topics, topics
+                        }
+                    }
+                );
 		}
 	}
 
@@ -92,6 +98,7 @@ namespace eventstore
 								EventHeader.Create
 								(
 									Guid.NewGuid(),
+                                    @event.GetType().FullName,
 									@event.GetType().GetEventTopics()
 								)
 							)
@@ -136,11 +143,11 @@ namespace eventstore
 			(
 				JsonConvert.SerializeObject
 				(
-					eventHeader,
+					eventHeader.CustomValues,
 					serializerSettings
 				)
 			);
-			return new EventData(eventHeader.EventId, @event.GetType().GetEventStoreName(), true, eventData, eventMetadata);
+			return new EventData(eventHeader.EventId, eventHeader.EventType, true, eventData, eventMetadata);
 		}
 
 		public Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata)
