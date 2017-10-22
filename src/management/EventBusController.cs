@@ -41,8 +41,8 @@ namespace management
 
 		public async Task Handle(IRecordedEvent<IStartSubscriber> message)
 		{
-			var subscriberStatuses = await _eventBus.StartSubscriber(message.Body.SubscriberName);
-			if (subscriberStatuses.Contains(new SubscriberStatus(message.Body.SubscriberName, ConnectionStatus.Connected)))
+			var connectionStatus = await _eventBus.StartSubscriber(message.Body.SubscriberName);
+			if (connectionStatus == ConnectionStatus.Connected)
 			{
 				await _eventPublisher.PublishEvent
 					(
@@ -54,8 +54,8 @@ namespace management
 
 		public async Task Handle(IRecordedEvent<IStopSubscriber> message)
 		{
-			var subscriberStatuses = await _eventBus.StopSubscriber(message.Body.SubscriberName);
-			if (subscriberStatuses.Contains(new SubscriberStatus(message.Body.SubscriberName, ConnectionStatus.Disconnected)))
+			var connectionStatus = await _eventBus.StopSubscriber(message.Body.SubscriberName);
+			if (connectionStatus == ConnectionStatus.NotConnected)
 			{
 				await _eventPublisher.PublishEvent
 					(
