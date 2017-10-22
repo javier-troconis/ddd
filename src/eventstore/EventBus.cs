@@ -89,7 +89,8 @@ namespace eventstore
                         NotConnectedSubscriber notConnectedSubscriber;
                         if ((notConnectedSubscriber = _subscribers[subscriberName] as NotConnectedSubscriber) != null)
                         {
-                            _subscribers[subscriberName] = await notConnectedSubscriber.Connect(_createConnection);
+                            var subscriberConnection = await notConnectedSubscriber.Connect(_createConnection);
+                            _subscribers[subscriberName] = new ConnectedSubscriber(subscriberConnection);
                         }
                     },
                     channelName: subscriberName,
@@ -150,17 +151,11 @@ namespace eventstore
 
         private class NotConnectedSubscriber : ISubscriber
         {
-            private readonly ConnectSubscriber _connect;
+            public readonly ConnectSubscriber Connect;
 
             public NotConnectedSubscriber(ConnectSubscriber connect)
             {
-                _connect = connect;
-            }
-
-            public async Task<ConnectedSubscriber> Connect(Func<IEventStoreConnection> createConnection)
-            {
-                var connection = await _connect(createConnection);
-                return new ConnectedSubscriber(connection);
+                Connect = connect;
             }
         }
     }
