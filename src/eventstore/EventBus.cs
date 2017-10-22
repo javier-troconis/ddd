@@ -91,7 +91,6 @@ namespace eventstore
                         {
                             _subscribers[subscriberName] = await notConnectedSubscriber.Connect(_createConnection);
                         }
-                        
                     },
                     channelName: subscriberName,
                     taskSucceeded: x => tsc.SetResult(SubscriberStatus.Connected)
