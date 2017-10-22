@@ -8,16 +8,16 @@ using shared;
 
 namespace eventstore
 {
-    public struct Subscriber
+    public struct SubscriberConnection
     {
-	    public readonly Action Stop;
+	    public readonly Action Disconnect;
 	    
-		private Subscriber(Action stop)
+		private SubscriberConnection(Action disconnect)
 		{
-			Stop = stop;
+			Disconnect = disconnect;
 		}
 
-	    public static async Task<Subscriber> StartCatchUpSubscriber(
+	    public static async Task<SubscriberConnection> StartCatchUpSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    Func<ResolvedEvent, Task> handleEvent,
@@ -45,7 +45,7 @@ namespace eventstore
 				{
 					
 				});
-		    return new Subscriber(
+		    return new SubscriberConnection(
 			    () =>
 			    {
 				    s.Stop();
@@ -53,7 +53,7 @@ namespace eventstore
 			    });
 		}
 
-	    public static async Task<Subscriber> StartVolatileSubscriber(
+	    public static async Task<SubscriberConnection> StartVolatileSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    Func<ResolvedEvent, Task> handleEvent)
@@ -68,7 +68,7 @@ namespace eventstore
 				{
 					
 				});
-			return new Subscriber(
+			return new SubscriberConnection(
 				() =>
 				{
 					s.Close();
@@ -76,7 +76,7 @@ namespace eventstore
 				});
 		}
 
-	    public static async Task<Subscriber> StartPersistentSubscriber(
+	    public static async Task<SubscriberConnection> StartPersistentSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    string groupName,
@@ -104,7 +104,7 @@ namespace eventstore
 					
 				}, 
 				autoAck: false);
-		    return new Subscriber(
+		    return new SubscriberConnection(
 				() =>
 				{
 					s.Stop(TimeSpan.FromSeconds(30));

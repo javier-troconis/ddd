@@ -17,7 +17,7 @@ using System.Collections.ObjectModel;
 
 namespace eventstore
 {
-	public enum ConnectionStatus
+	public enum SubscriberStatus
 	{
         Unknown,
 		Connected,
@@ -28,13 +28,13 @@ namespace eventstore
     {
         private readonly TaskQueue _queue = new TaskQueue();
         private readonly Func<IEventStoreConnection> _createConnection;
-        private readonly IReadOnlyDictionary<string, StartSubscriber> _subscriberRegistry;
+        private readonly IReadOnlyDictionary<string, ConnectSubscriber> _subscriberRegistry;
         private readonly IDictionary<string, ISubscriber> _subscribers;
 
         private EventBus
             (
                 Func<IEventStoreConnection> createConnection,
-                IReadOnlyDictionary<string, StartSubscriber> subscriberRegistry,
+                IReadOnlyDictionary<string, ConnectSubscriber> subscriberRegistry,
                 IDictionary<string, ISubscriber> subscribers
             )
         {
@@ -43,14 +43,14 @@ namespace eventstore
             _subscribers = subscribers;
         }
 
-        public async Task<ConnectionStatus> StopSubscriber(string subscriberName)
+        public async Task<SubscriberStatus> StopSubscriber(string subscriberName)
         {
             if (!_subscribers.ContainsKey(subscriberName))
             {
-                return ConnectionStatus.Unknown;
+                return SubscriberStatus.Unknown;
             }
 
-            var tsc = new TaskCompletionSource<ConnectionStatus>();
+            var tsc = new TaskCompletionSource<SubscriberStatus>();
             await _queue.SendToChannel
                 (
                     () =>
@@ -58,13 +58,13 @@ namespace eventstore
                         ConnectedSubscriber connectedSubscriber;
                         if ((connectedSubscriber = _subscribers[subscriberName] as ConnectedSubscriber) != null)
                         {
-                            connectedSubscriber.Stop();
+                            connectedSubscriber.Disconnect();
                             _subscribers[subscriberName] = new NotConnectedSubscriber(_subscriberRegistry[subscriberName]);
                         }
                         return Task.CompletedTask;
                     },
                     channelName: subscriberName,
-                    taskSucceeded: x => tsc.SetResult(ConnectionStatus.NotConnected)
+                    taskSucceeded: x => tsc.SetResult(SubscriberStatus.NotConnected)
                 );
             return await tsc.Task;
         }
@@ -74,14 +74,14 @@ namespace eventstore
             return Task.WhenAll(_subscribers.Select(x => StopSubscriber(x.Key)));
         }
 
-        public async Task<ConnectionStatus> StartSubscriber(string subscriberName)
+        public async Task<SubscriberStatus> StartSubscriber(string subscriberName)
         {
             if (!_subscribers.ContainsKey(subscriberName))
             {
-                return ConnectionStatus.Unknown;
+                return SubscriberStatus.Unknown;
             }
 
-            var tsc = new TaskCompletionSource<ConnectionStatus>();
+            var tsc = new TaskCompletionSource<SubscriberStatus>();
             await _queue.SendToChannel
                 (
                     async () =>
@@ -89,13 +89,13 @@ namespace eventstore
                         NotConnectedSubscriber notConnectedSubscriber;
                         if ((notConnectedSubscriber = _subscribers[subscriberName] as NotConnectedSubscriber) != null)
                         {
-                            var connectedSubscriber = await notConnectedSubscriber.Start(_createConnection);
-                            _subscribers[subscriberName] = new ConnectedSubscriber(connectedSubscriber.Stop);
+                            var subscriberConnection = await notConnectedSubscriber.Connect(_createConnection);
+                            _subscribers[subscriberName] = new ConnectedSubscriber(subscriberConnection.Disconnect);
                         }
                         
                     },
                     channelName: subscriberName,
-                    taskSucceeded: x => tsc.SetResult(ConnectionStatus.Connected)
+                    taskSucceeded: x => tsc.SetResult(SubscriberStatus.Connected)
                 );
             return await tsc.Task;
         }
@@ -137,21 +137,21 @@ namespace eventstore
 
         private class ConnectedSubscriber : ISubscriber
         {
-            public readonly Action Stop;
+            public readonly Action Disconnect;
 
-            public ConnectedSubscriber(Action stop)
+            public ConnectedSubscriber(Action disconnect)
             {
-                Stop = stop;
+                Disconnect = disconnect;
             }
         }
 
         private class NotConnectedSubscriber : ISubscriber
         {
-            public readonly StartSubscriber Start;
+            public readonly ConnectSubscriber Connect;
 
-            public NotConnectedSubscriber(StartSubscriber start)
+            public NotConnectedSubscriber(ConnectSubscriber connect)
             {
-                Start = start;
+                Connect = connect;
             }
         }
     }

@@ -10,7 +10,7 @@ using System.Collections.ObjectModel;
 
 namespace eventstore
 {
-    public delegate Task<Subscriber> StartSubscriber(Func<IEventStoreConnection> createConnection);
+    public delegate Task<SubscriberConnection> ConnectSubscriber(Func<IEventStoreConnection> createConnection);
 
 	public struct CatchupSubscriberRegistrationOptions
 	{
@@ -67,9 +67,9 @@ namespace eventstore
     public struct SubscriberRegistration
     {
         public readonly string SubscriberName;
-        public readonly StartSubscriber StartSubscriber;
+        public readonly ConnectSubscriber StartSubscriber;
 
-        public SubscriberRegistration(string subscriberName, StartSubscriber startSubscriber)
+        public SubscriberRegistration(string subscriberName, ConnectSubscriber startSubscriber)
         {
             SubscriberName = subscriberName;
             StartSubscriber = startSubscriber;
@@ -78,9 +78,9 @@ namespace eventstore
 
     public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
     {
-        private readonly IDictionary<string, StartSubscriber> _subscriberRegistrations;
+        private readonly IDictionary<string, ConnectSubscriber> _subscriberRegistrations;
 
-        private SubscriberRegistry(IDictionary<string, StartSubscriber> subscriberRegistrations)
+        private SubscriberRegistry(IDictionary<string, ConnectSubscriber> subscriberRegistrations)
         {
             _subscriberRegistrations = subscriberRegistrations;
         }
@@ -103,12 +103,12 @@ namespace eventstore
                     new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => "default"));
             return new SubscriberRegistry
                 (
-                    new Dictionary<string, StartSubscriber>
+                    new Dictionary<string, ConnectSubscriber>
                         {
                             {
                                 typeof(TSubscriber).GetEventStoreName(),
                                 createConnection =>
-                                    Subscriber.StartCatchUpSubscriber
+                                    SubscriberConnection.StartCatchUpSubscriber
                                     (
                                         createConnection,
                                         registrationConfiguration.SubscriptionStream,
@@ -139,12 +139,12 @@ namespace eventstore
                     new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
             return new SubscriberRegistry
                 (
-                     new Dictionary<string, StartSubscriber>
+                     new Dictionary<string, ConnectSubscriber>
                         {
                             {
                                 typeof(TSubscriber).GetEventStoreName(),
                                 createConnection =>
-                                    Subscriber.StartVolatileSubscriber
+                                    SubscriberConnection.StartVolatileSubscriber
                                     (
                                         createConnection,
                                         registrationConfiguration.SubscriptionStream,
@@ -174,12 +174,12 @@ namespace eventstore
                     new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
             return new SubscriberRegistry
                 (
-                     new Dictionary<string, StartSubscriber>
+                     new Dictionary<string, ConnectSubscriber>
                         {
                             {
                                 typeof(TSubscriber).GetEventStoreName(),
                                 createConnection =>
-                                    Subscriber.StartPersistentSubscriber
+                                    SubscriberConnection.StartPersistentSubscriber
                                     (
                                         createConnection,
                                         registrationConfiguration.SubscriptionStream,
@@ -194,7 +194,7 @@ namespace eventstore
 
         public static SubscriberRegistry CreateSubscriberRegistry()
         {
-            return new SubscriberRegistry(new Dictionary<string, StartSubscriber>());
+            return new SubscriberRegistry(new Dictionary<string, ConnectSubscriber>());
         }
 
         public IEnumerator<SubscriberRegistration> GetEnumerator()
