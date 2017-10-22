@@ -271,9 +271,9 @@ namespace eventstore
             return Task.WhenAll(_subscribersOperations.Select(x => StartSubscriber(x.Key)));
         }
 
-        public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscribersRegistry)
+        public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscriberRegistry)
         {
-            var subscriberRegistry = configureSubscribersRegistry(SubscriberRegistry.CreateSubscriberRegistry());
+            var subscriberRegistry = configureSubscriberRegistry(SubscriberRegistry.CreateSubscriberRegistry());
 
             return new EventBus
                 (
@@ -289,14 +289,11 @@ namespace eventstore
                                     connect = async () =>
                                     {
                                         var connection = await x.Connect(createConnection);
-                                        return new Disconnect
-                                        (
-                                            () =>
+                                        return () =>
                                             {
                                                 connection.Disconnect();
                                                 return connect;
-                                            }
-                                        );
+                                            };
                                     }
                                 );
                             }
