@@ -84,6 +84,7 @@ namespace eventstore
 	    {
 			var connection = createConnection();
 		    await connection.ConnectAsync();
+			// retry if ps doesn't exist ?
 			var s = await connection.ConnectToPersistentSubscriptionAsync(
 				streamName, 
 				groupName,
