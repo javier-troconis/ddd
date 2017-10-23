@@ -42,7 +42,6 @@ namespace management
 				Console.WriteLine($"{nameof(RestartSubscriberWorkflow1)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStarted)}");
 			}
 			return Task.CompletedTask;
-			
 		}
 
 		public Task Handle(IRecordedEvent<IStartRestartSubscriberWorkflow1> message)

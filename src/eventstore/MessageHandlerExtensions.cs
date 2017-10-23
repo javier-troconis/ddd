@@ -25,7 +25,7 @@ namespace eventstore
 			return FuncExtensions.ComposeForward(CreateSubscriberEventHandle((dynamic)s), f);
 		}
 
-		internal static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberEventHandle<TSubscriber>(this TSubscriber s) where TSubscriber : IMessageHandler
+		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberEventHandle<TSubscriber>(this TSubscriber s) where TSubscriber : IMessageHandler
 		{
 			var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>
 				(
