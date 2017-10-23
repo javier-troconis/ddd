@@ -25,17 +25,14 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			if (message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) && Equals(workflowType, WorkflowType))
-			{
-				Console.WriteLine($"{nameof(RestartSubscriberWorkflow1)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
-				return _eventPublisher.PublishEvent(
-					new StartSubscriber(message.Data.SubscriberName), 
-					x => x
-						.SetMetadata(EventHeaderKey.WorkflowId, message.Metadata[EventHeaderKey.WorkflowId])
-						.SetMetadata(EventHeaderKey.WorkflowType, WorkflowType));
-			}
-			Console.WriteLine($"{nameof(RestartSubscriberWorkflow1)} ignoring: {nameof(ISubscriberStopped)}");
-			return Task.CompletedTask;
+			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) ||
+			    !Equals(workflowType, WorkflowType)) return Task.CompletedTask;
+			Console.WriteLine($"{nameof(RestartSubscriberWorkflow1)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
+			return _eventPublisher.PublishEvent(
+				new StartSubscriber(message.Data.SubscriberName), 
+				x => x
+					.SetMetadata(EventHeaderKey.WorkflowId, message.Metadata[EventHeaderKey.WorkflowId])
+					.SetMetadata(EventHeaderKey.WorkflowType, WorkflowType));
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
@@ -43,9 +40,7 @@ namespace management
 			if (message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) && Equals(workflowType, WorkflowType))
 			{
 				Console.WriteLine($"{nameof(RestartSubscriberWorkflow1)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStarted)}");
-				return Task.CompletedTask;
 			}
-			Console.WriteLine($"{nameof(RestartSubscriberWorkflow1)} ignoring: {nameof(ISubscriberStarted)}");
 			return Task.CompletedTask;
 			
 		}
