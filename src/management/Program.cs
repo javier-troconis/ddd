@@ -35,7 +35,11 @@ namespace management
 				registry => registry
 					.RegisterPersistentSubscriber
 					(
-						new RestartSubscriberWorkflow(new eventstore.EventStore(connection))
+						new RestartSubscriberWorkflow1(eventPublisher)
+					)
+					.RegisterPersistentSubscriber
+					(
+						new RestartSubscriberWorkflow2(eventPublisher)
 					)
 				);
 	        consumerEventBus
@@ -83,7 +87,8 @@ namespace management
 				Console.WriteLine("3 - provision subscription streams");
 	            Console.WriteLine("4 - start query_subscriber2");
 	            Console.WriteLine("5 - stop query_subscriber2");
-				Console.WriteLine("6 - restart(stop -> start) query_subscriber2");
+				Console.WriteLine("6 - restart(stop -> start) query_subscriber2 - workflow1");
+	            Console.WriteLine("7 - restart(stop -> start) query_subscriber2 - workflow2");
 
 				var option = Console.ReadKey().KeyChar;
                 switch (option)
@@ -115,9 +120,11 @@ namespace management
 						eventPublisher.PublishEvent(new StopSubscriber("query_subscriber2"));
 						break;
 	                case '6':
-		                var workflowId = Guid.NewGuid();
-						eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow(workflowId, "query_subscriber2"));
+						eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow1(Guid.NewGuid(), "query_subscriber2"));
 						break;
+	                case '7':
+		                eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow2(Guid.NewGuid(), "query_subscriber2"));
+		                break;
 					default:
                         return;
                 }

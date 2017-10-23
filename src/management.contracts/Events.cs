@@ -27,7 +27,13 @@ namespace management.contracts
 	//	Guid WorkflowId { get; }
 	//}
 
-	public interface IStartRestartSubscriberWorkflow
+	public interface IStartRestartSubscriberWorkflow2
+	{
+		Guid WorkflowId { get; }
+		string SubscriberName { get; }
+	}
+
+	public interface IStartRestartSubscriberWorkflow1
 	{
 		Guid WorkflowId { get; }
 		string SubscriberName { get; }
