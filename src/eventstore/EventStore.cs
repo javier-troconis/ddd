@@ -13,32 +13,32 @@ using Newtonsoft.Json.Linq;
 
 namespace eventstore
 {
-	public struct EventHeader
+	public struct EventConfiguration
 	{ 
 		public readonly Guid EventId;
-        public readonly string EventType;
-        public readonly IReadOnlyDictionary<string, object> CustomValues;
+        public readonly string EventType;       
+        public readonly IReadOnlyDictionary<string, object> Metadata;
   
-		private EventHeader(Guid eventId, string eventType, IReadOnlyDictionary<string, object> customValues)
+		private EventConfiguration(Guid eventId, string eventType, IReadOnlyDictionary<string, object> metaData)
 		{
 			EventId = eventId;
             EventType = eventType;
-            CustomValues = customValues;
+            Metadata = metaData;
 		}
 
-		public EventHeader SetEventId(Guid eventId)
+		public EventConfiguration SetEventId(Guid eventId)
 		{
-			return new EventHeader(eventId, EventType, CustomValues);
+			return new EventConfiguration(eventId, EventType, Metadata);
 		}
 
-		public EventHeader SetCorrelationId(Guid correlationId)
+		public EventConfiguration SetCorrelationId(Guid correlationId)
 		{
-            return SetEntry(EventHeaderKey.CorrelationId, correlationId);
-		}
+            return SetMetadata(EventHeaderKey.CorrelationId, correlationId);
+        }
 
-		public EventHeader SetEntry(string key, object value)
+		public EventConfiguration SetMetadata(string key, object value)
 		{
-			return new EventHeader(
+			return new EventConfiguration(
 				EventId,
                 EventType,
                 new Dictionary<string, object>
@@ -48,13 +48,13 @@ namespace eventstore
 						{
 							key, value
 						}
-					}.Merge(CustomValues.ToDictionary(x => x.Key, x => x.Value)))
+					}.Merge(Metadata.ToDictionary(x => x.Key, x => x.Value)))
 				);
 		}
 
-		internal static EventHeader Create(Guid eventId, string eventType, string[] topics)
+		internal static EventConfiguration Create(Guid eventId, string eventType, string[] topics)
 		{
-            return new EventHeader
+            return new EventConfiguration
                 (
                     eventId,
                     eventType,
@@ -71,7 +71,7 @@ namespace eventstore
 	public interface IEventStore
 	{
 		Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
-		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventHeader, EventHeader> configureEventHeader = null);
+		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent = null);
 		Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata);
 	}
 
@@ -84,7 +84,7 @@ namespace eventstore
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventHeader, EventHeader> configureEventHeader)
+		public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent)
 		{
 			var eventData = events
 				.Select
@@ -93,15 +93,16 @@ namespace eventstore
 						ConvertToEventData
 						(
 							@event,
-							(configureEventHeader ?? (x => x))
-							(
-								EventHeader.Create
-								(
-									Guid.NewGuid(),
-                                    @event.GetType().FullName,
-									@event.GetType().GetEventTopics()
-								)
-							)
+                            EventConfiguration.Create
+                            (
+                                Guid.NewGuid(),
+                                @event.GetType().FullName,
+                                @event.GetType().GetEventTopics()
+                            )
+                                .PipeForward
+                                (
+                                    configureEvent ?? (x => x)
+                                )
 						)
 				);
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
@@ -132,7 +133,7 @@ namespace eventstore
 			return resolvedEvents;
 		}
 
-		private static EventData ConvertToEventData(object @event, EventHeader eventHeader)
+		private static EventData ConvertToEventData(object @event, EventConfiguration eventConfiguration)
 		{
 			var serializerSettings = new JsonSerializerSettings
 			{
@@ -143,11 +144,11 @@ namespace eventstore
 			(
 				JsonConvert.SerializeObject
 				(
-					eventHeader.CustomValues,
+					eventConfiguration.Metadata,
 					serializerSettings
 				)
 			);
-			return new EventData(eventHeader.EventId, eventHeader.EventType, true, eventData, eventMetadata);
+			return new EventData(eventConfiguration.EventId, eventConfiguration.EventType, true, eventData, eventMetadata);
 		}
 
 		public Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata)

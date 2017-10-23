@@ -31,14 +31,14 @@ namespace management
 			}
 			Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " processing: " + nameof(ISubscriberStopped));
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StartSubscriber(message.Data.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, workflowId));
+			await eventPublisher.PublishEvent(new StartSubscriber(message.Data.SubscriberName), x => x.SetMetadata(EventHeaderKey.WorkflowId, workflowId));
 		}
 
 		public async Task Handle(IRecordedEvent<IStartReconnectSubscriberWorkflow> message)
 		{
 			Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " processing: " + nameof(IStartReconnectSubscriberWorkflow));
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StopSubscriber(message.Data.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, message.Data.WorkflowId));
+			await eventPublisher.PublishEvent(new StopSubscriber(message.Data.SubscriberName), x => x.SetMetadata(EventHeaderKey.WorkflowId, message.Data.WorkflowId));
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)

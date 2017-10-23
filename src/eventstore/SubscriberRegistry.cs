@@ -108,7 +108,7 @@ namespace eventstore
                             {
                                 typeof(TSubscriber).GetEventStoreName(),
                                 createConnection =>
-                                    SubscriberConnection.StartCatchUpSubscriber
+                                    SubscriberConnection.ConnectCatchUpSubscriber
                                     (
                                         createConnection,
                                         registrationConfiguration.SubscriptionStream,
@@ -144,7 +144,7 @@ namespace eventstore
                             {
                                 typeof(TSubscriber).GetEventStoreName(),
                                 createConnection =>
-                                    SubscriberConnection.StartVolatileSubscriber
+                                    SubscriberConnection.ConnectVolatileSubscriber
                                     (
                                         createConnection,
                                         registrationConfiguration.SubscriptionStream,
@@ -179,7 +179,7 @@ namespace eventstore
                             {
                                 typeof(TSubscriber).GetEventStoreName(),
                                 createConnection =>
-                                    SubscriberConnection.StartPersistentSubscriber
+                                    SubscriberConnection.ConnectPersistentSubscriber
                                     (
                                         createConnection,
                                         registrationConfiguration.SubscriptionStream,

@@ -53,7 +53,7 @@ namespace query
 				await _eventPublisher.PublishEvent
 					(
 						new SubscriberStarted(message.Data.SubscriberName),
-						x => message.Metadata.Aggregate(x, (y, z) => y.SetEntry(z.Key, z.Value)).SetCorrelationId(message.EventId)
+						x => message.Metadata.Aggregate(x, (y, z) => y.SetMetadata(z.Key, z.Value)).SetCorrelationId(message.EventId)
 					);
 			}
 		}
@@ -66,7 +66,7 @@ namespace query
 				await _eventPublisher.PublishEvent
 					(
 						new SubscriberStopped(message.Data.SubscriberName),
-						x => message.Metadata.Aggregate(x, (y, z) => y.SetEntry(z.Key, z.Value)).SetCorrelationId(message.EventId)
+						x => message.Metadata.Aggregate(x, (y, z) => y.SetMetadata(z.Key, z.Value)).SetCorrelationId(message.EventId)
 					);
 			}
 		}

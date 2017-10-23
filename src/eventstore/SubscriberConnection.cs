@@ -17,7 +17,7 @@ namespace eventstore
 			Disconnect = disconnect;
 		}
 
-	    public static async Task<SubscriberConnection> StartCatchUpSubscriber(
+	    public static async Task<SubscriberConnection> ConnectCatchUpSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    Func<ResolvedEvent, Task> handleEvent,
@@ -53,7 +53,7 @@ namespace eventstore
 			    });
 		}
 
-	    public static async Task<SubscriberConnection> StartVolatileSubscriber(
+	    public static async Task<SubscriberConnection> ConnectVolatileSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    Func<ResolvedEvent, Task> handleEvent)
@@ -76,7 +76,7 @@ namespace eventstore
 				});
 		}
 
-	    public static async Task<SubscriberConnection> StartPersistentSubscriber(
+	    public static async Task<SubscriberConnection> ConnectPersistentSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    string groupName,
