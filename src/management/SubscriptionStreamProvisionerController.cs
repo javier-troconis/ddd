@@ -4,11 +4,11 @@ using shared;
 
 namespace management
 {
-	public class ProvisionSubscriptionStream : IProvisionSubscriptionStreamRequests
+	public class SubscriptionStreamProvisionerController : IProvisionSubscriptionStreamRequests
 	{
 		private readonly ISubscriptionStreamProvisioner _subscriptionStreamProvisioner;
 
-		public ProvisionSubscriptionStream(ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
+		public SubscriptionStreamProvisionerController(ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
 		{
 			_subscriptionStreamProvisioner = subscriptionStreamProvisioner;
 		}

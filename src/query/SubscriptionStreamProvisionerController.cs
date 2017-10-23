@@ -9,11 +9,11 @@ using shared;
 
 namespace query
 {
-	public class ProvisionSubscriptionStream : IProvisionSubscriptionStreamRequests
+	public class SubscriptionStreamProvisionerController : IProvisionSubscriptionStreamRequests
 	{
 		private readonly ISubscriptionStreamProvisioner _subscriptionStreamProvisioner;
 
-		public ProvisionSubscriptionStream(ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
+		public SubscriptionStreamProvisionerController(ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
 		{
 			_subscriptionStreamProvisioner = subscriptionStreamProvisioner;
 		}

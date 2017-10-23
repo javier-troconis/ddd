@@ -48,12 +48,12 @@ namespace query
 		public async Task Handle(IRecordedEvent<IStartSubscriber> message)
 		{
 			var status = await _eventBus.StartSubscriber(message.Data.SubscriberName);
-			if (status == SubscriberStatus.Connected)
+			if (status == SubscriberStatus.Started)
 			{
 				await _eventPublisher.PublishEvent
 					(
 						new SubscriberStarted(message.Data.SubscriberName),
-						x => message.Metadata.Aggregate(x, (y, z) => y.SetMetadata(z.Key, z.Value)).SetCorrelationId(message.EventId)
+						x => x.CopyMetadata(message.Metadata).SetCorrelationId(message.EventId)
 					);
 			}
 		}
@@ -61,12 +61,12 @@ namespace query
 		public async Task Handle(IRecordedEvent<IStopSubscriber> message)
 		{
 			var status = await _eventBus.StopSubscriber(message.Data.SubscriberName);
-			if (status == SubscriberStatus.NotConnected)
+			if (status == SubscriberStatus.Stopped)
 			{
 				await _eventPublisher.PublishEvent
 					(
 						new SubscriberStopped(message.Data.SubscriberName),
-						x => message.Metadata.Aggregate(x, (y, z) => y.SetMetadata(z.Key, z.Value)).SetCorrelationId(message.EventId)
+						x => x.CopyMetadata(message.Metadata).SetCorrelationId(message.EventId)
 					);
 			}
 		}

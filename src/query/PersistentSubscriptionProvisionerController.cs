@@ -1,14 +1,19 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
+
 using eventstore;
+
 using shared;
 
-namespace management
+namespace query
 {
-	public class ProvisionPersistentSubscription : IProvisionPersistentSubscriptionRequests
+	public class PersistentSubscriptionProvisionerController : IProvisionPersistentSubscriptionRequests
 	{
 		private readonly IPersistentSubscriptionProvisioner _persistentSubscriptionProvisioner;
 
-		public ProvisionPersistentSubscription(IPersistentSubscriptionProvisioner persistentSubscriptionProvisioner)
+		public PersistentSubscriptionProvisionerController(IPersistentSubscriptionProvisioner persistentSubscriptionProvisioner)
 		{
 			_persistentSubscriptionProvisioner = persistentSubscriptionProvisioner;
 		}
@@ -16,8 +21,8 @@ namespace management
 		public Task Handle(IRecordedEvent<IProvisionPersistentSubscriptionRequested> message)
 		{
 			return _persistentSubscriptionProvisioner
-				.RegisterPersistentSubscription<ReconnectSubscriberWorkflow>()
-				.RegisterPersistentSubscription<IProvisionSubscriptionStreamRequests, ProvisionSubscriptionStream>(
+				.RegisterPersistentSubscription<Subscriber3>()
+				.RegisterPersistentSubscription<IProvisionSubscriptionStreamRequests, SubscriptionStreamProvisionerController>(
 					x => x
                         .WithMaxRetriesOf(0)
                         .PreferDispatchToSingle()

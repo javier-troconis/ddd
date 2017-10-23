@@ -52,6 +52,11 @@ namespace eventstore
 				);
 		}
 
+		public EventConfiguration CopyMetadata(IReadOnlyDictionary<string, object> metadata)
+		{
+			return metadata.Aggregate(this, (y, z) => y.SetMetadata(z.Key, z.Value));
+		}
+
 		internal static EventConfiguration Create(Guid eventId, string eventType, string[] topics)
 		{
             return new EventConfiguration
