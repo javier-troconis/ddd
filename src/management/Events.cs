@@ -27,9 +27,9 @@ namespace management
 		public string SubscriberName { get; }
 	}
 
-	internal struct StartReconnectSubscriberWorkflow : IStartReconnectSubscriberWorkflow
+	internal struct StartRestartSubscriberWorkflow : IStartRestartSubscriberWorkflow
 	{
-		public StartReconnectSubscriberWorkflow(Guid workflowId, string subscriberName)
+		public StartRestartSubscriberWorkflow(Guid workflowId, string subscriberName)
 		{
 			WorkflowId = workflowId;
 			SubscriberName = subscriberName;

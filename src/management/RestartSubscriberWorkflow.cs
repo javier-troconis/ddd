@@ -10,14 +10,14 @@ using shared;
 
 namespace management
 {
-	public class ReconnectSubscriberWorkflow :
-	    IMessageHandler<IRecordedEvent<IStartReconnectSubscriberWorkflow>, Task>,
+	public class RestartSubscriberWorkflow :
+	    IMessageHandler<IRecordedEvent<IStartRestartSubscriberWorkflow>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>
 	{
 		private readonly IEventStore _eventStore;
 
-		public ReconnectSubscriberWorkflow(IEventStore eventStore)
+		public RestartSubscriberWorkflow(IEventStore eventStore)
 		{
 			_eventStore = eventStore;
 		}
@@ -26,17 +26,17 @@ namespace management
 		{
 			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
 			{
-				Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " ignoring: " + nameof(ISubscriberStopped));
+				Console.WriteLine("from: " + nameof(RestartSubscriberWorkflow) + " ignoring: " + nameof(ISubscriberStopped));
 				return;
 			}
-			Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " processing: " + nameof(ISubscriberStopped));
+			Console.WriteLine("from: " + nameof(RestartSubscriberWorkflow) + " processing: " + nameof(ISubscriberStopped));
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
 			await eventPublisher.PublishEvent(new StartSubscriber(message.Data.SubscriberName), x => x.SetMetadata(EventHeaderKey.WorkflowId, workflowId));
 		}
 
-		public async Task Handle(IRecordedEvent<IStartReconnectSubscriberWorkflow> message)
+		public async Task Handle(IRecordedEvent<IStartRestartSubscriberWorkflow> message)
 		{
-			Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " processing: " + nameof(IStartReconnectSubscriberWorkflow));
+			Console.WriteLine("from: " + nameof(RestartSubscriberWorkflow) + " processing: " + nameof(IStartRestartSubscriberWorkflow));
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
 			await eventPublisher.PublishEvent(new StopSubscriber(message.Data.SubscriberName), x => x.SetMetadata(EventHeaderKey.WorkflowId, message.Data.WorkflowId));
 		}
@@ -45,10 +45,10 @@ namespace management
 		{
 			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
 			{
-				Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " ignoring: " + nameof(ISubscriberStarted));
+				Console.WriteLine("from: " + nameof(RestartSubscriberWorkflow) + " ignoring: " + nameof(ISubscriberStarted));
 				return Task.CompletedTask;
 			}
-			Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " processing: " + nameof(ISubscriberStarted));
+			Console.WriteLine("from: " + nameof(RestartSubscriberWorkflow) + " processing: " + nameof(ISubscriberStarted));
 			return Task.CompletedTask;
 		}
 	}
