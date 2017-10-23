@@ -24,26 +24,26 @@ namespace management
 
 		public async Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			if (!message.Header.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
+			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
 			{
 				Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " ignoring: " + nameof(ISubscriberStopped));
 				return;
 			}
 			Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " processing: " + nameof(ISubscriberStopped));
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StartSubscriber(message.Body.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, workflowId));
+			await eventPublisher.PublishEvent(new StartSubscriber(message.Data.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, workflowId));
 		}
 
 		public async Task Handle(IRecordedEvent<IStartReconnectSubscriberWorkflow> message)
 		{
 			Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " processing: " + nameof(IStartReconnectSubscriberWorkflow));
 			IEventPublisher eventPublisher = new EventPublisher(_eventStore);
-			await eventPublisher.PublishEvent(new StopSubscriber(message.Body.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, message.Body.WorkflowId));
+			await eventPublisher.PublishEvent(new StopSubscriber(message.Data.SubscriberName), x => x.SetEntry(EventHeaderKey.WorkflowId, message.Data.WorkflowId));
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
 		{
-			if (!message.Header.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
+			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowId, out object workflowId))
 			{
 				Console.WriteLine("from: " + nameof(ReconnectSubscriberWorkflow) + " ignoring: " + nameof(ISubscriberStarted));
 				return Task.CompletedTask;

@@ -15,19 +15,19 @@ namespace query
     {
         public Task Handle(IRecordedEvent<IApplicationStartedV3> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber2)} - {message.Header.EventStreamId} - {nameof(IApplicationStartedV3)} {message.Header.EventId}");
+			Console.WriteLine($"{nameof(Subscriber2)} - {message.EventStreamId} - {nameof(IApplicationStartedV3)} {message.EventId}");
 			return Task.CompletedTask;
 		}
 
 		public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
         {
-            Console.WriteLine($"{nameof(Subscriber2)} - {message.Header.EventStreamId} - {nameof(IApplicationStartedV2)} {message.Header.EventId}");
+            Console.WriteLine($"{nameof(Subscriber2)} - {message.EventStreamId} - {nameof(IApplicationStartedV2)} {message.EventId}");
             return Task.CompletedTask;
         }
 
         public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
 	    {
-			Console.WriteLine($"{nameof(Subscriber2)} - {message.Header.EventStreamId} - {nameof(IApplicationStartedV1)} {message.Header.EventId}");
+			Console.WriteLine($"{nameof(Subscriber2)} - {message.EventStreamId} - {nameof(IApplicationStartedV1)} {message.EventId}");
             return Task.CompletedTask;
         }
     }
@@ -37,7 +37,7 @@ namespace query
 	{
 		public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber2Continuation)} - {message.Header.EventStreamId} - {nameof(IApplicationStartedV2)} {message.Header.EventId}");
+			Console.WriteLine($"{nameof(Subscriber2Continuation)} - {message.EventStreamId} - {nameof(IApplicationStartedV2)} {message.EventId}");
 			return Task.CompletedTask;
 		}
 	}

@@ -47,26 +47,26 @@ namespace query
 
 		public async Task Handle(IRecordedEvent<IStartSubscriber> message)
 		{
-			var status = await _eventBus.StartSubscriber(message.Body.SubscriberName);
+			var status = await _eventBus.StartSubscriber(message.Data.SubscriberName);
 			if (status == SubscriberStatus.Connected)
 			{
 				await _eventPublisher.PublishEvent
 					(
-						new SubscriberStarted(message.Body.SubscriberName),
-						x => message.Header.Aggregate(x, (y, z) => y.SetEntry(z.Key, z.Value)).SetCorrelationId(message.Header.EventId)
+						new SubscriberStarted(message.Data.SubscriberName),
+						x => message.Metadata.Aggregate(x, (y, z) => y.SetEntry(z.Key, z.Value)).SetCorrelationId(message.EventId)
 					);
 			}
 		}
 
 		public async Task Handle(IRecordedEvent<IStopSubscriber> message)
 		{
-			var status = await _eventBus.StopSubscriber(message.Body.SubscriberName);
+			var status = await _eventBus.StopSubscriber(message.Data.SubscriberName);
 			if (status == SubscriberStatus.NotConnected)
 			{
 				await _eventPublisher.PublishEvent
 					(
-						new SubscriberStopped(message.Body.SubscriberName),
-						x => message.Header.Aggregate(x, (y, z) => y.SetEntry(z.Key, z.Value)).SetCorrelationId(message.Header.EventId)
+						new SubscriberStopped(message.Data.SubscriberName),
+						x => message.Metadata.Aggregate(x, (y, z) => y.SetEntry(z.Key, z.Value)).SetCorrelationId(message.EventId)
 					);
 			}
 		}

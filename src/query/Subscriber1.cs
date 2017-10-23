@@ -14,13 +14,13 @@ namespace query
     {
         public Task Handle(IRecordedEvent<IApplicationSubmittedV1> message)
         {
-            Console.WriteLine($"{nameof(Subscriber1)} - {message.Header.EventStreamId} - {nameof(IApplicationSubmittedV1)} {message.Header.EventId}");
+            Console.WriteLine($"{nameof(Subscriber1)} - {message.EventStreamId} - {nameof(IApplicationSubmittedV1)} {message.EventId}");
             return Task.CompletedTask;
         }
 
         public Task Handle(IRecordedEvent<IApplicationStartedV2> message)
         {
-            Console.WriteLine($"{nameof(Subscriber1)} - {message.Header.EventStreamId} - {nameof(IApplicationStartedV2)} {message.Header.EventId}");
+            Console.WriteLine($"{nameof(Subscriber1)} - {message.EventStreamId} - {nameof(IApplicationStartedV2)} {message.EventId}");
             return Task.CompletedTask;
         }
     }

@@ -13,7 +13,7 @@ namespace query
     {
         public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
         {
-            Console.WriteLine($"{nameof(Subscriber3)} - {message.Header.EventStreamId} - {nameof(IApplicationStartedV1)} {message.Header.EventId}");
+            Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationStartedV1)} {message.EventId}");
             return Task.CompletedTask;
         }
 

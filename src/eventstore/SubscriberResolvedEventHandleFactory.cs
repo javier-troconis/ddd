@@ -8,6 +8,7 @@ using ImpromptuInterface;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using shared;
+using System.Collections.ObjectModel;
 
 namespace eventstore
 {
@@ -49,20 +50,15 @@ namespace eventstore
 		    }
 		    var recordedEvent = new
 		    {
-				Header = new RecordedEventHeader
-				(
-					eventMetadata.SkipWhile(x => x.Key == EventHeaderKey.CorrelationId || x.Key == EventHeaderKey.Topics).ToDictionary(x => x.Key, x => x.Value)
-				)
-					{
-						OriginalStreamId = resolvedEvent.OriginalStreamId,
-						OriginalEventNumber = resolvedEvent.OriginalEventNumber,
-						EventStreamId = resolvedEvent.Event.EventStreamId,
-						EventNumber = resolvedEvent.Event.EventNumber,
-						Created = resolvedEvent.Event.Created,
-						EventId = resolvedEvent.Event.EventId,
-						CorrelationId = eventMetadata.TryGetValue(EventHeaderKey.CorrelationId, out object correlationId) ? Guid.Parse((string)correlationId) : default(Guid?)
-					},
-				Body = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
+                resolvedEvent.OriginalStreamId,
+                resolvedEvent.OriginalEventNumber,
+                resolvedEvent.Event.EventStreamId,
+                resolvedEvent.Event.EventNumber,
+                resolvedEvent.Event.Created,
+                resolvedEvent.Event.EventId,
+                CorrelationId = eventMetadata.TryGetValue(EventHeaderKey.CorrelationId, out object correlationId) ? Guid.Parse((string)correlationId) : default(Guid?),
+                Metadata = eventMetadata.SkipWhile(x => x.Key == EventHeaderKey.CorrelationId || x.Key == EventHeaderKey.Topics).ToDictionary(x => x.Key, x => x.Value),
+				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 		    };
 
 		    var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);
@@ -77,21 +73,5 @@ namespace eventstore
 			    return handler.Handle(recordedEvent);
 		    }
 	    }
-
-	    internal class RecordedEventHeader : Dictionary<string, object>, IRecordedEventHeader
-	    {
-		    public RecordedEventHeader(IDictionary<string, object> customValues) : base(customValues)
-		    {
-		
-		    }
-
-		    public string OriginalStreamId { get; set; }
-		    public long OriginalEventNumber { get; set; }
-			public string EventStreamId { get; set; }
-			public long EventNumber { get; set; }
-			public DateTime Created { get; set; }
-			public Guid EventId { get; set; }
-			public Guid? CorrelationId { get; set; }
-		}
 	}
 }
