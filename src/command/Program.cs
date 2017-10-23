@@ -63,6 +63,7 @@ namespace command
 						return;
 				}
 				Console.WriteLine();
+				Console.WriteLine();
 			}
 
 			//while (true)

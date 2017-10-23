@@ -28,45 +28,44 @@ namespace management
             IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
 
 
-			//      var consumerEventBus =
-			//       EventBus.CreateEventBus
-			//       (
-			//        createConnection,
-			//        registry => registry
-			//	        .RegisterPersistentSubscriber
-			//	        (
-			//		        new ReconnectSubscriberWorkflow(new eventstore.EventStore(connection))
-			//	        )
-			//       );
-
-			//      consumerEventBus
-			//	.StartAllSubscribers()
-			//	.Wait();
+			var consumerEventBus =
+				EventBus.CreateEventBus
+				(
+				createConnection,
+				registry => registry
+					.RegisterPersistentSubscriber
+					(
+						new ReconnectSubscriberWorkflow(new eventstore.EventStore(connection))
+					)
+				);
+			consumerEventBus
+			  .StartAllSubscribers()
+			  .Wait();
 
 			var infrastructureEventBus =
 				EventBus.CreateEventBus
 				(
 					createConnection,
 					registry => registry
-						//.RegisterVolatileSubscriber
-						//(
-						//	new EventBusController
-						//	(
-						//		consumerEventBus,
-						//		eventPublisher
-						//	)
-						//)
-						//.RegisterPersistentSubscriber
-						//(
-						//	new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
-						//		new ProjectionManager(
-						//			EventStoreSettings.ClusterDns,
-						//			EventStoreSettings.ExternalHttpPort,
-						//			EventStoreSettings.Username,
-						//			EventStoreSettings.Password,
-						//			new ConsoleLogger()))),
-						//	x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
-						//)
+						.RegisterVolatileSubscriber
+						(
+							new EventBusController
+							(
+								consumerEventBus,
+								eventPublisher
+							)
+						)
+						.RegisterPersistentSubscriber
+						(
+							new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
+								new ProjectionManager(
+									EventStoreSettings.ClusterDns,
+									EventStoreSettings.ExternalHttpPort,
+									EventStoreSettings.Username,
+									EventStoreSettings.Password,
+									new ConsoleLogger()))),
+							x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+						)
 						.RegisterVolatileSubscriber
 						(
 							new ProvisionPersistentSubscription(new PersistentSubscriptionProvisioner(
@@ -84,9 +83,9 @@ namespace management
                 Console.WriteLine("1 - provision system streams");
 				Console.WriteLine("2 - provision persistent subscriptions");
 				Console.WriteLine("3 - provision subscription streams");
-	            Console.WriteLine("4 - start subscriber query_subscriber3");
-	            Console.WriteLine("5 - stop subscriber query_subscriber3");
-				Console.WriteLine("6 - restart query_subscriber3");
+	            Console.WriteLine("4 - start query_subscriber2");
+	            Console.WriteLine("5 - stop query_subscriber2");
+				Console.WriteLine("6 - reconnect query_subscriber2");
 
 				var option = Console.ReadKey().KeyChar;
                 switch (option)
@@ -125,7 +124,8 @@ namespace management
                         return;
                 }
                 Console.WriteLine();
-            }
+	            Console.WriteLine();
+			}
         }
     }
 }

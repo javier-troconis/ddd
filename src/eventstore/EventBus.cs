@@ -284,18 +284,16 @@ namespace eventstore
                             x =>
                             {
                                 Connect connect = null;
-                                return (Delegate)
-                                (
-                                    connect = async () =>
-                                    {
-                                        var connection = await x.Connect(createConnection);
-                                        return () =>
-                                            {
-                                                connection.Disconnect();
-                                                return connect;
-                                            };
-                                    }
-                                );
+	                            connect = async () =>
+	                            {
+		                            var connection = await x.Connect(createConnection);
+		                            return () =>
+		                            {
+			                            connection.Disconnect();
+			                            return connect;
+		                            };
+	                            };
+	                            return (Delegate)connect;
                             }
                         )
                 );

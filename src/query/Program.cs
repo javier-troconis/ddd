@@ -62,17 +62,17 @@ namespace query
 								eventPublisher
 							)
 						)
-						//.RegisterPersistentSubscriber
-						//(
-						//	new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
-						//		new ProjectionManager(
-						//			EventStoreSettings.ClusterDns,
-						//			EventStoreSettings.ExternalHttpPort,
-						//			EventStoreSettings.Username,
-						//			EventStoreSettings.Password,
-						//			new ConsoleLogger()))),
-						//	x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
-						//)
+						.RegisterPersistentSubscriber
+						(
+							new ProvisionSubscriptionStream(new SubscriptionStreamProvisioner(
+								new ProjectionManager(
+									EventStoreSettings.ClusterDns,
+									EventStoreSettings.ExternalHttpPort,
+									EventStoreSettings.Username,
+									EventStoreSettings.Password,
+									new ConsoleLogger()))),
+							x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+						)
 						.RegisterVolatileSubscriber
 						(
 							new ProvisionPersistentSubscription(new PersistentSubscriptionProvisioner(
