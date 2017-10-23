@@ -39,8 +39,7 @@ namespace query
 						.RegisterCatchupSubscriber<Subscriber2>
 						(
 							new Subscriber2()
-								.ComposeForward(new Subscriber2Continuation())
-									.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
+								.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
 							CheckpointReader<Subscriber2>.ReadCheckpoint
 						)
 						//.RegisterPersistentSubscriber
@@ -81,10 +80,9 @@ namespace query
 						)
 				);
 			infrastructureEventBus
-				.StartAllSubscribers()
-				.Wait();
+				.StartAllSubscribers();
 
-			while (true) { };
+			while (true) { }
 		}
 	}
 }

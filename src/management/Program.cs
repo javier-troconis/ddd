@@ -38,9 +38,8 @@ namespace management
 						new RestartSubscriberWorkflow(new eventstore.EventStore(connection))
 					)
 				);
-			consumerEventBus
-			  .StartAllSubscribers()
-			  .Wait();
+	        consumerEventBus
+		        .StartAllSubscribers();
 
 			var infrastructureEventBus =
 				EventBus.CreateEventBus
@@ -73,9 +72,8 @@ namespace management
 							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
 						)
 				);
-			infrastructureEventBus
-				.StartAllSubscribers()
-				.Wait();
+	        infrastructureEventBus
+		        .StartAllSubscribers();
 
 
 			while (true)
@@ -85,7 +83,7 @@ namespace management
 				Console.WriteLine("3 - provision subscription streams");
 	            Console.WriteLine("4 - start query_subscriber2");
 	            Console.WriteLine("5 - stop query_subscriber2");
-				Console.WriteLine("6 - reconnect query_subscriber2");
+				Console.WriteLine("6 - restart(stop -> start) query_subscriber2");
 
 				var option = Console.ReadKey().KeyChar;
                 switch (option)

@@ -108,17 +108,16 @@ namespace eventstore
                             x => x.Name,
                             x =>
                             {
-                                Connect connect = null;
-	                            connect = async () =>
+	                            async Task<Disconnect> Connect()
 	                            {
 		                            var connection = await x.Connect(createConnection);
 		                            return () =>
 		                            {
 			                            connection.Disconnect();
-			                            return connect;
+			                            return Connect;
 		                            };
-	                            };
-	                            return (Delegate)connect;
+	                            }
+	                            return (Delegate)new Connect(Connect);
                             }
                         )
                 );

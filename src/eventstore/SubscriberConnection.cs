@@ -84,33 +84,44 @@ namespace eventstore
 	    {
 			var connection = createConnection();
 		    await connection.ConnectAsync();
+			
 			// retry if ps doesn't exist ?
-			var s = await connection.ConnectToPersistentSubscriptionAsync(
-				streamName, 
-				groupName,
-				async (subscription, resolvedEvent) =>
-				{
-					try
-					{
-						await handleEvent(resolvedEvent);
-						subscription.Acknowledge(resolvedEvent);
-					}
-					catch (Exception ex)
-					{
-						subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
-					}
-				}, 
-				subscriptionDropped: (subscription, dropReason, exception) =>
-				{
-					
-				}, 
-				autoAck: false);
-		    return new SubscriberConnection(
-				() =>
-				{
-					s.Stop(TimeSpan.FromSeconds(30));
-					connection.Close();
-				});
+		    while (true)
+		    {
+			    try
+			    {
+				    var s = await connection.ConnectToPersistentSubscriptionAsync(
+					    streamName,
+					    groupName,
+					    async (subscription, resolvedEvent) =>
+					    {
+						    try
+						    {
+							    await handleEvent(resolvedEvent);
+							    subscription.Acknowledge(resolvedEvent);
+						    }
+						    catch (Exception ex)
+						    {
+							    subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
+						    }
+					    },
+					    subscriptionDropped: (subscription, dropReason, exception) =>
+					    {
+
+					    },
+					    autoAck: false);
+				    return new SubscriberConnection(
+					    () =>
+					    {
+						    s.Stop(TimeSpan.FromSeconds(30));
+						    connection.Close();
+					    });
+			    }
+			    catch (Exception ex)
+			    {
+				    await Task.Delay(TimeSpan.FromSeconds(1));
+			    }
+		    }
 	    }
 
 
