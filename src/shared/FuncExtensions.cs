@@ -95,5 +95,20 @@ namespace shared
 		{
 			return async x => f(await x);
 		}
-    }
+
+		public static Func<T1, Task<T2>> DelayExecutionBy<T1, T2>(this Func<T1, T2> f, TimeSpan delay, CancellationToken cancellationToken)
+		{
+			return x =>
+				Task.Delay(delay, cancellationToken)
+					.ContinueWith(t => f(x), TaskContinuationOptions.NotOnCanceled);
+		}
+
+		public static Func<T1, Task<T2>> DelayExecutionBy<T1, T2>(this Func<T1, Task<T2>> f, TimeSpan delay, CancellationToken cancellationToken)
+		{
+			return x =>
+				Task.Delay(delay, cancellationToken)
+					.ContinueWith(t => f(x), TaskContinuationOptions.NotOnCanceled)
+					.Unwrap();
+		}
+	}
 }
