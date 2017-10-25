@@ -35,11 +35,11 @@ namespace management
 				registry => registry
 					.RegisterPersistentSubscriber
 					(
-						new RestartSubscriberWorkflow1(eventPublisher)
+						new RestartSubscriberWorkflow1Controller(eventPublisher)
 					)
 					.RegisterPersistentSubscriber
 					(
-						new RestartSubscriberWorkflow2(eventPublisher)
+						new RestartSubscriberWorkflow2Controller(eventPublisher)
 					)
 				);
 	        consumerEventBus
