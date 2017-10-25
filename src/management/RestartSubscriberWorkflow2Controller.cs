@@ -7,6 +7,8 @@ using eventstore;
 using EventStore.ClientAPI;
 using management.contracts;
 using shared;
+using ISubscriberStarted = eventstore.ISubscriberStarted;
+using ISubscriberStopped = eventstore.ISubscriberStopped;
 
 namespace management
 {

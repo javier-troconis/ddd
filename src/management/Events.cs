@@ -7,26 +7,6 @@ using management.contracts;
 
 namespace management
 {
-    internal struct StartSubscriber : IStartSubscriber 
-    {
-	    public StartSubscriber(string subscriberName)
-	    {
-		    SubscriberName = subscriberName;
-	    }
-
-	    public string SubscriberName { get; }
-    }
-
-	internal struct StopSubscriber : IStopSubscriber
-	{
-		public StopSubscriber(string subscriberName)
-		{
-			SubscriberName = subscriberName;
-		}
-
-		public string SubscriberName { get; }
-	}
-
 	internal struct StartRestartSubscriberWorkflow2 : IStartRestartSubscriberWorkflow2
 	{
 		public StartRestartSubscriberWorkflow2(Guid workflowId, string subscriberName)
