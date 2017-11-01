@@ -106,12 +106,10 @@ namespace management
 						systemStreamProvisioner.ProvisionSystemStreams();
                         break;
                     case '2':
-						var persistentSubscriptionProvisioningRequestor = new ProvisionPersistentSubscriptionRequestor(eventPublisher);
-						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionProvision("*");
+	                    eventPublisher.PublishEvent(new ProvisionAllPersistentSubscriptions());
                         break;
 					case '3':
-						var subscriptionStreamProvisioningRequestor = new ProvisionProvisionSubscriptionStreamRequestor(eventPublisher);
-						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamProvision("*");
+						eventPublisher.PublishEvent(new ProvisionAllSubscriptionStreams());
                         break;
 	                case '4':
 		                eventPublisher.PublishEvent(new StartSubscriber("query_subscriber2"));
