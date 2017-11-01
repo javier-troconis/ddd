@@ -67,13 +67,13 @@ namespace management
 									EventStoreSettings.Username,
 									EventStoreSettings.Password,
 									new ConsoleLogger()))),
-							x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+							x => x.SetSubscriptionStream<ISubscriptionStreamProvisioningController>()
 						)
 						.RegisterVolatileSubscriber
 						(
 							new PersistentSubscriptionProvisioningController(new PersistentSubscriptionProvisioningService(
 								new PersistentSubscriptionManager(createConnection))),
-							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
+							x => x.SetSubscriptionStream<IPersistentSubscriptionProvisioningController>()
 						)
 				);
 	        infrastructureEventBus
@@ -100,7 +100,7 @@ namespace management
 							EventStoreSettings.Username,
 							EventStoreSettings.Password,
 							new ConsoleLogger());
-                        var topicStreamProvisioner = new TopicStreamProvisioner(projectionManager);
+                        var topicStreamProvisioner = new TopicStreamProvisioningService(projectionManager);
                         var subscriptionStreamProvisioner = new SubscriptionStreamProvisioningService(projectionManager);
 						var systemStreamProvisioner = new SystemStreamsProvisioningService(topicStreamProvisioner, subscriptionStreamProvisioner);
 						systemStreamProvisioner.ProvisionSystemStreams();

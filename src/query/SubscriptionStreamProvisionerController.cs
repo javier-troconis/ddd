@@ -9,22 +9,28 @@ using shared;
 
 namespace query
 {
-	public class SubscriptionStreamProvisionerController : IProvisionSubscriptionStreamRequests
+	public class SubscriptionStreamProvisionerController : ISubscriptionStreamProvisioningController
 	{
 		private readonly ISubscriptionStreamProvisioningService _subscriptionStreamProvisioningService;
 
 		public SubscriptionStreamProvisionerController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService)
 		{
-			_subscriptionStreamProvisioningService = subscriptionStreamProvisioningService;
+			_subscriptionStreamProvisioningService = 
+				subscriptionStreamProvisioningService
+					.RegisterSubscriptionStream<Subscriber1>()
+					.RegisterSubscriptionStream<Subscriber2>()
+					.RegisterSubscriptionStream<Subscriber3>();
 		}
 
-		public Task Handle(IRecordedEvent<IProvisionSubscriptionStreamRequested> message)
+		public Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)
 		{
 			return _subscriptionStreamProvisioningService
-				.RegisterSubscriptionStream<Subscriber1>()
-				.RegisterSubscriptionStream<Subscriber2>()
-				.RegisterSubscriptionStream<Subscriber3>()
 				.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
+		}
+
+		public Task Handle(IRecordedEvent<IProvisionAllSubscriptionStreams> message)
+		{
+			return _subscriptionStreamProvisioningService.ProvisionAllSubscriptionStreams();
 		}
 	}
 }

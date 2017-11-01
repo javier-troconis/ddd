@@ -70,13 +70,13 @@ namespace query
 									EventStoreSettings.Username,
 									EventStoreSettings.Password,
 									new ConsoleLogger()))),
-							x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+							x => x.SetSubscriptionStream<ISubscriptionStreamProvisioningController>()
 						)
 						.RegisterVolatileSubscriber
 						(
 							new PersistentSubscriptionProvisionerController(new PersistentSubscriptionProvisioningService(
 								new PersistentSubscriptionManager(createConnection))),
-							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
+							x => x.SetSubscriptionStream<IPersistentSubscriptionProvisioningController>()
 						)
 				);
 			infrastructureEventBus

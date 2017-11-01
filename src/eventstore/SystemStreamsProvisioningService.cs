@@ -17,15 +17,15 @@ namespace eventstore
 
 	public class SystemStreamsProvisioningService : ISystemStreamsProvisioningService
 	{
-        private readonly ITopicStreamProvisioner _topicStreamProvisioner;
+        private readonly ITopicStreamProvisioningService _topicStreamProvisioningService;
         private readonly ISubscriptionStreamProvisioningService _subscriptionStreamProvisioningService;
 
         public SystemStreamsProvisioningService(
-            ITopicStreamProvisioner topicStreamProvisioner, 
+            ITopicStreamProvisioningService topicStreamProvisioningService, 
             ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService
             )
 		{
-            _topicStreamProvisioner = topicStreamProvisioner;
+            _topicStreamProvisioningService = topicStreamProvisioningService;
             _subscriptionStreamProvisioningService = subscriptionStreamProvisioningService;
         }
 
@@ -33,10 +33,10 @@ namespace eventstore
 		{
             return Task.WhenAll
                 (
-                    _topicStreamProvisioner.ProvisionTopicStream(),
+                    _topicStreamProvisioningService.ProvisionTopicStream(),
                     _subscriptionStreamProvisioningService
-                        .RegisterSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
-                        .RegisterSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+                        .RegisterSubscriptionStream<IPersistentSubscriptionProvisioningController>()
+                        .RegisterSubscriptionStream<ISubscriptionStreamProvisioningController>()
                         .ProvisionAllSubscriptionStreams()
                 );
 		}
