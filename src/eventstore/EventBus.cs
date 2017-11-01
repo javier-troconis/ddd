@@ -27,19 +27,19 @@ namespace eventstore
     public sealed class EventBus
     {
         private readonly TaskQueue _queue = new TaskQueue();
-        private readonly IDictionary<string, Delegate> _subscribersOperations;
+        private readonly IDictionary<string, Delegate> _subscriberOperations;
 
         private EventBus
             (
-                IDictionary<string, Delegate> subscribersOperations
+                IDictionary<string, Delegate> subscriberOperations
             )
         {
-            _subscribersOperations = subscribersOperations;
+            _subscriberOperations = subscriberOperations;
         }
 
         public async Task<SubscriberStatus> StopSubscriber(string subscriberName)
         {
-            if (!_subscribersOperations.ContainsKey(subscriberName))
+            if (!_subscriberOperations.ContainsKey(subscriberName))
             {
                 return SubscriberStatus.Unknown;
             }
@@ -50,9 +50,9 @@ namespace eventstore
                     () =>
                     {
                         Disconnect operation;
-                        if ((operation = _subscribersOperations[subscriberName] as Disconnect) != null)
+                        if ((operation = _subscriberOperations[subscriberName] as Disconnect) != null)
                         {
-                            _subscribersOperations[subscriberName] = operation();
+                            _subscriberOperations[subscriberName] = operation();
                         }
                         return Task.CompletedTask;
                     },
@@ -64,12 +64,12 @@ namespace eventstore
 
         public Task StopAllSubscribers()
         {
-            return Task.WhenAll(_subscribersOperations.Select(x => StopSubscriber(x.Key)));
+            return Task.WhenAll(_subscriberOperations.Select(x => StopSubscriber(x.Key)));
         }
 
         public async Task<SubscriberStatus> StartSubscriber(string subscriberName)
         {
-            if (!_subscribersOperations.ContainsKey(subscriberName))
+            if (!_subscriberOperations.ContainsKey(subscriberName))
             {
                 return SubscriberStatus.Unknown;
             }
@@ -80,9 +80,9 @@ namespace eventstore
                     async () =>
                     {
                         Connect operation;
-                        if ((operation = _subscribersOperations[subscriberName] as Connect) != null)
+                        if ((operation = _subscriberOperations[subscriberName] as Connect) != null)
                         {
-                            _subscribersOperations[subscriberName] = await operation();
+                            _subscriberOperations[subscriberName] = await operation();
                         }
                     },
                     channelName: subscriberName,
@@ -93,7 +93,7 @@ namespace eventstore
 
         public Task StartAllSubscribers()
         {
-            return Task.WhenAll(_subscribersOperations.Select(x => StartSubscriber(x.Key)));
+            return Task.WhenAll(_subscriberOperations.Select(x => StartSubscriber(x.Key)));
         }
 
         public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscriberRegistry)

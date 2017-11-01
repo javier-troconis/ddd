@@ -28,7 +28,7 @@ namespace management
             IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
 
 
-			var consumerEventBus =
+			var applicationEventBus =
 				EventBus.CreateEventBus
 				(
 				createConnection,
@@ -42,7 +42,7 @@ namespace management
 						new RestartSubscriberWorkflow2Controller(eventPublisher)
 					)
 				);
-	        consumerEventBus
+	        applicationEventBus
 		        .StartAllSubscribers();
 
 			var infrastructureEventBus =
@@ -54,7 +54,7 @@ namespace management
 						(
 							new EventBusController
 							(
-								consumerEventBus,
+								applicationEventBus,
 								eventPublisher
 							)
 						)

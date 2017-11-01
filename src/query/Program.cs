@@ -27,7 +27,7 @@ namespace query
 			connection.ConnectAsync().Wait();
 			IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
 
-			var consumerEventBus = 
+			var applicationEventBus = 
 				EventBus.CreateEventBus
 				(
 					createConnection,
@@ -57,7 +57,7 @@ namespace query
 						(
 							new EventBusController
 							(
-								consumerEventBus,
+								applicationEventBus,
 								eventPublisher
 							)
 						)
