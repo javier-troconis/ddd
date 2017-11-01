@@ -27,8 +27,8 @@ namespace eventstore
 
         Task ProvisionAllPersistentSubscriptions();
 
-	    Task<PersistentSubscriptionProvisioningStatus> ProvisionPersistentSubscription(string subscriptionGroupName);
-    }
+	    Task<PersistentSubscriptionProvisioningStatus> ProvisionPersistentSubscription(string subscriptionStreamName, string subscriptionGroupName);
+	}
 
     public class PersistentSubscriptionProvisioningService : IPersistentSubscriptionProvisioningService
     {
@@ -38,9 +38,7 @@ namespace eventstore
         public PersistentSubscriptionProvisioningService
 			(
 				IPersistentSubscriptionManager persistentSubscriptionManager
-			)
-            :
-                this
+			) : this
 			(
 					persistentSubscriptionManager, 
 					new Dictionary<string, Func<Task>>()
@@ -72,7 +70,7 @@ namespace eventstore
 					new Dictionary<string, Func<Task>>
 					{
 						{
-							typeof(TSubscriptionGroup).GetEventStoreName(),
+							typeof(TSubscription).GetEventStoreName() + "-" + typeof(TSubscriptionGroup).GetEventStoreName(),
 							() =>
 							{
 								var streamName = typeof(TSubscription).GetEventStoreName();
@@ -94,12 +92,18 @@ namespace eventstore
 
 	    public Task ProvisionAllPersistentSubscriptions()
 	    {
-			return Task.WhenAll(_registry.Select(x => ProvisionPersistentSubscription(x.Key)));
+			return Task.WhenAll(
+				_registry.Select(
+					x =>
+					{
+						var parts = x.Key.Split('-');
+						return ProvisionPersistentSubscription(parts[0], parts[1]);
+					}));
 		}
 
-	    public async Task<PersistentSubscriptionProvisioningStatus> ProvisionPersistentSubscription(string subscriptionGroupName)
+	    public async Task<PersistentSubscriptionProvisioningStatus> ProvisionPersistentSubscription(string subscriptionStreamName, string subscriptionGroupName)
 	    {
-			if (!_registry.TryGetValue(subscriptionGroupName, out Func<Task> operation))
+			if (!_registry.TryGetValue(subscriptionStreamName + "-" + subscriptionGroupName, out Func<Task> operation))
 		    {
 			    return PersistentSubscriptionProvisioningStatus.Unknown;
 		    }

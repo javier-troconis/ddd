@@ -75,7 +75,7 @@ namespace query
 						.RegisterVolatileSubscriber
 						(
 							new PersistentSubscriptionProvisioningController(new PersistentSubscriptionProvisioningService(
-								new PersistentSubscriptionManager(createConnection))),
+								new PersistentSubscriptionManager(createConnection)), eventPublisher),
 							x => x.SetSubscriptionStream<IPersistentSubscriptionProvisioningController>()
 						)
 				);
