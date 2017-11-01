@@ -9,16 +9,16 @@ using shared;
 
 namespace query
 {
-	public class PersistentSubscriptionProvisionerController : IPersistentSubscriptionProvisioningController
+	public class PersistentSubscriptionProvisioningController : IPersistentSubscriptionProvisioningController
 	{
 		private readonly IPersistentSubscriptionProvisioningService _persistentSubscriptionProvisioningService;
 
-		public PersistentSubscriptionProvisionerController(IPersistentSubscriptionProvisioningService persistentSubscriptionProvisioningService)
+		public PersistentSubscriptionProvisioningController(IPersistentSubscriptionProvisioningService persistentSubscriptionProvisioningService)
 		{
 			_persistentSubscriptionProvisioningService = 
 				persistentSubscriptionProvisioningService
 					.RegisterPersistentSubscription<Subscriber3>()
-					.RegisterPersistentSubscription<ISubscriptionStreamProvisioningController, SubscriptionStreamProvisionerController>(
+					.RegisterPersistentSubscription<ISubscriptionStreamProvisioningController, SubscriptionStreamProvisioningController>(
 						x => x
 							.WithMaxRetriesOf(0)
 							.PreferDispatchToSingle()
@@ -27,8 +27,7 @@ namespace query
 
 		public Task Handle(IRecordedEvent<IProvisionPersistentSubscription> message)
 		{
-			return _persistentSubscriptionProvisioningService
-				.ProvisionPersistentSubscription(message.Data.PersistentSubscriptionGroup);
+			return _persistentSubscriptionProvisioningService.ProvisionPersistentSubscription(message.Data.PersistentSubscriptionGroup);
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionAllPersistentSubscriptions> message)

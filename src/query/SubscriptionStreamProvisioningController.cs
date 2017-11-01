@@ -9,11 +9,11 @@ using shared;
 
 namespace query
 {
-	public class SubscriptionStreamProvisionerController : ISubscriptionStreamProvisioningController
+	public class SubscriptionStreamProvisioningController : ISubscriptionStreamProvisioningController
 	{
 		private readonly ISubscriptionStreamProvisioningService _subscriptionStreamProvisioningService;
 
-		public SubscriptionStreamProvisionerController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService)
+		public SubscriptionStreamProvisioningController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService)
 		{
 			_subscriptionStreamProvisioningService = 
 				subscriptionStreamProvisioningService
@@ -24,8 +24,7 @@ namespace query
 
 		public Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)
 		{
-			return _subscriptionStreamProvisioningService
-				.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
+			return _subscriptionStreamProvisioningService.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionAllSubscriptionStreams> message)
