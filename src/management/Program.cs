@@ -35,11 +35,11 @@ namespace management
 				registry => registry
 					.RegisterPersistentSubscriber
 					(
-						new RestartSubscriberWorkflow1Controller(eventPublisher)
+						new RestartSubscriberWorkflowController(eventPublisher)
 					)
 					.RegisterPersistentSubscriber
 					(
-						new RestartSubscriberWorkflow2Controller(eventPublisher)
+						new ProvisionSubscriptionStreamWorkflowController(eventPublisher)
 					)
 				);
 	        applicationEventBus
@@ -118,10 +118,10 @@ namespace management
 						eventPublisher.PublishEvent(new StopSubscriber("query_subscriber2"));
 						break;
 	                case '6':
-						eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow1(Guid.NewGuid(), "query_subscriber2"));
+						eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow(Guid.NewGuid(), "query_subscriber2"));
 						break;
 	                case '7':
-		                eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow2(Guid.NewGuid(), "query_subscriber2"));
+		                eventPublisher.PublishEvent(new StartProvisionSubscriptionStreamWorkflow(Guid.NewGuid(), "query_subscriber2"));
 		                break;
 					default:
                         return;

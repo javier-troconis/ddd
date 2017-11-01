@@ -12,8 +12,8 @@ namespace management
 		{
 			_subscriptionStreamProvisioningService =
 				subscriptionStreamProvisioningService.RegisterSubscriptionStream<EventBusController>()
-					.RegisterSubscriptionStream<RestartSubscriberWorkflow1Controller>()
-					.RegisterSubscriptionStream<RestartSubscriberWorkflow2Controller>();
+					.RegisterSubscriptionStream<RestartSubscriberWorkflowController>()
+					.RegisterSubscriptionStream<ProvisionSubscriptionStreamWorkflowController>();
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)

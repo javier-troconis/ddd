@@ -11,20 +11,30 @@ namespace query
 {
 	public class SubscriptionStreamProvisioningController : ISubscriptionStreamProvisioningController
 	{
+		private readonly IEventPublisher _eventPublisher;
 		private readonly ISubscriptionStreamProvisioningService _subscriptionStreamProvisioningService;
 
-		public SubscriptionStreamProvisioningController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService)
-		{
+		public SubscriptionStreamProvisioningController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService, IEventPublisher eventPublisher)
+		{ 
 			_subscriptionStreamProvisioningService = 
 				subscriptionStreamProvisioningService
 					.RegisterSubscriptionStream<Subscriber1>()
 					.RegisterSubscriptionStream<Subscriber2>()
 					.RegisterSubscriptionStream<Subscriber3>();
+			_eventPublisher = eventPublisher;
 		}
 
-		public Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)
+		public async Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)
 		{
-			return _subscriptionStreamProvisioningService.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
+			var status = await _subscriptionStreamProvisioningService.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
+			if (status == SubscriptionProvisioningStatus.Provisioned)
+			{
+				await _eventPublisher.PublishEvent
+				(
+					new SubscriptionStreamProvisioned(message.Data.SubscriptionStream),
+					x => x.CopyMetadata(message.Metadata).SetCorrelationId(message.EventId)
+				);
+			}
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionAllSubscriptionStreams> message)

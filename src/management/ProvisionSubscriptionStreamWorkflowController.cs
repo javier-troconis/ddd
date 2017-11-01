@@ -7,20 +7,19 @@ using eventstore;
 using EventStore.ClientAPI;
 using management.contracts;
 using shared;
-using ISubscriberStarted = eventstore.ISubscriberStarted;
-using ISubscriberStopped = eventstore.ISubscriberStopped;
 
 namespace management
 {
-	public class RestartSubscriberWorkflow2Controller :
-	    IMessageHandler<IRecordedEvent<IStartRestartSubscriberWorkflow2>, Task>,
+	public class ProvisionSubscriptionStreamWorkflowController :
+	    IMessageHandler<IRecordedEvent<IStartProvisionSubscriptionStreamWorkflow>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
-		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>
+		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>,
+		IMessageHandler<IRecordedEvent<ISubscriptionStreamProvisioned>, Task>
 	{
-		private static readonly string WorkflowType = typeof(RestartSubscriberWorkflow2Controller).FullName;
+		private static readonly string WorkflowType = typeof(ProvisionSubscriptionStreamWorkflowController).FullName;
 		private readonly IEventPublisher _eventPublisher;
 
-		public RestartSubscriberWorkflow2Controller(IEventPublisher eventPublisher)
+		public ProvisionSubscriptionStreamWorkflowController(IEventPublisher eventPublisher)
 		{
 			_eventPublisher = eventPublisher;
 		}
@@ -29,7 +28,7 @@ namespace management
 		{
 			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) ||
 			    !Equals(workflowType, WorkflowType)) return Task.CompletedTask;
-			Console.WriteLine($"{nameof(RestartSubscriberWorkflow2Controller)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
+			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
 			return _eventPublisher.PublishEvent(
 				new StartSubscriber(message.Data.SubscriberName), 
 				x => x
@@ -41,14 +40,14 @@ namespace management
 		{
 			if (message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) && Equals(workflowType, WorkflowType))
 			{
-				Console.WriteLine($"{nameof(RestartSubscriberWorkflow2Controller)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStarted)}");
+				Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStarted)}");
 			}
 			return Task.CompletedTask;
 		}
 
-		public Task Handle(IRecordedEvent<IStartRestartSubscriberWorkflow2> message)
+		public Task Handle(IRecordedEvent<IStartProvisionSubscriptionStreamWorkflow> message)
 		{
-			Console.WriteLine($"{nameof(RestartSubscriberWorkflow2Controller)} {message.Data.WorkflowId} handling: {nameof(IStartRestartSubscriberWorkflow2)}");
+			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Data.WorkflowId} handling: {nameof(IStartProvisionSubscriptionStreamWorkflow)}");
 			return _eventPublisher.PublishEvent(
 				new StopSubscriber(message.Data.SubscriberName), 
 				x => x
@@ -56,5 +55,9 @@ namespace management
 					.SetMetadata(EventHeaderKey.WorkflowType, WorkflowType));
 		}
 
+		public Task Handle(IRecordedEvent<ISubscriptionStreamProvisioned> message)
+		{
+			throw new NotImplementedException();
+		}
 	}
 }

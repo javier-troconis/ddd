@@ -12,8 +12,8 @@ namespace management
 		{
 			_persistentSubscriptionProvisioningService = 
 				persistentSubscriptionProvisioningService
-					.RegisterPersistentSubscription<RestartSubscriberWorkflow1Controller>()
-					.RegisterPersistentSubscription<RestartSubscriberWorkflow2Controller>()
+					.RegisterPersistentSubscription<RestartSubscriberWorkflowController>()
+					.RegisterPersistentSubscription<ProvisionSubscriptionStreamWorkflowController>()
 					.RegisterPersistentSubscription<ISubscriptionStreamProvisioningController, SubscriptionStreamProvisioningController>(
 						x => x
 							.WithMaxRetriesOf(0)

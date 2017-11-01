@@ -34,7 +34,7 @@ namespace query
 			{
 				await _eventPublisher.PublishEvent
 				(
-					new object(),
+					new PersistentSubscriptionProvisioned(message.Data.SubscriptionStream, message.Data.PersistentSubscriptionGroup),
 					x => x.CopyMetadata(message.Metadata).SetCorrelationId(message.EventId)
 				);
 			}
