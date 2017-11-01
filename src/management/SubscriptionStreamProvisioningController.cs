@@ -4,18 +4,18 @@ using shared;
 
 namespace management
 {
-	public class SubscriptionStreamProvisionerController : IProvisionSubscriptionStreamRequests
+	public class SubscriptionStreamProvisioningController : IProvisionSubscriptionStreamRequests
 	{
-		private readonly ISubscriptionStreamProvisioner _subscriptionStreamProvisioner;
+		private readonly ISubscriptionStreamProvisioningService _subscriptionStreamProvisioningService;
 
-		public SubscriptionStreamProvisionerController(ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
+		public SubscriptionStreamProvisioningController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService)
 		{
-			_subscriptionStreamProvisioner = subscriptionStreamProvisioner;
+			_subscriptionStreamProvisioningService = subscriptionStreamProvisioningService;
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionSubscriptionStreamRequested> message)
 		{
-			return _subscriptionStreamProvisioner
+			return _subscriptionStreamProvisioningService
 				.RegisterSubscriptionStream<EventBusController>()
 				.RegisterSubscriptionStream<RestartSubscriberWorkflow1Controller>()
 				.RegisterSubscriptionStream<RestartSubscriberWorkflow2Controller>()

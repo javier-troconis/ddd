@@ -63,7 +63,7 @@ namespace query
 						)
 						.RegisterPersistentSubscriber
 						(
-							new SubscriptionStreamProvisionerController(new SubscriptionStreamProvisioner(
+							new SubscriptionStreamProvisionerController(new SubscriptionStreamProvisioningService(
 								new ProjectionManager(
 									EventStoreSettings.ClusterDns,
 									EventStoreSettings.ExternalHttpPort,
@@ -74,7 +74,7 @@ namespace query
 						)
 						.RegisterVolatileSubscriber
 						(
-							new PersistentSubscriptionProvisionerController(new PersistentSubscriptionProvisioner(
+							new PersistentSubscriptionProvisionerController(new PersistentSubscriptionProvisioningService(
 								new PersistentSubscriptionManager(createConnection))),
 							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
 						)

@@ -60,7 +60,7 @@ namespace management
 						)
 						.RegisterPersistentSubscriber
 						(
-							new SubscriptionStreamProvisionerController(new SubscriptionStreamProvisioner(
+							new SubscriptionStreamProvisioningController(new SubscriptionStreamProvisioningService(
 								new ProjectionManager(
 									EventStoreSettings.ClusterDns,
 									EventStoreSettings.ExternalHttpPort,
@@ -71,7 +71,7 @@ namespace management
 						)
 						.RegisterVolatileSubscriber
 						(
-							new PersistentSubscriptionProvisionerController(new PersistentSubscriptionProvisioner(
+							new PersistentSubscriptionProvisioningController(new PersistentSubscriptionProvisioningService(
 								new PersistentSubscriptionManager(createConnection))),
 							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
 						)
@@ -101,8 +101,8 @@ namespace management
 							EventStoreSettings.Password,
 							new ConsoleLogger());
                         var topicStreamProvisioner = new TopicStreamProvisioner(projectionManager);
-                        var subscriptionStreamProvisioner = new SubscriptionStreamProvisioner(projectionManager);
-						var systemStreamProvisioner = new SystemStreamsProvisioner(topicStreamProvisioner, subscriptionStreamProvisioner);
+                        var subscriptionStreamProvisioner = new SubscriptionStreamProvisioningService(projectionManager);
+						var systemStreamProvisioner = new SystemStreamsProvisioningService(topicStreamProvisioner, subscriptionStreamProvisioner);
 						systemStreamProvisioner.ProvisionSystemStreams();
                         break;
                     case '2':

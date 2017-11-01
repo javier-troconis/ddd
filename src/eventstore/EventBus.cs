@@ -31,10 +31,28 @@ namespace eventstore
 
         private EventBus
             (
-                IDictionary<string, Delegate> subscriberOperations
-            )
+				Func<IEventStoreConnection> createConnection, 
+				SubscriberRegistry subscriberRegistry
+			)
         {
-            _subscriberOperations = subscriberOperations;
+            _subscriberOperations = subscriberRegistry
+	            .ToDictionary
+	            (
+		            x => x.Name,
+		            x =>
+		            {
+			            async Task<Disconnect> Connect()
+			            {
+				            var connection = await x.Connect(createConnection);
+				            return () =>
+				            {
+					            connection.Disconnect();
+					            return Connect;
+				            };
+			            }
+			            return (Delegate)new Connect(Connect);
+		            }
+	            );
         }
 
         public async Task<SubscriberStatus> StopSubscriber(string subscriberName)
@@ -99,28 +117,11 @@ namespace eventstore
         public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscriberRegistry)
         {
             var subscriberRegistry = configureSubscriberRegistry(SubscriberRegistry.CreateSubscriberRegistry());
-
             return new EventBus
                 (
-                    subscriberRegistry
-                        .ToDictionary
-                        (
-                            x => x.Name,
-                            x =>
-                            {
-	                            async Task<Disconnect> Connect()
-	                            {
-		                            var connection = await x.Connect(createConnection);
-		                            return () =>
-		                            {
-			                            connection.Disconnect();
-			                            return Connect;
-		                            };
-	                            }
-	                            return (Delegate)new Connect(Connect);
-                            }
-                        )
-                );
+					createConnection,
+					subscriberRegistry
+				);
         }
 
         private delegate Task<Disconnect> Connect();

@@ -11,16 +11,16 @@ namespace query
 {
 	public class SubscriptionStreamProvisionerController : IProvisionSubscriptionStreamRequests
 	{
-		private readonly ISubscriptionStreamProvisioner _subscriptionStreamProvisioner;
+		private readonly ISubscriptionStreamProvisioningService _subscriptionStreamProvisioningService;
 
-		public SubscriptionStreamProvisionerController(ISubscriptionStreamProvisioner subscriptionStreamProvisioner)
+		public SubscriptionStreamProvisionerController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService)
 		{
-			_subscriptionStreamProvisioner = subscriptionStreamProvisioner;
+			_subscriptionStreamProvisioningService = subscriptionStreamProvisioningService;
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionSubscriptionStreamRequested> message)
 		{
-			return _subscriptionStreamProvisioner
+			return _subscriptionStreamProvisioningService
 				.RegisterSubscriptionStream<Subscriber1>()
 				.RegisterSubscriptionStream<Subscriber2>()
 				.RegisterSubscriptionStream<Subscriber3>()
