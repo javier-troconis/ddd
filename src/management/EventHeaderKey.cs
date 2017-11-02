@@ -4,5 +4,6 @@
     {
 		public const string WorkflowId = "workflowId";
 	    public const string WorkflowType = "workflowType";
-	}
+	    public const string WorkflowData = "workflowData";
+    }
 }

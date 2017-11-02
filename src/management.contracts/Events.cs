@@ -5,7 +5,7 @@ namespace management.contracts
 	public interface IStartProvisionSubscriptionStreamWorkflow
 	{
 		Guid WorkflowId { get; }
-		string SubscriptionName { get; }
+		string SubscriptionStreamName { get; }
 		string SubscriberName { get; }
 	}
 

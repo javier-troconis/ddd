@@ -12,12 +12,12 @@ namespace management
 		public StartProvisionSubscriptionStreamWorkflow(Guid workflowId, string subscriptionName, string subscriberName)
 		{
 			WorkflowId = workflowId;
-			SubscriptionName = subscriptionName;
+			SubscriptionStreamName = subscriptionName;
 			SubscriberName = subscriberName;
 		}
 
 		public Guid WorkflowId { get; }
-		public string SubscriptionName { get; }
+		public string SubscriptionStreamName { get; }
 		public string SubscriberName { get; }
 	}
 

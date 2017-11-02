@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using eventstore;
 using EventStore.ClientAPI;
 using management.contracts;
+using Newtonsoft.Json;
 using shared;
 
 namespace management
@@ -26,14 +27,16 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) ||
-			    !Equals(workflowType, WorkflowType)) return Task.CompletedTask;
+			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) || !Equals(workflowType, WorkflowType))
+			{
+				return Task.CompletedTask;
+			}
+				
 			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
+			var workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)message.Metadata[EventHeaderKey.WorkflowData]);
 			return _eventPublisher.PublishEvent(
-				new StartSubscriber(message.Data.SubscriberName), 
-				x => x
-					.SetMetadata(EventHeaderKey.WorkflowId, message.Metadata[EventHeaderKey.WorkflowId])
-					.SetMetadata(EventHeaderKey.WorkflowType, WorkflowType));
+				new ProvisionSubscriptionStream(workflowData.SubscriptionStreamName), 
+				x => x.CopyMetadata(message.Metadata));
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
@@ -52,12 +55,40 @@ namespace management
 				new StopSubscriber(message.Data.SubscriberName), 
 				x => x
 					.SetMetadata(EventHeaderKey.WorkflowId, message.Data.WorkflowId)
-					.SetMetadata(EventHeaderKey.WorkflowType, WorkflowType));
+					.SetMetadata(EventHeaderKey.WorkflowType, WorkflowType)
+					.SetMetadata
+					(
+						EventHeaderKey.WorkflowData, 
+						JsonConvert.SerializeObject
+						(
+							new WorkflowData
+							{
+								SubscriptionStreamName = message.Data.SubscriptionStreamName,
+								SubscriberName = message.Data.SubscriberName
+							}
+						)
+					)
+				);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriptionStreamProvisioned> message)
 		{
-			throw new NotImplementedException();
+			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) || !Equals(workflowType, WorkflowType))
+			{
+				return Task.CompletedTask;
+			}
+
+			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriptionStreamProvisioned)}");
+			var workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)message.Metadata[EventHeaderKey.WorkflowData]);
+			return _eventPublisher.PublishEvent(
+				new StartSubscriber(workflowData.SubscriberName),
+				x => x.CopyMetadata(message.Metadata));
+		}
+
+		private class WorkflowData
+		{
+			public string SubscriptionStreamName { get; set; }
+			public string SubscriberName { get; set; }
 		}
 	}
 }
