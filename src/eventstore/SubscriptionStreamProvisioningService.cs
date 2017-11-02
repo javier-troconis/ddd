@@ -9,7 +9,7 @@ namespace eventstore
 {
 	public enum ProvisionSubscriptionStreamResult
 	{
-		Unknown,
+		NotFound,
 		Provisioned
 	}
 
@@ -96,7 +96,7 @@ fromAll()
 	    {
 		    if (!_registry.TryGetValue(subscriptionStreamName, out Func<Task> operation))
 		    {
-			    return ProvisionSubscriptionStreamResult.Unknown;
+			    return ProvisionSubscriptionStreamResult.NotFound;
 		    }
 		    await operation();
 			return ProvisionSubscriptionStreamResult.Provisioned;

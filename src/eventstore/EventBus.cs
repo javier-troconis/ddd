@@ -19,13 +19,13 @@ namespace eventstore
 {
     public enum StopSubscriberResult
 	{
-        Unknown,
+        NotFound,
         Stopped
     }
 
 	public enum StartSubscriberResult
 	{
-		Unknown,
+		NotFound,
 		Started
 	}
 
@@ -64,7 +64,7 @@ namespace eventstore
         {
             if (!_subscriberOperations.ContainsKey(subscriberName))
             {
-                return StopSubscriberResult.Unknown;
+                return StopSubscriberResult.NotFound;
             }
 
             var tsc = new TaskCompletionSource<StopSubscriberResult>();
@@ -94,7 +94,7 @@ namespace eventstore
         {
             if (!_subscriberOperations.ContainsKey(subscriberName))
             {
-                return StartSubscriberResult.Unknown;
+                return StartSubscriberResult.NotFound;
             }
 
             var tsc = new TaskCompletionSource<StartSubscriberResult>();

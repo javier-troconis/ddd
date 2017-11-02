@@ -12,7 +12,7 @@ namespace eventstore
 {
 	public enum ProvisionPersistentSubscriptionResult
 	{
-		Unknown,
+		NotFound,
 		Provisioned
 	}
 
@@ -105,7 +105,7 @@ namespace eventstore
 	    {
 			if (!_registry.TryGetValue(subscriptionStreamName + "-" + subscriptionGroupName, out Func<Task> operation))
 		    {
-			    return ProvisionPersistentSubscriptionResult.Unknown;
+			    return ProvisionPersistentSubscriptionResult.NotFound;
 		    }
 		    await operation();
 		    return ProvisionPersistentSubscriptionResult.Provisioned;
