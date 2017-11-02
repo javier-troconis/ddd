@@ -39,11 +39,7 @@ namespace eventstore
 
 	    private static object TryDeserializeEvent(IEnumerable<Type> candidateEventTypes, ResolvedEvent resolvedEvent)
 	    {
-		    var systemMetadataKeys = new[]
-		    {
-			    EventMetadataKey.CorrelationId,
-				EventMetadataKey.Topics
-		    };
+		   
 			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 		    var topics = ((JArray)eventMetadata[EventMetadataKey.Topics]).ToObject<string[]>();
 		    var eventType = topics
@@ -62,8 +58,7 @@ namespace eventstore
                 resolvedEvent.Event.Created,
                 resolvedEvent.Event.EventId,
                 CorrelationId = eventMetadata.TryGetValue(EventMetadataKey.CorrelationId, out object correlationId) ? Guid.Parse((string)correlationId) : default(Guid?),
-			   
-				Metadata = eventMetadata.Where(x => !systemMetadataKeys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value),
+				Metadata = eventMetadata.Where(x => !x.Key.StartsWith("__")).ToDictionary(x => x.Key, x => x.Value),
 				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 		    };
 

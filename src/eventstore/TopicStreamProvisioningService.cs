@@ -38,14 +38,14 @@ fromAll()
     .when({{
         $any: function(s, e) {{
             var topics;
-            if (e.streamId.indexOf('{0}') === 0  || !e.metadata || !(topics = e.metadata.topics)) {{
+            if (e.streamId.indexOf('{0}') === 0  || !e.metadata || !(topics = e.metadata.{1})) {{
                 return;
             }}
             topics.forEach(emitTopic(e));
         }}
     }});";
 
-			var query = string.Format(queryTemplate, queryName);
+			var query = string.Format(queryTemplate, queryName, EventMetadataKey.Topics);
             return _projectionManager.CreateOrUpdateContinuousProjection(queryName, query);
         }
     }
