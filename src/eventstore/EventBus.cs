@@ -17,14 +17,19 @@ using System.Collections.ObjectModel;
 
 namespace eventstore
 {
-    public enum SubscriberStatus
-    {
+    public enum StopSubscriberResult
+	{
         Unknown,
-        Started,
         Stopped
     }
 
-    public sealed class EventBus
+	public enum StartSubscriberResult
+	{
+		Unknown,
+		Started
+	}
+
+	public sealed class EventBus
     {
         private readonly TaskQueue _queue = new TaskQueue();
         private readonly IDictionary<string, Delegate> _subscriberOperations;
@@ -55,14 +60,14 @@ namespace eventstore
 	            );
         }
 
-        public async Task<SubscriberStatus> StopSubscriber(string subscriberName)
+        public async Task<StopSubscriberResult> StopSubscriber(string subscriberName)
         {
             if (!_subscriberOperations.ContainsKey(subscriberName))
             {
-                return SubscriberStatus.Unknown;
+                return StopSubscriberResult.Unknown;
             }
 
-            var tsc = new TaskCompletionSource<SubscriberStatus>();
+            var tsc = new TaskCompletionSource<StopSubscriberResult>();
             await _queue.SendToChannel
                 (
                     () =>
@@ -75,7 +80,7 @@ namespace eventstore
                         return Task.CompletedTask;
                     },
                     channelName: subscriberName,
-                    taskSucceeded: x => tsc.SetResult(SubscriberStatus.Stopped)
+                    taskSucceeded: x => tsc.SetResult(StopSubscriberResult.Stopped)
                 );
             return await tsc.Task;
         }
@@ -85,14 +90,14 @@ namespace eventstore
             return Task.WhenAll(_subscriberOperations.Select(x => StopSubscriber(x.Key)));
         }
 
-        public async Task<SubscriberStatus> StartSubscriber(string subscriberName)
+        public async Task<StartSubscriberResult> StartSubscriber(string subscriberName)
         {
             if (!_subscriberOperations.ContainsKey(subscriberName))
             {
-                return SubscriberStatus.Unknown;
+                return StartSubscriberResult.Unknown;
             }
 
-            var tsc = new TaskCompletionSource<SubscriberStatus>();
+            var tsc = new TaskCompletionSource<StartSubscriberResult>();
             await _queue.SendToChannel
                 (
                     async () =>
@@ -104,7 +109,7 @@ namespace eventstore
                         }
                     },
                     channelName: subscriberName,
-                    taskSucceeded: x => tsc.SetResult(SubscriberStatus.Started)
+                    taskSucceeded: x => tsc.SetResult(StartSubscriberResult.Started)
                 );
             return await tsc.Task;
         }

@@ -23,7 +23,7 @@ namespace management
 
 		public Task Handle(IRecordedEvent<IProvisionPersistentSubscription> message)
 		{
-			return _persistentSubscriptionProvisioningService.ProvisionPersistentSubscription(message.Data.SubscriptionStream, message.Data.PersistentSubscriptionGroup);
+			return _persistentSubscriptionProvisioningService.ProvisionPersistentSubscription(message.Data.SubscriptionStreamName, message.Data.PersistentSubscriptionGroupName);
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionAllPersistentSubscriptions> message)

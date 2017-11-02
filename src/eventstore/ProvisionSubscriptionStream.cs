@@ -5,16 +5,16 @@ namespace eventstore
 
     public interface IProvisionSubscriptionStream
 	{
-		string SubscriptionStream { get; }
+		string SubscriptionStreamName { get; }
 	}
 
 	public class ProvisionSubscriptionStream : IProvisionSubscriptionStream
 	{
-	    public ProvisionSubscriptionStream(string subscriptionStream)
+	    public ProvisionSubscriptionStream(string subscriptionStreamName)
 	    {
-		    SubscriptionStream = subscriptionStream;
+		    SubscriptionStreamName = subscriptionStreamName;
 	    }
 
-	    public string SubscriptionStream { get; }
+	    public string SubscriptionStreamName { get; }
 	}
 }

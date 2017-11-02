@@ -8,19 +8,19 @@ namespace eventstore
 {
 	public interface IPersistentSubscriptionProvisioned
 	{
-		string SubscriptionStream { get; }
-		string PersistentSubscriptionGroup { get; }
+		string SubscriptionStreamName { get; }
+		string PersistentSubscriptionGroupName { get; }
 	}
 
 	public struct PersistentSubscriptionProvisioned
     {
-	    public string SubscriptionStream { get; }
-	    public string PersistentSubscriptionGroup { get; }
+	    public string SubscriptionStreamName { get; }
+	    public string PersistentSubscriptionGroupName { get; }
 
-	    public PersistentSubscriptionProvisioned(string subscriptionStream, string persistentSubscriptionGroup)
+	    public PersistentSubscriptionProvisioned(string subscriptionStreamName, string persistentSubscriptionGroupName)
 	    {
-		    SubscriptionStream = subscriptionStream;
-		    PersistentSubscriptionGroup = persistentSubscriptionGroup;
+		    SubscriptionStreamName = subscriptionStreamName;
+		    PersistentSubscriptionGroupName = persistentSubscriptionGroupName;
 	    }
     }
 }

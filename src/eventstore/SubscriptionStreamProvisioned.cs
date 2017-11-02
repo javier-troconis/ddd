@@ -8,17 +8,17 @@ namespace eventstore
 {
 	public interface ISubscriptionStreamProvisioned
 	{
-		string SubscriptionStream { get; }
+		string SubscriptionStreamName { get; }
 	}
 
 
-	public struct SubscriptionStreamProvisioned
+	public struct SubscriptionStreamProvisioned : ISubscriptionStreamProvisioned
     {
-	    public string SubscriptionStream { get; }
+	    public string SubscriptionStreamName { get; }
 
-	    public SubscriptionStreamProvisioned(string subscriptionStream)
+	    public SubscriptionStreamProvisioned(string subscriptionStreamName)
 	    {
-		    SubscriptionStream = subscriptionStream;
+		    SubscriptionStreamName = subscriptionStreamName;
 	    }
     }
 }

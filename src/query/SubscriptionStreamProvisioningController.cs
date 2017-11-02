@@ -26,12 +26,12 @@ namespace query
 
 		public async Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)
 		{
-			var status = await _subscriptionStreamProvisioningService.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
-			if (status == SubscriptionProvisioningStatus.Provisioned)
+			var status = await _subscriptionStreamProvisioningService.ProvisionSubscriptionStream(message.Data.SubscriptionStreamName);
+			if (status == ProvisionSubscriptionStreamResult.Provisioned)
 			{
 				await _eventPublisher.PublishEvent
 				(
-					new SubscriptionStreamProvisioned(message.Data.SubscriptionStream),
+					new SubscriptionStreamProvisioned(message.Data.SubscriptionStreamName),
 					x => x.CopyMetadata(message.Metadata).SetCorrelationId(message.EventId)
 				);
 			}

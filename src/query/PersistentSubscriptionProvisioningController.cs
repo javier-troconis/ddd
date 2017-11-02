@@ -29,12 +29,12 @@ namespace query
 
 		public async Task Handle(IRecordedEvent<IProvisionPersistentSubscription> message)
 		{
-			var status = await _persistentSubscriptionProvisioningService.ProvisionPersistentSubscription(message.Data.SubscriptionStream, message.Data.PersistentSubscriptionGroup);
-			if (status == PersistentSubscriptionProvisioningStatus.Provisioned)
+			var status = await _persistentSubscriptionProvisioningService.ProvisionPersistentSubscription(message.Data.SubscriptionStreamName, message.Data.PersistentSubscriptionGroupName);
+			if (status == ProvisionPersistentSubscriptionResult.Provisioned)
 			{
 				await _eventPublisher.PublishEvent
 				(
-					new PersistentSubscriptionProvisioned(message.Data.SubscriptionStream, message.Data.PersistentSubscriptionGroup),
+					new PersistentSubscriptionProvisioned(message.Data.SubscriptionStreamName, message.Data.PersistentSubscriptionGroupName),
 					x => x.CopyMetadata(message.Metadata).SetCorrelationId(message.EventId)
 				);
 			}

@@ -18,7 +18,7 @@ namespace management
 
 		public Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)
 		{
-			return _subscriptionStreamProvisioningService.ProvisionSubscriptionStream(message.Data.SubscriptionStream);
+			return _subscriptionStreamProvisioningService.ProvisionSubscriptionStream(message.Data.SubscriptionStreamName);
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionAllSubscriptionStreams> message)

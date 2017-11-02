@@ -121,7 +121,7 @@ namespace management
 						eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow(Guid.NewGuid(), "query_subscriber2"));
 						break;
 	                case '7':
-		                eventPublisher.PublishEvent(new StartProvisionSubscriptionStreamWorkflow(Guid.NewGuid(), "query_subscriber2"));
+		                eventPublisher.PublishEvent(new StartProvisionSubscriptionStreamWorkflow(Guid.NewGuid(), "query_subscriber2", "query_subscriber2"));
 		                break;
 					default:
                         return;

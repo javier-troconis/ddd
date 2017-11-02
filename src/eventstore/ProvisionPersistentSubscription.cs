@@ -4,19 +4,19 @@ namespace eventstore
 {
 	public interface IProvisionPersistentSubscription
 	{
-		string SubscriptionStream { get; }
-		string PersistentSubscriptionGroup { get; }
+		string SubscriptionStreamName { get; }
+		string PersistentSubscriptionGroupName { get; }
 	}
 
 	public class ProvisionPersistentSubscription : IProvisionPersistentSubscription
 	{
-	    public ProvisionPersistentSubscription(string subscriptionStream, string persistentSubscriptionGroup)
+	    public ProvisionPersistentSubscription(string subscriptionStreamName, string persistentSubscriptionGroupName)
 	    {
-		    SubscriptionStream = subscriptionStream;
-		    PersistentSubscriptionGroup = persistentSubscriptionGroup;
+		    SubscriptionStreamName = subscriptionStreamName;
+		    PersistentSubscriptionGroupName = persistentSubscriptionGroupName;
 	    }
 
-		public string SubscriptionStream { get; }
-		public string PersistentSubscriptionGroup { get; }
+		public string SubscriptionStreamName { get; }
+		public string PersistentSubscriptionGroupName { get; }
 	}
 }

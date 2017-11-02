@@ -10,7 +10,7 @@ using shared;
 
 namespace eventstore
 {
-	public enum PersistentSubscriptionProvisioningStatus
+	public enum ProvisionPersistentSubscriptionResult
 	{
 		Unknown,
 		Provisioned
@@ -27,7 +27,7 @@ namespace eventstore
 
         Task ProvisionAllPersistentSubscriptions();
 
-	    Task<PersistentSubscriptionProvisioningStatus> ProvisionPersistentSubscription(string subscriptionStreamName, string subscriptionGroupName);
+	    Task<ProvisionPersistentSubscriptionResult> ProvisionPersistentSubscription(string subscriptionStreamName, string subscriptionGroupName);
 	}
 
     public class PersistentSubscriptionProvisioningService : IPersistentSubscriptionProvisioningService
@@ -101,14 +101,14 @@ namespace eventstore
 					}));
 		}
 
-	    public async Task<PersistentSubscriptionProvisioningStatus> ProvisionPersistentSubscription(string subscriptionStreamName, string subscriptionGroupName)
+	    public async Task<ProvisionPersistentSubscriptionResult> ProvisionPersistentSubscription(string subscriptionStreamName, string subscriptionGroupName)
 	    {
 			if (!_registry.TryGetValue(subscriptionStreamName + "-" + subscriptionGroupName, out Func<Task> operation))
 		    {
-			    return PersistentSubscriptionProvisioningStatus.Unknown;
+			    return ProvisionPersistentSubscriptionResult.Unknown;
 		    }
 		    await operation();
-		    return PersistentSubscriptionProvisioningStatus.Provisioned;
+		    return ProvisionPersistentSubscriptionResult.Provisioned;
 		}
 
 	   

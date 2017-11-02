@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace eventstore
 {
-	public enum SubscriptionProvisioningStatus
+	public enum ProvisionSubscriptionStreamResult
 	{
 		Unknown,
 		Provisioned
@@ -16,7 +16,7 @@ namespace eventstore
 	public interface ISubscriptionStreamProvisioningService
     {
         ISubscriptionStreamProvisioningService RegisterSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler;
-        Task<SubscriptionProvisioningStatus> ProvisionSubscriptionStream(string subscriptionStreamName);
+        Task<ProvisionSubscriptionStreamResult> ProvisionSubscriptionStream(string subscriptionStreamName);
 	    Task ProvisionAllSubscriptionStreams();
 	}
 
@@ -92,14 +92,14 @@ fromAll()
 				.Merge(_registry));
         }
 
-	    public async Task<SubscriptionProvisioningStatus> ProvisionSubscriptionStream(string subscriptionStreamName)
+	    public async Task<ProvisionSubscriptionStreamResult> ProvisionSubscriptionStream(string subscriptionStreamName)
 	    {
 		    if (!_registry.TryGetValue(subscriptionStreamName, out Func<Task> operation))
 		    {
-			    return SubscriptionProvisioningStatus.Unknown;
+			    return ProvisionSubscriptionStreamResult.Unknown;
 		    }
 		    await operation();
-			return SubscriptionProvisioningStatus.Provisioned;
+			return ProvisionSubscriptionStreamResult.Provisioned;
 	    }
 
 	    public Task ProvisionAllSubscriptionStreams()

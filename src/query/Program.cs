@@ -63,13 +63,21 @@ namespace query
 						)
 						.RegisterPersistentSubscriber
 						(
-							new SubscriptionStreamProvisioningController(new SubscriptionStreamProvisioningService(
-								new ProjectionManager(
-									EventStoreSettings.ClusterDns,
-									EventStoreSettings.ExternalHttpPort,
-									EventStoreSettings.Username,
-									EventStoreSettings.Password,
-									new ConsoleLogger()))),
+							new SubscriptionStreamProvisioningController
+							(
+								new SubscriptionStreamProvisioningService
+								(
+									new ProjectionManager
+									(
+										EventStoreSettings.ClusterDns,
+										EventStoreSettings.ExternalHttpPort,
+										EventStoreSettings.Username,
+										EventStoreSettings.Password,
+										new ConsoleLogger()
+									)
+								), 
+								eventPublisher
+							),
 							x => x.SetSubscriptionStream<ISubscriptionStreamProvisioningController>()
 						)
 						.RegisterVolatileSubscriber
