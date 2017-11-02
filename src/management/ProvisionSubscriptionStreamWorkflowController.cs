@@ -34,9 +34,11 @@ namespace management
 				
 			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
 			var workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)message.Metadata[EventHeaderKey.WorkflowData]);
-			return _eventPublisher.PublishEvent(
-				new ProvisionSubscriptionStream(workflowData.SubscriptionStreamName), 
-				x => x.CopyMetadata(message.Metadata));
+			return _eventPublisher.PublishEvent
+				(
+					new ProvisionSubscriptionStream(workflowData.SubscriptionStreamName), 
+					x => x.CopyMetadata(message.Metadata)
+				);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
@@ -80,9 +82,11 @@ namespace management
 
 			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriptionStreamProvisioned)}");
 			var workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)message.Metadata[EventHeaderKey.WorkflowData]);
-			return _eventPublisher.PublishEvent(
-				new StartSubscriber(workflowData.SubscriberName),
-				x => x.CopyMetadata(message.Metadata));
+			return _eventPublisher.PublishEvent
+				(
+					new StartSubscriber(workflowData.SubscriberName),
+					x => x.CopyMetadata(message.Metadata)
+				);
 		}
 
 		private class WorkflowData
