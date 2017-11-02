@@ -11,6 +11,7 @@ using shared;
 
 namespace management
 {
+	//todo
 	public class ProvisionSubscriptionStreamWorkflowController :
 	    IMessageHandler<IRecordedEvent<IRunProvisionSubscriptionStreamWorkflow>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
@@ -27,72 +28,81 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) || !Equals(workflowType, WorkflowType))
+			WorkflowData workflowData;
+			if (message.Metadata.TryGetValue(EventHeaderKey.WorkflowData, out object data) && (workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)data)).WorkflowType == WorkflowType)
 			{
-				return Task.CompletedTask;
+				return RunNextActivity(workflowData, WorkflowActivities);
 			}
-			Console.WriteLine(message.EventId);
-			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
-			var workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)message.Metadata[EventHeaderKey.WorkflowData]);
-			return _eventPublisher.PublishEvent
-				(
-					new ProvisionSubscriptionStream(workflowData.SubscriptionStreamName), 
-					x => x.CopyMetadata(message.Metadata)
-				);
+			return Task.CompletedTask;
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
 		{
-			if (message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) && Equals(workflowType, WorkflowType))
+			WorkflowData workflowData;
+			if (message.Metadata.TryGetValue(EventHeaderKey.WorkflowData, out object data) && (workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)data)).WorkflowType == WorkflowType)
 			{
-				Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStarted)}");
+				return RunNextActivity(workflowData, WorkflowActivities);
+			}
+			return Task.CompletedTask;
+		}
+
+		public Task Handle(IRecordedEvent<ISubscriptionStreamProvisioned> message)
+		{
+			WorkflowData workflowData;
+			if (message.Metadata.TryGetValue(EventHeaderKey.WorkflowData, out object data) && (workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)data)).WorkflowType == WorkflowType)
+			{
+				return RunNextActivity(workflowData, WorkflowActivities);
 			}
 			return Task.CompletedTask;
 		}
 
 		public Task Handle(IRecordedEvent<IRunProvisionSubscriptionStreamWorkflow> message)
 		{
-			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Data.WorkflowId} handling: {nameof(IRunProvisionSubscriptionStreamWorkflow)}");
-			return _eventPublisher.PublishEvent(
-				new StopSubscriber(message.Data.SubscriberName), 
-				x => x
-					.SetMetadata(EventHeaderKey.WorkflowId, message.Data.WorkflowId)
-					.SetMetadata(EventHeaderKey.WorkflowType, WorkflowType)
-					.SetMetadata
-					(
-						EventHeaderKey.WorkflowData, 
-						JsonConvert.SerializeObject
-						(
-							new WorkflowData
-							{
-								SubscriptionStreamName = message.Data.SubscriptionStreamName,
-								SubscriberName = message.Data.SubscriberName
-							}
-						)
-					)
-				);
+			var workflowData = new WorkflowData
+			{
+				WorkflowId = message.Data.WorkflowId,
+				WorkflowType = WorkflowType,
+				SubscriptionStreamName = message.Data.SubscriptionStreamName,
+				SubscriberName = message.Data.SubscriberName
+			};
+			return RunNextActivity(workflowData, WorkflowActivities);
 		}
 
-		public Task Handle(IRecordedEvent<ISubscriptionStreamProvisioned> message)
+		private Task RunNextActivity(WorkflowData workflowData, IReadOnlyList<Func<WorkflowData, object>> workflowActivities)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) || !Equals(workflowType, WorkflowType))
+			if (++workflowData.CurrentActivityIndex >= WorkflowActivities.Length)
 			{
 				return Task.CompletedTask;
 			}
-
-			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriptionStreamProvisioned)}");
-			var workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)message.Metadata[EventHeaderKey.WorkflowData]);
+			var nextActivity = workflowActivities[workflowData.CurrentActivityIndex](workflowData);
+			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {workflowData.WorkflowId} running: {nextActivity.GetType()}");
 			return _eventPublisher.PublishEvent
-				(
-					new StartSubscriber(workflowData.SubscriberName),
-					x => x.CopyMetadata(message.Metadata)
-				);
+			(
+				nextActivity,
+				x => x
+					.SetMetadata(EventHeaderKey.WorkflowData, JsonConvert.SerializeObject(workflowData))
+			);
 		}
 
 		private class WorkflowData
 		{
+			public Guid WorkflowId { get; set; }
+			public string WorkflowType { get; set; }
+			public int CurrentActivityIndex { get; set; } = -1;
 			public string SubscriptionStreamName { get; set; }
 			public string SubscriberName { get; set; }
 		}
+
+		private static readonly Func<WorkflowData, object>[] WorkflowActivities = 
+			{
+				x => new StopSubscriber(x.SubscriberName),
+				x => new StartSubscriber(x.SubscriberName),
+				x => new ProvisionSubscriptionStream(x.SubscriptionStreamName), 
+				x => new StopSubscriber(x.SubscriberName),
+				x => new ProvisionSubscriptionStream(x.SubscriptionStreamName),
+				x => new StartSubscriber(x.SubscriberName),
+				x => new StopSubscriber(x.SubscriberName),
+				x => new StartSubscriber(x.SubscriberName)
+			};
 	}
 }
