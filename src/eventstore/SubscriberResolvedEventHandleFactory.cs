@@ -39,8 +39,13 @@ namespace eventstore
 
 	    private static object TryDeserializeEvent(IEnumerable<Type> candidateEventTypes, ResolvedEvent resolvedEvent)
 	    {
-		    var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-		    var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<string[]>();
+		    var systemMetadataKeys = new[]
+		    {
+			    EventMetadataKey.CorrelationId,
+				EventMetadataKey.Topics
+		    };
+			var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+		    var topics = ((JArray)eventMetadata[EventMetadataKey.Topics]).ToObject<string[]>();
 		    var eventType = topics
 			    .Join(candidateEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y)
 			    .FirstOrDefault();
@@ -56,8 +61,9 @@ namespace eventstore
                 resolvedEvent.Event.EventNumber,
                 resolvedEvent.Event.Created,
                 resolvedEvent.Event.EventId,
-                CorrelationId = eventMetadata.TryGetValue(EventHeaderKey.CorrelationId, out object correlationId) ? Guid.Parse((string)correlationId) : default(Guid?),
-                Metadata = eventMetadata.SkipWhile(x => x.Key == EventHeaderKey.CorrelationId || x.Key == EventHeaderKey.Topics).ToDictionary(x => x.Key, x => x.Value),
+                CorrelationId = eventMetadata.TryGetValue(EventMetadataKey.CorrelationId, out object correlationId) ? Guid.Parse((string)correlationId) : default(Guid?),
+			   
+				Metadata = eventMetadata.Where(x => !systemMetadataKeys.Contains(x.Key)).ToDictionary(x => x.Key, x => x.Value),
 				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 		    };
 

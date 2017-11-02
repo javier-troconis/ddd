@@ -12,7 +12,7 @@ using shared;
 namespace management
 {
 	public class ProvisionSubscriptionStreamWorkflowController :
-	    IMessageHandler<IRecordedEvent<IStartProvisionSubscriptionStreamWorkflow>, Task>,
+	    IMessageHandler<IRecordedEvent<IRunProvisionSubscriptionStreamWorkflow>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriptionStreamProvisioned>, Task>
@@ -27,11 +27,12 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
+			var h = message.Metadata;
 			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) || !Equals(workflowType, WorkflowType))
 			{
 				return Task.CompletedTask;
 			}
-				
+			Console.WriteLine(message.EventId);
 			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
 			var workflowData = JsonConvert.DeserializeObject<WorkflowData>((string)message.Metadata[EventHeaderKey.WorkflowData]);
 			return _eventPublisher.PublishEvent
@@ -50,9 +51,9 @@ namespace management
 			return Task.CompletedTask;
 		}
 
-		public Task Handle(IRecordedEvent<IStartProvisionSubscriptionStreamWorkflow> message)
+		public Task Handle(IRecordedEvent<IRunProvisionSubscriptionStreamWorkflow> message)
 		{
-			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Data.WorkflowId} handling: {nameof(IStartProvisionSubscriptionStreamWorkflow)}");
+			Console.WriteLine($"{nameof(ProvisionSubscriptionStreamWorkflowController)} {message.Data.WorkflowId} handling: {nameof(IRunProvisionSubscriptionStreamWorkflow)}");
 			return _eventPublisher.PublishEvent(
 				new StopSubscriber(message.Data.SubscriberName), 
 				x => x

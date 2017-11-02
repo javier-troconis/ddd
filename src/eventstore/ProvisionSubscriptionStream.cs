@@ -8,7 +8,7 @@ namespace eventstore
 		string SubscriptionStreamName { get; }
 	}
 
-	public class ProvisionSubscriptionStream : IProvisionSubscriptionStream
+	public struct ProvisionSubscriptionStream : IProvisionSubscriptionStream
 	{
 	    public ProvisionSubscriptionStream(string subscriptionStreamName)
 	    {

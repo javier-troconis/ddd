@@ -8,7 +8,7 @@ namespace eventstore
 	
 	}
 
-	public class ProvisionAllSubscriptionStreams : IProvisionAllSubscriptionStreams
+	public struct ProvisionAllSubscriptionStreams : IProvisionAllSubscriptionStreams
 	{
 	 
 	}

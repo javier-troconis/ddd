@@ -12,7 +12,7 @@ using shared;
 namespace management
 {
 	public class RestartSubscriberWorkflowController :
-		IMessageHandler<IRecordedEvent<IStartRestartSubscriberWorkflow>, Task>,
+		IMessageHandler<IRecordedEvent<IRunRestartSubscriberWorkflow>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>
 	{
@@ -26,8 +26,11 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) ||
-			    !Equals(workflowType, WorkflowType)) return Task.CompletedTask;
+			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) || !Equals(workflowType, WorkflowType))
+			{
+				return Task.CompletedTask;
+			}
+
 			Console.WriteLine($"{nameof(RestartSubscriberWorkflowController)} {message.Metadata[EventHeaderKey.WorkflowId]} handling: {nameof(ISubscriberStopped)}");
 			return _eventPublisher.PublishEvent(
 				new StartSubscriber(message.Data.SubscriberName),
@@ -45,9 +48,9 @@ namespace management
 			return Task.CompletedTask;
 		}
 
-		public Task Handle(IRecordedEvent<IStartRestartSubscriberWorkflow> message)
+		public Task Handle(IRecordedEvent<IRunRestartSubscriberWorkflow> message)
 		{
-			Console.WriteLine($"{nameof(RestartSubscriberWorkflowController)} {message.Data.WorkflowId} handling: {nameof(IStartRestartSubscriberWorkflow)}");
+			Console.WriteLine($"{nameof(RestartSubscriberWorkflowController)} {message.Data.WorkflowId} handling: {nameof(IRunRestartSubscriberWorkflow)}");
 			return _eventPublisher.PublishEvent(
 				new StopSubscriber(message.Data.SubscriberName),
 				x => x

@@ -11,7 +11,8 @@ namespace management
 		public SubscriptionStreamProvisioningController(ISubscriptionStreamProvisioningService subscriptionStreamProvisioningService)
 		{
 			_subscriptionStreamProvisioningService =
-				subscriptionStreamProvisioningService.RegisterSubscriptionStream<EventBusController>()
+				subscriptionStreamProvisioningService
+					.RegisterSubscriptionStream<EventBusController>()
 					.RegisterSubscriptionStream<RestartSubscriberWorkflowController>()
 					.RegisterSubscriptionStream<ProvisionSubscriptionStreamWorkflowController>();
 		}

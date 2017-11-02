@@ -7,7 +7,7 @@ namespace eventstore
 		
 	}
 
-	public class ProvisionAllPersistentSubscriptions : IProvisionAllPersistentSubscriptions
+	public struct ProvisionAllPersistentSubscriptions : IProvisionAllPersistentSubscriptions
 	{
 	 
 	}

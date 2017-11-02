@@ -7,9 +7,9 @@ using management.contracts;
 
 namespace management
 {
-	internal struct StartProvisionSubscriptionStreamWorkflow : IStartProvisionSubscriptionStreamWorkflow
+	internal struct RunProvisionSubscriptionStreamWorkflow : IRunProvisionSubscriptionStreamWorkflow
 	{
-		public StartProvisionSubscriptionStreamWorkflow(Guid workflowId, string subscriptionName, string subscriberName)
+		public RunProvisionSubscriptionStreamWorkflow(Guid workflowId, string subscriptionName, string subscriberName)
 		{
 			WorkflowId = workflowId;
 			SubscriptionStreamName = subscriptionName;
@@ -21,9 +21,9 @@ namespace management
 		public string SubscriberName { get; }
 	}
 
-	internal struct StartRestartSubscriberWorkflow : IStartRestartSubscriberWorkflow
+	internal struct RunRestartSubscriberWorkflow : IRunRestartSubscriberWorkflow
 	{
-		public StartRestartSubscriberWorkflow(Guid workflowId, string subscriberName)
+		public RunRestartSubscriberWorkflow(Guid workflowId, string subscriberName)
 		{
 			WorkflowId = workflowId;
 			SubscriberName = subscriberName;

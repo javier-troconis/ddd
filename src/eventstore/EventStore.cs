@@ -33,7 +33,7 @@ namespace eventstore
 
 		public EventConfiguration SetCorrelationId(Guid correlationId)
 		{
-            return SetMetadata(EventHeaderKey.CorrelationId, correlationId);
+            return SetMetadata(EventMetadataKey.CorrelationId, correlationId);
         }
 
 		public EventConfiguration SetMetadata(string key, object value)
@@ -66,7 +66,7 @@ namespace eventstore
                     new Dictionary<string, object>
                     {
                         {
-                            EventHeaderKey.Topics, topics
+                            EventMetadataKey.Topics, topics
                         }
                     }
                 );

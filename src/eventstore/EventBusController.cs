@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using shared;
 
 namespace eventstore
@@ -94,6 +95,7 @@ namespace eventstore
 			var status = await _eventBus.StopSubscriber(message.Data.SubscriberName);
 			if (status == StopSubscriberResult.Stopped)
 			{
+				var h = message.Metadata;
 				await _eventPublisher.PublishEvent
 				(
 					new SubscriberStopped(message.Data.SubscriberName),
