@@ -9,14 +9,12 @@ namespace management
 {
 	internal struct StartProvisionSubscriptionStreamScript : IStartProvisionSubscriptionStreamScript
 	{
-		public StartProvisionSubscriptionStreamScript(Guid workflowId, string subscriptionName, string subscriberName)
+		public StartProvisionSubscriptionStreamScript(string subscriptionName, string subscriberName)
 		{
-			WorkflowId = workflowId;
 			SubscriptionStreamName = subscriptionName;
 			SubscriberName = subscriberName;
 		}
 
-		public Guid WorkflowId { get; }
 		public string SubscriptionStreamName { get; }
 		public string SubscriberName { get; }
 	}

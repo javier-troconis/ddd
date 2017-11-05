@@ -133,7 +133,7 @@ namespace management
 						eventPublisher.PublishEvent(new StopSubscriber("query_subscriber2"));
 						break;
 	                case '6':
-		                eventPublisher.PublishEvent(new StartProvisionSubscriptionStreamScript(Guid.NewGuid(), "query_subscriber2", "query_subscriber2"));
+		                eventPublisher.PublishEvent(new StartProvisionSubscriptionStreamScript("query_subscriber2", "query_subscriber2"));
 		                break;
 					default:
                         return;

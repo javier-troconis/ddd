@@ -11,20 +11,19 @@ using shared;
 
 namespace management
 {
-	//todo
 	public class ProvisionSubscriptionStreamScriptController :
 	    IMessageHandler<IRecordedEvent<IStartProvisionSubscriptionStreamScript>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriptionStreamProvisioned>, Task>
 	{
-		private static readonly string WorkflowType = typeof(ProvisionSubscriptionStreamScript).FullName;
-		private readonly Func<ProvisionSubscriptionStreamScript.Data, object>[] _activities;
+		private static readonly string ScriptType = typeof(ProvisionSubscriptionStreamScript).FullName;
+		private readonly IReadOnlyList<Func<ProvisionSubscriptionStreamScript.Data, object>> _activities;
 		private readonly IEventPublisher _eventPublisher;
 
 		public ProvisionSubscriptionStreamScriptController
 			(
-				Func<ProvisionSubscriptionStreamScript.Data, object>[] activities, 
+				IReadOnlyList<Func<ProvisionSubscriptionStreamScript.Data, object>> activities, 
 				IEventPublisher eventPublisher
 			)
 		{
@@ -34,54 +33,63 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			return ProcessNextActivity(message);
+			return ProcessNextScriptActivity(_eventPublisher, _activities, ScriptType, message);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
 		{
-			return ProcessNextActivity(message);
+			return ProcessNextScriptActivity(_eventPublisher, _activities, ScriptType, message);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriptionStreamProvisioned> message)
 		{
-			return ProcessNextActivity(message);
+			return ProcessNextScriptActivity(_eventPublisher, _activities, ScriptType, message);
 		}
 
 		public Task Handle(IRecordedEvent<IStartProvisionSubscriptionStreamScript> message)
 		{
-			var scriptData = new ProvisionSubscriptionStreamScript.Data
-				{
-					SubscriberName = message.Data.SubscriberName,
-					SubscriptionStreamName = message.Data.SubscriptionStreamName
-				};
+			return StartScript
+				(
+					_eventPublisher, 
+					_activities,
+					ScriptType,
+					new ProvisionSubscriptionStreamScript.Data
+					{
+						SubscriberName = message.Data.SubscriberName,
+						SubscriptionStreamName = message.Data.SubscriptionStreamName
+					}
+				);
+		}
+
+		private static Task StartScript<TScriptData>(IEventPublisher eventPublisher, IReadOnlyList<Func<TScriptData, object>> activities, string scriptType, TScriptData scriptData)
+		{
 			const int nextActivityIndex = 0;
-			var nextActivity = _activities[nextActivityIndex](scriptData);
-			return _eventPublisher.PublishEvent
+			var nextActivity = activities[nextActivityIndex](scriptData);
+			return eventPublisher.PublishEvent
 			(
 				nextActivity,
 				x => x
-					.SetMetadataEntry(EventHeaderKey.ScriptId, message.Data.WorkflowId)
-					.SetMetadataEntry(EventHeaderKey.ScriptType, WorkflowType)
+					.SetMetadataEntry(EventHeaderKey.ScriptId, Guid.NewGuid())
+					.SetMetadataEntry(EventHeaderKey.ScriptType, scriptType)
 					.SetMetadataEntry(EventHeaderKey.ScriptCurrentActivityIndex, nextActivityIndex)
 					.SetMetadataEntry(EventHeaderKey.ScriptData, JsonConvert.SerializeObject(scriptData))
 			);
 		}
 
-
-		private Task ProcessNextActivity<TData>(IRecordedEvent<TData> message)
+		private static Task ProcessNextScriptActivity<TScriptData>(IEventPublisher eventPublisher, IReadOnlyList<Func<TScriptData, object>> activities, string scriptType, IRecordedEvent message)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.ScriptType, out object workflowType) || !Equals(workflowType, WorkflowType))
+			if (!message.Metadata.TryGetValue(EventHeaderKey.ScriptType, out object messageScriptType) || !Equals(messageScriptType, scriptType))
 			{
 				return Task.CompletedTask;
 			}
 			var nextActivityIndex = Convert.ToInt32(message.Metadata[EventHeaderKey.ScriptCurrentActivityIndex]) + 1;
-			if (nextActivityIndex >= _activities.Length)
+			if (nextActivityIndex >= activities.Count)
 			{
 				return Task.CompletedTask;
 			}
-			var scriptData = JsonConvert.DeserializeObject<ProvisionSubscriptionStreamScript.Data>(Convert.ToString(message.Metadata[EventHeaderKey.ScriptData]));
-			var nextActivity = _activities[nextActivityIndex](scriptData);
-			return _eventPublisher.PublishEvent
+			var scriptData = JsonConvert.DeserializeObject<TScriptData>(Convert.ToString(message.Metadata[EventHeaderKey.ScriptData]));
+			var nextActivity = activities[nextActivityIndex](scriptData);
+			return eventPublisher.PublishEvent
 			(
 				nextActivity,
 				x => x
@@ -99,16 +107,17 @@ namespace management
 			public string SubscriberName { get; set; }
 		}
 
-		public static readonly Func<Data, object>[] Activities = 
-			{
-				x => new StopSubscriber(x.SubscriberName),
-				x => new StartSubscriber(x.SubscriberName),
-				x => new ProvisionSubscriptionStream(x.SubscriptionStreamName), 
-				x => new StopSubscriber(x.SubscriberName),
-				x => new ProvisionSubscriptionStream(x.SubscriptionStreamName),
-				x => new StartSubscriber(x.SubscriberName),
-				x => new StopSubscriber(x.SubscriberName),
-				x => new StartSubscriber(x.SubscriberName)
-			};
+		public static readonly IReadOnlyList<Func<Data, object>> Activities = 
+			new Func<Data, object>[]
+				{
+					x => new StopSubscriber(x.SubscriberName),
+					x => new StartSubscriber(x.SubscriberName),
+					x => new ProvisionSubscriptionStream(x.SubscriptionStreamName), 
+					x => new StopSubscriber(x.SubscriberName),
+					x => new ProvisionSubscriptionStream(x.SubscriptionStreamName),
+					x => new StartSubscriber(x.SubscriberName),
+					x => new StopSubscriber(x.SubscriberName),
+					x => new StartSubscriber(x.SubscriberName)
+				};
 	}
 }
