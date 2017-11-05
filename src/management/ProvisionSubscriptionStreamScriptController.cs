@@ -49,20 +49,21 @@ namespace management
 
 		public Task Handle(IRecordedEvent<IStartProvisionSubscriptionStreamScript> message)
 		{
-			var data = new ProvisionSubscriptionStreamScript.Data
+			var scriptData = new ProvisionSubscriptionStreamScript.Data
 				{
 					SubscriberName = message.Data.SubscriberName,
 					SubscriptionStreamName = message.Data.SubscriptionStreamName
 				};
-			const int currentActivityIndex = 0;
+			const int nextActivityIndex = 0;
+			var nextActivity = _activities[nextActivityIndex](scriptData);
 			return _eventPublisher.PublishEvent
 			(
-				_activities[currentActivityIndex](data),
+				nextActivity,
 				x => x
 					.SetMetadataEntry(EventHeaderKey.WorkflowId, message.Data.WorkflowId)
 					.SetMetadataEntry(EventHeaderKey.WorkflowType, WorkflowType)
-					.SetMetadataEntry(EventHeaderKey.WorkflowCurrentActivityIndex, currentActivityIndex)
-					.SetMetadataEntry(EventHeaderKey.WorkflowData, JsonConvert.SerializeObject(data))
+					.SetMetadataEntry(EventHeaderKey.WorkflowCurrentActivityIndex, nextActivityIndex)
+					.SetMetadataEntry(EventHeaderKey.WorkflowData, JsonConvert.SerializeObject(scriptData))
 			);
 		}
 
@@ -73,15 +74,17 @@ namespace management
 			{
 				return Task.CompletedTask;
 			}
-			var nextActivityIndex = (int) message.Metadata[EventHeaderKey.WorkflowCurrentActivityIndex] + 1;
+			var nextActivityIndex = Convert.ToInt32(message.Metadata[EventHeaderKey.WorkflowCurrentActivityIndex]) + 1;
 			if (nextActivityIndex >= _activities.Length)
 			{
 				return Task.CompletedTask;
 			}
-			var data = JsonConvert.DeserializeObject<ProvisionSubscriptionStreamScript.Data>((string)message.Metadata[EventHeaderKey.WorkflowData]);
+			var scriptData = JsonConvert.DeserializeObject<ProvisionSubscriptionStreamScript.Data>(Convert.ToString(message.Metadata[EventHeaderKey.WorkflowData]));
+			var nextActivity = _activities[nextActivityIndex](scriptData);
+			Console.WriteLine(nextActivity.GetType());
 			return _eventPublisher.PublishEvent
 			(
-				_activities[nextActivityIndex](data),
+				nextActivity,
 				x => x
 					.CopyMetadata(message.Metadata)
 					.SetMetadataEntry(EventHeaderKey.WorkflowCurrentActivityIndex, nextActivityIndex)
