@@ -103,8 +103,7 @@ namespace management
 				Console.WriteLine("3 - ProvisionAllSubscriptionStreams");
 	            Console.WriteLine("4 - Start - query_subscriber2");
 	            Console.WriteLine("5 - Stop - query_subscriber2");
-				Console.WriteLine("6 - RestartSubscriber - query_subscriber2");
-	            Console.WriteLine("7 - ProvisionSubscriptionStream - query_subscriber2");
+	            Console.WriteLine("6 - ProvisionSubscriptionStream - query_subscriber2");
 
 				var option = Console.ReadKey().KeyChar;
                 switch (option)
@@ -134,10 +133,7 @@ namespace management
 						eventPublisher.PublishEvent(new StopSubscriber("query_subscriber2"));
 						break;
 	                case '6':
-						eventPublisher.PublishEvent(new RunRestartSubscriberWorkflow(Guid.NewGuid(), "query_subscriber2"));
-						break;
-	                case '7':
-		                eventPublisher.PublishEvent(new RunProvisionSubscriptionStreamWorkflow(Guid.NewGuid(), "query_subscriber2", "query_subscriber2"));
+		                eventPublisher.PublishEvent(new StartProvisionSubscriptionStreamScript(Guid.NewGuid(), "query_subscriber2", "query_subscriber2"));
 		                break;
 					default:
                         return;

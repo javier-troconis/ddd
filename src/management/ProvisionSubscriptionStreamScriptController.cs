@@ -13,7 +13,7 @@ namespace management
 {
 	//todo
 	public class ProvisionSubscriptionStreamScriptController :
-	    IMessageHandler<IRecordedEvent<IRunProvisionSubscriptionStreamWorkflow>, Task>,
+	    IMessageHandler<IRecordedEvent<IStartProvisionSubscriptionStreamScript>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriptionStreamProvisioned>, Task>
@@ -47,7 +47,7 @@ namespace management
 			return ProcessNextActivity(message);
 		}
 
-		public Task Handle(IRecordedEvent<IRunProvisionSubscriptionStreamWorkflow> message)
+		public Task Handle(IRecordedEvent<IStartProvisionSubscriptionStreamScript> message)
 		{
 			var data = new ProvisionSubscriptionStreamScript.Data
 				{

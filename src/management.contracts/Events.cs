@@ -2,16 +2,10 @@
 
 namespace management.contracts
 {
-	public interface IRunProvisionSubscriptionStreamWorkflow
+	public interface IStartProvisionSubscriptionStreamScript
 	{
 		Guid WorkflowId { get; }
 		string SubscriptionStreamName { get; }
-		string SubscriberName { get; }
-	}
-
-	public interface IRunRestartSubscriberWorkflow
-	{
-		Guid WorkflowId { get; }
 		string SubscriberName { get; }
 	}
 }
