@@ -29,7 +29,7 @@ namespace management
 		    resolvedEvent =>
 		    {
 				var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-				return eventMetadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) && Equals(workflowType, "");
+				return eventMetadata.TryGetValue(EventHeaderKey.ScriptType, out object workflowType) && Equals(workflowType, "");
 			};
 
 		public static void Main(string[] args)

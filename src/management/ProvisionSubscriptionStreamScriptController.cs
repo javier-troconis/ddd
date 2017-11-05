@@ -60,34 +60,33 @@ namespace management
 			(
 				nextActivity,
 				x => x
-					.SetMetadataEntry(EventHeaderKey.WorkflowId, message.Data.WorkflowId)
-					.SetMetadataEntry(EventHeaderKey.WorkflowType, WorkflowType)
-					.SetMetadataEntry(EventHeaderKey.WorkflowCurrentActivityIndex, nextActivityIndex)
-					.SetMetadataEntry(EventHeaderKey.WorkflowData, JsonConvert.SerializeObject(scriptData))
+					.SetMetadataEntry(EventHeaderKey.ScriptId, message.Data.WorkflowId)
+					.SetMetadataEntry(EventHeaderKey.ScriptType, WorkflowType)
+					.SetMetadataEntry(EventHeaderKey.ScriptCurrentActivityIndex, nextActivityIndex)
+					.SetMetadataEntry(EventHeaderKey.ScriptData, JsonConvert.SerializeObject(scriptData))
 			);
 		}
 
 
 		private Task ProcessNextActivity<TData>(IRecordedEvent<TData> message)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) || !Equals(workflowType, WorkflowType))
+			if (!message.Metadata.TryGetValue(EventHeaderKey.ScriptType, out object workflowType) || !Equals(workflowType, WorkflowType))
 			{
 				return Task.CompletedTask;
 			}
-			var nextActivityIndex = Convert.ToInt32(message.Metadata[EventHeaderKey.WorkflowCurrentActivityIndex]) + 1;
+			var nextActivityIndex = Convert.ToInt32(message.Metadata[EventHeaderKey.ScriptCurrentActivityIndex]) + 1;
 			if (nextActivityIndex >= _activities.Length)
 			{
 				return Task.CompletedTask;
 			}
-			var scriptData = JsonConvert.DeserializeObject<ProvisionSubscriptionStreamScript.Data>(Convert.ToString(message.Metadata[EventHeaderKey.WorkflowData]));
+			var scriptData = JsonConvert.DeserializeObject<ProvisionSubscriptionStreamScript.Data>(Convert.ToString(message.Metadata[EventHeaderKey.ScriptData]));
 			var nextActivity = _activities[nextActivityIndex](scriptData);
-			Console.WriteLine(nextActivity.GetType());
 			return _eventPublisher.PublishEvent
 			(
 				nextActivity,
 				x => x
 					.CopyMetadata(message.Metadata)
-					.SetMetadataEntry(EventHeaderKey.WorkflowCurrentActivityIndex, nextActivityIndex)
+					.SetMetadataEntry(EventHeaderKey.ScriptCurrentActivityIndex, nextActivityIndex)
 			);
 		}
 	}

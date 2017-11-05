@@ -2,9 +2,9 @@
 {
     internal static class EventHeaderKey
     {
-		public const string WorkflowId = "workflowId";
-	    public const string WorkflowType = "workflowType";
-	    public const string WorkflowData = "workflowData";
-	    public const string WorkflowCurrentActivityIndex = "workflowCurrentActivityIndex";
+		public const string ScriptId = "scriptId";
+	    public const string ScriptType = "scriptType";
+	    public const string ScriptData = "scriptData";
+	    public const string ScriptCurrentActivityIndex = "scriptCurrentActivityIndex";
 	}
 }
