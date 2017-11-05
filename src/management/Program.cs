@@ -1,18 +1,38 @@
 ﻿ using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading.Tasks;
+ using System.Text;
+ using System.Threading.Tasks;
 
 using eventstore;
  using EventStore.ClientAPI;
  using EventStore.ClientAPI.Common.Log;
+ using Newtonsoft.Json;
+ using shared;
 
 
 namespace management
 {
     public class Program
     {
-        public static void Main(string[] args)
+	    static Func<ResolvedEvent, Task<ResolvedEvent>> Filter(Func<ResolvedEvent, bool> predicate, Func<ResolvedEvent, Task<ResolvedEvent>> trueContinuation)
+	    {
+		    return resolvedEvent => predicate(resolvedEvent) ? trueContinuation(resolvedEvent) : Task.FromResult(resolvedEvent);
+	    }
+
+	    static Func<ResolvedEvent, Task<ResolvedEvent>> Filter(Func<ResolvedEvent, bool> predicate, IMessageHandler subscriber)
+	    {
+		    return Filter(predicate, subscriber.CreateSubscriberEventHandle());
+	    }
+
+		private static readonly Func<ResolvedEvent, bool> Predicate =
+		    resolvedEvent =>
+		    {
+				var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+				return eventMetadata.TryGetValue(EventHeaderKey.WorkflowType, out object workflowType) && Equals(workflowType, "");
+			};
+
+		public static void Main(string[] args)
         {
 			Func<IEventStoreConnection> createConnection = new EventStoreConnectionFactory(
                 EventStoreSettings.ClusterDns,
@@ -35,11 +55,7 @@ namespace management
 				registry => registry
 					.RegisterPersistentSubscriber
 					(
-						new RestartSubscriberWorkflowController(eventPublisher)
-					)
-					.RegisterPersistentSubscriber
-					(
-						new ProvisionSubscriptionStreamWorkflowController(eventPublisher)
+						new ProvisionSubscriptionStreamScriptController(ProvisionSubscriptionStreamScript.Activities, eventPublisher)
 					)
 				);
 	        applicationEventBus

@@ -13,8 +13,7 @@ namespace management
 			_subscriptionStreamProvisioningService =
 				subscriptionStreamProvisioningService
 					.RegisterSubscriptionStream<EventBusController>()
-					.RegisterSubscriptionStream<RestartSubscriberWorkflowController>()
-					.RegisterSubscriptionStream<ProvisionSubscriptionStreamWorkflowController>();
+					.RegisterSubscriptionStream<ProvisionSubscriptionStreamScriptController>();
 		}
 
 		public Task Handle(IRecordedEvent<IProvisionSubscriptionStream> message)
