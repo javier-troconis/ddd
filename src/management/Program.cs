@@ -15,22 +15,22 @@ namespace management
 {
     public class Program
     {
-	    static Func<ResolvedEvent, Task<ResolvedEvent>> Filter(Func<ResolvedEvent, bool> predicate, Func<ResolvedEvent, Task<ResolvedEvent>> trueContinuation)
-	    {
-		    return resolvedEvent => predicate(resolvedEvent) ? trueContinuation(resolvedEvent) : Task.FromResult(resolvedEvent);
-	    }
+	 //   static Func<ResolvedEvent, Task<ResolvedEvent>> Filter(Func<ResolvedEvent, bool> predicate, Func<ResolvedEvent, Task<ResolvedEvent>> trueContinuation)
+	 //   {
+		//    return resolvedEvent => predicate(resolvedEvent) ? trueContinuation(resolvedEvent) : Task.FromResult(resolvedEvent);
+	 //   }
 
-	    static Func<ResolvedEvent, Task<ResolvedEvent>> Filter(Func<ResolvedEvent, bool> predicate, IMessageHandler subscriber)
-	    {
-		    return Filter(predicate, subscriber.CreateSubscriberEventHandle());
-	    }
+	 //   static Func<ResolvedEvent, Task<ResolvedEvent>> Filter(Func<ResolvedEvent, bool> predicate, IMessageHandler subscriber)
+	 //   {
+		//    return Filter(predicate, subscriber.CreateSubscriberEventHandle());
+	 //   }
 
-		private static readonly Func<ResolvedEvent, bool> Predicate =
-		    resolvedEvent =>
-		    {
-				var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
-				return eventMetadata.TryGetValue(EventHeaderKey.ScriptType, out object workflowType) && Equals(workflowType, "");
-			};
+		//private static readonly Func<ResolvedEvent, bool> Predicate =
+		//    resolvedEvent =>
+		//    {
+		//		var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+		//		return eventMetadata.TryGetValue(EventHeaderKey.ScriptType, out object workflowType) && Equals(workflowType, "");
+		//	};
 
 		public static void Main(string[] args)
         {
@@ -51,12 +51,12 @@ namespace management
 			var applicationEventBus =
 				EventBus.CreateEventBus
 				(
-				createConnection,
-				registry => registry
-					.RegisterPersistentSubscriber
-					(
-						new ProvisionSubscriptionStreamScriptController(ProvisionSubscriptionStreamScript.Activities, eventPublisher)
-					)
+					createConnection,
+					registry => registry
+						.RegisterPersistentSubscriber
+						(
+							new ProvisionSubscriptionStreamScriptController(ProvisionSubscriptionStreamScript.Activities, eventPublisher)
+						)
 				);
 	        applicationEventBus
 		        .StartAllSubscribers();

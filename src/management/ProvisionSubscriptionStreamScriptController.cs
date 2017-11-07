@@ -65,6 +65,7 @@ namespace management
 		{
 			const int nextActivityIndex = 0;
 			var nextActivity = activities[nextActivityIndex](scriptData);
+			Console.WriteLine(nextActivity.GetType());
 			return eventPublisher.PublishEvent
 			(
 				nextActivity,
@@ -78,7 +79,7 @@ namespace management
 
 		private static Task ProcessNextScriptActivity<TScriptData>(IEventPublisher eventPublisher, IReadOnlyList<Func<TScriptData, object>> activities, string scriptType, IRecordedEvent message)
 		{
-			if (!message.Metadata.TryGetValue(EventHeaderKey.ScriptType, out object messageScriptType) || !Equals(messageScriptType, scriptType))
+			if (!message.Metadata.TryGetValue(EventHeaderKey.ScriptType, out object candidateScriptType) || !Equals(candidateScriptType, scriptType))
 			{
 				return Task.CompletedTask;
 			}
@@ -89,6 +90,7 @@ namespace management
 			}
 			var scriptData = JsonConvert.DeserializeObject<TScriptData>(Convert.ToString(message.Metadata[EventHeaderKey.ScriptData]));
 			var nextActivity = activities[nextActivityIndex](scriptData);
+			Console.WriteLine(nextActivity.GetType());
 			return eventPublisher.PublishEvent
 			(
 				nextActivity,
@@ -97,27 +99,5 @@ namespace management
 					.SetMetadataEntry(EventHeaderKey.ScriptCurrentActivityIndex, nextActivityIndex)
 			);
 		}
-	}
-
-	public static class ProvisionSubscriptionStreamScript
-	{
-		public class Data
-		{
-			public string SubscriptionStreamName { get; set; }
-			public string SubscriberName { get; set; }
-		}
-
-		public static readonly IReadOnlyList<Func<Data, object>> Activities = 
-			new Func<Data, object>[]
-				{
-					x => new StopSubscriber(x.SubscriberName),
-					x => new StartSubscriber(x.SubscriberName),
-					x => new ProvisionSubscriptionStream(x.SubscriptionStreamName), 
-					x => new StopSubscriber(x.SubscriberName),
-					x => new ProvisionSubscriptionStream(x.SubscriptionStreamName),
-					x => new StartSubscriber(x.SubscriberName),
-					x => new StopSubscriber(x.SubscriberName),
-					x => new StartSubscriber(x.SubscriberName)
-				};
 	}
 }
