@@ -47,16 +47,16 @@ namespace eventstore
 
         public ISubscriptionStreamProvisioningService RegisterSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler
         {
-			return new SubscriptionStreamProvisioningService(
-				_projectionManager, 
-				new Dictionary<string, Func<Task>>
-					{
-						{
-							typeof(TSubscription).GetEventStoreName(),
-							() =>
-							{
-								const string queryTemplate =
-									@"var topics = [{0}];
+	        return new SubscriptionStreamProvisioningService(
+		        _projectionManager,
+		        _registry.Merge(new Dictionary<string, Func<Task>>
+		        {
+			        {
+				        typeof(TSubscription).GetEventStoreName(),
+				        () =>
+				        {
+					        const string queryTemplate =
+						        @"var topics = [{0}];
 
 function handle(s, e) {{
     var event = e.bodyRaw;
@@ -80,16 +80,18 @@ var handlers = topics.reduce(
 
 fromAll()
     .when(handlers);";
-								var subscriptionType = typeof(TSubscription);
-								var handlingTypes = subscriptionType.GetMessageHandlerTypes()
-									.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-								var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
-								var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), typeof(TSubscription).GetEventStoreName());
-								return _projectionManager.CreateOrUpdateContinuousProjection(typeof(TSubscription).GetEventStoreName(), query);
-							}
-						}
-					}
-				.Merge(_registry));
+					        var subscriptionType = typeof(TSubscription);
+					        var handlingTypes = subscriptionType.GetMessageHandlerTypes()
+						        .Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
+					        var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreName());
+					        var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")),
+						        typeof(TSubscription).GetEventStoreName());
+					        return _projectionManager.CreateOrUpdateContinuousProjection(typeof(TSubscription).GetEventStoreName(),
+						        query);
+				        }
+			        }
+		        })
+			);
         }
 
 	    public async Task<ProvisionSubscriptionStreamResult> ProvisionSubscriptionStream(string subscriptionStreamName)

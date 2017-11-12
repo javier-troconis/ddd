@@ -40,16 +40,23 @@ namespace eventstore
 		{
 			return new EventConfiguration(
 				EventId,
-                EventType,
-                new Dictionary<string, object>
+				EventType,
+				new Dictionary<string, object>
 				(
-					new Dictionary<string, object>
-					{
-						{
-							key, value
-						}
-					}.Merge(Metadata.ToDictionary(x => x.Key, x => x.Value)))
-				);
+					Metadata.ToDictionary(x => x.Key, x => x.Value)
+						.Merge
+						(
+							new Dictionary<string, object>
+							{
+								{
+									key, value
+								}
+							}
+						)
+				)
+			);
+
+
 		}
 
 		public EventConfiguration CopyMetadata(IReadOnlyDictionary<string, object> metadata)

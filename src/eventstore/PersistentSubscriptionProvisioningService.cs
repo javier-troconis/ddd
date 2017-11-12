@@ -33,7 +33,7 @@ namespace eventstore
     public class PersistentSubscriptionProvisioningService : IPersistentSubscriptionProvisioningService
     {
         private readonly IPersistentSubscriptionManager _persistentSubscriptionManager;
-        private readonly IDictionary<string, Func<Task>> _registry;
+        private readonly IReadOnlyDictionary<string, Func<Task>> _registry;
 
         public PersistentSubscriptionProvisioningService
 			(
@@ -48,7 +48,7 @@ namespace eventstore
 
         private PersistentSubscriptionProvisioningService(
             IPersistentSubscriptionManager persistentSubscriptionManager,
-            IDictionary<string, Func<Task>> registry
+            IReadOnlyDictionary<string, Func<Task>> registry
             )
         {
             _persistentSubscriptionManager = persistentSubscriptionManager;
@@ -68,25 +68,32 @@ namespace eventstore
 				(
 					_persistentSubscriptionManager,
 					new Dictionary<string, Func<Task>>
-					{
-						{
-							typeof(TSubscription).GetEventStoreName() + "-" + typeof(TSubscriptionGroup).GetEventStoreName(),
-							() =>
+					(
+						_registry.ToDictionary(x => x.Key, x => x.Value)
+						.Merge
+						(
+							new Dictionary<string, Func<Task>>
 							{
-								var streamName = typeof(TSubscription).GetEventStoreName();
-								var persistentSubscriptionSettings = (configurePersistentSubscription ?? (x => x))(
-									PersistentSubscriptionSettings
-										.Create()
-										.ResolveLinkTos()
-										.StartFromBeginning()
-										.MaximumCheckPointCountOf(1)
-										.CheckPointAfter(TimeSpan.FromSeconds(1))
-										.WithExtraStatistics()
-									);
-								return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, typeof(TSubscriptionGroup).GetEventStoreName(), persistentSubscriptionSettings);
+								{
+									typeof(TSubscription).GetEventStoreName() + "-" + typeof(TSubscriptionGroup).GetEventStoreName(),
+									() =>
+									{
+										var streamName = typeof(TSubscription).GetEventStoreName();
+										var persistentSubscriptionSettings = (configurePersistentSubscription ?? (x => x))(
+											PersistentSubscriptionSettings
+												.Create()
+												.ResolveLinkTos()
+												.StartFromBeginning()
+												.MaximumCheckPointCountOf(1)
+												.CheckPointAfter(TimeSpan.FromSeconds(1))
+												.WithExtraStatistics()
+											);
+										return _persistentSubscriptionManager.CreateOrUpdatePersistentSubscription(streamName, typeof(TSubscriptionGroup).GetEventStoreName(), persistentSubscriptionSettings);
+									}
+								}
 							}
-						}
-					}.Merge(_registry)
+						)
+					)
 				);
         }
 

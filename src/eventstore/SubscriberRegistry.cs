@@ -78,11 +78,11 @@ namespace eventstore
 
     public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
     {
-        private readonly IDictionary<string, ConnectSubscriber> _subscriberRegistrations;
+        private readonly IReadOnlyDictionary<string, ConnectSubscriber> _registry;
 
-        private SubscriberRegistry(IDictionary<string, ConnectSubscriber> subscriberRegistrations)
+        private SubscriberRegistry(IReadOnlyDictionary<string, ConnectSubscriber> registry)
         {
-            _subscriberRegistrations = subscriberRegistrations;
+            _registry = registry;
         }
 
         public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
@@ -103,23 +103,29 @@ namespace eventstore
                     new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => "default"));
             return new SubscriberRegistry
                 (
-                    new Dictionary<string, ConnectSubscriber>
-                        {
-                            {
-                                typeof(TSubscriber).GetEventStoreName(),
-                                createConnection =>
-                                    SubscriberConnection.ConnectCatchUpSubscriber
-                                    (
-                                        createConnection,
-                                        registrationConfiguration.SubscriptionStream,
-                                        handleEvent,
-                                        getCheckpoint,
-                                        registrationConfiguration.GetEventHandlingQueueKey
-                                    )
-                            }
-                        }
-                    .Merge(_subscriberRegistrations)
-                );
+					new Dictionary<string, ConnectSubscriber>
+					(
+						_registry.ToDictionary(x => x.Key, x => x.Value)
+						.Merge
+						(
+							new Dictionary<string, ConnectSubscriber>
+								{
+									{
+										typeof(TSubscriber).GetEventStoreName(),
+										createConnection =>
+											SubscriberConnection.ConnectCatchUpSubscriber
+											(
+												createConnection,
+												registrationConfiguration.SubscriptionStream,
+												handleEvent,
+												getCheckpoint,
+												registrationConfiguration.GetEventHandlingQueueKey
+											)
+									}
+								}
+						)
+					)
+				);
         }
 
         public SubscriberRegistry RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, VolatileSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
@@ -139,20 +145,26 @@ namespace eventstore
                     new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
             return new SubscriberRegistry
                 (
-                     new Dictionary<string, ConnectSubscriber>
-                        {
-                            {
-                                typeof(TSubscriber).GetEventStoreName(),
-                                createConnection =>
-                                    SubscriberConnection.ConnectVolatileSubscriber
-                                    (
-                                        createConnection,
-                                        registrationConfiguration.SubscriptionStream,
-                                        handleEvent
-                                    )
-                            }
-                        }
-                    .Merge(_subscriberRegistrations)
+					new Dictionary<string, ConnectSubscriber>
+					(
+						_registry.ToDictionary(x => x.Key, x => x.Value)
+							.Merge
+							(
+								new Dictionary<string, ConnectSubscriber>
+									{
+										{
+											typeof(TSubscriber).GetEventStoreName(),
+											createConnection =>
+												SubscriberConnection.ConnectVolatileSubscriber
+												(
+													createConnection,
+													registrationConfiguration.SubscriptionStream,
+													handleEvent
+												)
+										}
+									}
+							)
+					)
                 );
         }
 
@@ -174,21 +186,27 @@ namespace eventstore
                     new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
             return new SubscriberRegistry
                 (
-                     new Dictionary<string, ConnectSubscriber>
-                        {
-                            {
-                                typeof(TSubscriber).GetEventStoreName(),
-                                createConnection =>
-                                    SubscriberConnection.ConnectPersistentSubscriber
-                                    (
-                                        createConnection,
-                                        registrationConfiguration.SubscriptionStream,
-                                        typeof(TSubscriber).GetEventStoreName(),
-                                        handleEvent
-                                    )
-                            }
-                        }
-                    .Merge(_subscriberRegistrations)
+					new Dictionary<string, ConnectSubscriber>
+					(
+						_registry.ToDictionary(x => x.Key, x => x.Value)
+							.Merge
+							(
+								new Dictionary<string, ConnectSubscriber>
+									{
+										{
+											typeof(TSubscriber).GetEventStoreName(),
+											createConnection =>
+												SubscriberConnection.ConnectPersistentSubscriber
+												(
+													createConnection,
+													registrationConfiguration.SubscriptionStream,
+													typeof(TSubscriber).GetEventStoreName(),
+													handleEvent
+												)
+										}
+									}
+							)
+					)
                 );
         }
 
@@ -199,7 +217,7 @@ namespace eventstore
 
         public IEnumerator<SubscriberRegistration> GetEnumerator()
         {
-            return _subscriberRegistrations
+            return _registry
                 .Select(x => new SubscriberRegistration(x.Key, x.Value))
                 .GetEnumerator();
         }
