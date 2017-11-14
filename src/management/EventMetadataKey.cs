@@ -1,6 +1,6 @@
 ﻿namespace management
 {
-    internal static class EventHeaderKey
+    internal static class EventMetadataKey
     {
 		public const string ScriptId = "scriptId";
 	    public const string ScriptType = "scriptType";

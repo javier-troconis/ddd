@@ -9,7 +9,7 @@ using shared;
 
 namespace management
 {
-    public static class ScriptController
+    public static class ScriptCommand
     {
 	    public static Task StartScript<TScriptData>(IEventPublisher eventPublisher, IReadOnlyList<Func<TScriptData, object>> activities, string scriptType, TScriptData scriptData)
 	    {
@@ -19,32 +19,32 @@ namespace management
 		    (
 			    nextActivity,
 			    x => x
-				    .SetMetadataEntry(EventHeaderKey.ScriptId, Guid.NewGuid())
-				    .SetMetadataEntry(EventHeaderKey.ScriptType, scriptType)
-				    .SetMetadataEntry(EventHeaderKey.ScriptCurrentActivityIndex, nextActivityIndex)
-				    .SetMetadataEntry(EventHeaderKey.ScriptData, JsonConvert.SerializeObject(scriptData))
+				    .SetMetadataEntry(EventMetadataKey.ScriptId, Guid.NewGuid())
+				    .SetMetadataEntry(EventMetadataKey.ScriptType, scriptType)
+				    .SetMetadataEntry(EventMetadataKey.ScriptCurrentActivityIndex, nextActivityIndex)
+				    .SetMetadataEntry(EventMetadataKey.ScriptData, JsonConvert.SerializeObject(scriptData))
 		    );
 	    }
 
 	    public static Task ProcessNextScriptActivity<TScriptData>(IEventPublisher eventPublisher, IReadOnlyList<Func<TScriptData, object>> activities, string scriptType, IRecordedEvent message)
 	    {
-		    if (!message.Metadata.TryGetValue(EventHeaderKey.ScriptType, out object candidateScriptType) || !Equals(candidateScriptType, scriptType))
+		    if (!message.Metadata.TryGetValue(EventMetadataKey.ScriptType, out object candidateScriptType) || !Equals(candidateScriptType, scriptType))
 		    {
 			    return Task.CompletedTask;
 		    }
-		    var nextActivityIndex = Convert.ToInt32(message.Metadata[EventHeaderKey.ScriptCurrentActivityIndex]) + 1;
+		    var nextActivityIndex = Convert.ToInt32(message.Metadata[EventMetadataKey.ScriptCurrentActivityIndex]) + 1;
 		    if (nextActivityIndex >= activities.Count)
 		    {
 			    return Task.CompletedTask;
 		    }
-		    var scriptData = JsonConvert.DeserializeObject<TScriptData>(Convert.ToString(message.Metadata[EventHeaderKey.ScriptData]));
+		    var scriptData = JsonConvert.DeserializeObject<TScriptData>(Convert.ToString(message.Metadata[EventMetadataKey.ScriptData]));
 		    var nextActivity = activities[nextActivityIndex](scriptData);
 		    return eventPublisher.PublishEvent
 		    (
 			    nextActivity,
 			    x => x
 				    .CopyMetadata(message.Metadata)
-				    .SetMetadataEntry(EventHeaderKey.ScriptCurrentActivityIndex, nextActivityIndex)
+				    .SetMetadataEntry(EventMetadataKey.ScriptCurrentActivityIndex, nextActivityIndex)
 		    );
 	    }
 	}

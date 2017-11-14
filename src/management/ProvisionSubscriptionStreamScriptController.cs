@@ -32,22 +32,22 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			return ScriptController.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
+			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
 		{
-			return ScriptController.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
+			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriptionStreamProvisioned> message)
 		{
-			return ScriptController.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
+			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
 		}
 
 		public Task Handle(IRecordedEvent<IStartProvisionSubscriptionStreamScript> message)
 		{
-			return ScriptController.StartScript
+			return ScriptCommand.StartScript
 				(
 					_eventPublisher,
 					_scriptDefinition.Activities,
