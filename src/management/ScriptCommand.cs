@@ -11,34 +11,34 @@ namespace management
 {
     public static class ScriptCommand
     {
-	    public static Task StartScript<TScriptData>(IEventPublisher eventPublisher, IReadOnlyList<Func<TScriptData, object>> activities, string scriptType, TScriptData scriptData)
+	    public static Task StartScript<TScriptData>(IEventPublisher eventPublisher, IScriptDefinition<TScriptData> scriptDefinition, TScriptData scriptData)
 	    {
 		    const int nextActivityIndex = 0;
-		    var nextActivity = activities[nextActivityIndex](scriptData);
+		    var nextActivity = scriptDefinition.Activities[nextActivityIndex](scriptData);
 		    return eventPublisher.PublishEvent
 		    (
 			    nextActivity,
 			    x => x
 				    .SetMetadataEntry(EventMetadataKey.ScriptId, Guid.NewGuid())
-				    .SetMetadataEntry(EventMetadataKey.ScriptType, scriptType)
+				    .SetMetadataEntry(EventMetadataKey.ScriptType, scriptDefinition.Type)
 				    .SetMetadataEntry(EventMetadataKey.ScriptCurrentActivityIndex, nextActivityIndex)
 				    .SetMetadataEntry(EventMetadataKey.ScriptData, JsonConvert.SerializeObject(scriptData))
 		    );
 	    }
 
-	    public static Task ProcessNextScriptActivity<TScriptData>(IEventPublisher eventPublisher, IReadOnlyList<Func<TScriptData, object>> activities, string scriptType, IRecordedEvent message)
+	    public static Task ProcessNextScriptActivity<TScriptData>(IEventPublisher eventPublisher, IScriptDefinition<TScriptData> scriptDefinition, IRecordedEvent message)
 	    {
-		    if (!message.Metadata.TryGetValue(EventMetadataKey.ScriptType, out object candidateScriptType) || !Equals(candidateScriptType, scriptType))
+		    if (!message.Metadata.TryGetValue(EventMetadataKey.ScriptType, out object candidateScriptType) || !Equals(candidateScriptType, scriptDefinition.Type))
 		    {
 			    return Task.CompletedTask;
 		    }
 		    var nextActivityIndex = Convert.ToInt32(message.Metadata[EventMetadataKey.ScriptCurrentActivityIndex]) + 1;
-		    if (nextActivityIndex >= activities.Count)
+		    if (nextActivityIndex >= scriptDefinition.Activities.Count)
 		    {
 			    return Task.CompletedTask;
 		    }
 		    var scriptData = JsonConvert.DeserializeObject<TScriptData>(Convert.ToString(message.Metadata[EventMetadataKey.ScriptData]));
-		    var nextActivity = activities[nextActivityIndex](scriptData);
+		    var nextActivity = scriptDefinition.Activities[nextActivityIndex](scriptData);
 		    return eventPublisher.PublishEvent
 		    (
 			    nextActivity,

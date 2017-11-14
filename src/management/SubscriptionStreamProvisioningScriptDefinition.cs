@@ -7,25 +7,25 @@ using eventstore;
 
 namespace management
 {
-	public class ProvisionSubscriptionStreamScriptData
+	public class SubscriptionStreamProvisioningScriptData
 	{
 		public string SubscriptionStreamName { get; set; }
 		public string SubscriberName { get; set; }
 	}
 
-	public class ProvisionSubscriptionStreamScriptDefinition : IScriptDefinition<ProvisionSubscriptionStreamScriptData>
+	public class SubscriptionStreamProvisioningScriptDefinition : IScriptDefinition<SubscriptionStreamProvisioningScriptData>
 	{
-		public static readonly IScriptDefinition<ProvisionSubscriptionStreamScriptData> Instance = new ProvisionSubscriptionStreamScriptDefinition();
+		public static readonly IScriptDefinition<SubscriptionStreamProvisioningScriptData> Instance = new SubscriptionStreamProvisioningScriptDefinition();
 
-		private ProvisionSubscriptionStreamScriptDefinition()
+		private SubscriptionStreamProvisioningScriptDefinition()
 		{
 			
 		}
 
-		public string Type => nameof(ProvisionSubscriptionStreamScriptDefinition);
+		public string Type => "SubscriptionStreamProvisioningScript";
 
-		public IReadOnlyList<Func<ProvisionSubscriptionStreamScriptData, object>> Activities =>
-			new Func<ProvisionSubscriptionStreamScriptData, object>[]
+		public IReadOnlyList<Func<SubscriptionStreamProvisioningScriptData, object>> Activities =>
+			new Func<SubscriptionStreamProvisioningScriptData, object>[]
 			{
 				x => new StopSubscriber(x.SubscriberName),
 				x => new StartSubscriber(x.SubscriberName),

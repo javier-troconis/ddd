@@ -11,19 +11,19 @@ using shared;
 
 namespace management
 {
-	public class ProvisionSubscriptionStreamScriptController :
+	public class SubscriptionStreamProvisioningScriptController :
 	    IMessageHandler<IRecordedEvent<IStartProvisionSubscriptionStreamScript>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStopped>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriberStarted>, Task>,
 		IMessageHandler<IRecordedEvent<ISubscriptionStreamProvisioned>, Task>
 	{
-		private readonly IScriptDefinition<ProvisionSubscriptionStreamScriptData> _scriptDefinition;
 		private readonly IEventPublisher _eventPublisher;
-
-		public ProvisionSubscriptionStreamScriptController
+		private readonly IScriptDefinition<SubscriptionStreamProvisioningScriptData> _scriptDefinition;
+		
+		public SubscriptionStreamProvisioningScriptController
 			(
-				IScriptDefinition<ProvisionSubscriptionStreamScriptData> scriptDefinition, 
-				IEventPublisher eventPublisher
+				IEventPublisher eventPublisher,
+				IScriptDefinition<SubscriptionStreamProvisioningScriptData> scriptDefinition
 			)
 		{
 			_scriptDefinition = scriptDefinition;
@@ -32,17 +32,17 @@ namespace management
 
 		public Task Handle(IRecordedEvent<ISubscriberStopped> message)
 		{
-			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
+			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition, message);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriberStarted> message)
 		{
-			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
+			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition, message);
 		}
 
 		public Task Handle(IRecordedEvent<ISubscriptionStreamProvisioned> message)
 		{
-			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition.Activities, _scriptDefinition.Type, message);
+			return ScriptCommand.ProcessNextScriptActivity(_eventPublisher, _scriptDefinition, message);
 		}
 
 		public Task Handle(IRecordedEvent<IStartProvisionSubscriptionStreamScript> message)
@@ -50,9 +50,8 @@ namespace management
 			return ScriptCommand.StartScript
 				(
 					_eventPublisher,
-					_scriptDefinition.Activities,
-					_scriptDefinition.Type,
-					new ProvisionSubscriptionStreamScriptData
+					_scriptDefinition,
+					new SubscriptionStreamProvisioningScriptData
 					{
 						SubscriberName = message.Data.SubscriberName,
 						SubscriptionStreamName = message.Data.SubscriptionStreamName

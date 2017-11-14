@@ -55,7 +55,7 @@ namespace management
 					registry => registry
 						.RegisterPersistentSubscriber
 						(
-							new ProvisionSubscriptionStreamScriptController(ProvisionSubscriptionStreamScriptDefinition.Instance, eventPublisher)
+							new SubscriptionStreamProvisioningScriptController(eventPublisher, SubscriptionStreamProvisioningScriptDefinition.Instance)
 						)
 				);
 	        applicationEventBus
