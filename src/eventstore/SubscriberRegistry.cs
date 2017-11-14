@@ -64,25 +64,12 @@ namespace eventstore
 		}
 	}
 
-    public struct SubscriberRegistration
+    public class SubscriberRegistry : ReadOnlyDictionary<string, ConnectSubscriber>
     {
-        public readonly string Name;
-        public readonly ConnectSubscriber Connect;
-
-        public SubscriberRegistration(string name, ConnectSubscriber connect)
+        
+        private SubscriberRegistry(IDictionary<string, ConnectSubscriber> dictionary) : base(dictionary)
         {
-            Name = name;
-            Connect = connect;
-        }
-    }
-
-    public struct SubscriberRegistry : IEnumerable<SubscriberRegistration>
-    {
-        private readonly IReadOnlyDictionary<string, ConnectSubscriber> _registry;
-
-        private SubscriberRegistry(IReadOnlyDictionary<string, ConnectSubscriber> registry)
-        {
-            _registry = registry;
+            
         }
 
         public SubscriberRegistry RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, CatchupSubscriberRegistrationOptions> configureRegistration = null) where TSubscriber : IMessageHandler
@@ -103,27 +90,24 @@ namespace eventstore
                     new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => "default"));
             return new SubscriberRegistry
                 (
-					new Dictionary<string, ConnectSubscriber>
+					Dictionary
+					.Merge
 					(
-						_registry.ToDictionary(x => x.Key, x => x.Value)
-						.Merge
-						(
-							new Dictionary<string, ConnectSubscriber>
+						new Dictionary<string, ConnectSubscriber>
+							{
 								{
-									{
-										typeof(TSubscriber).GetEventStoreName(),
-										createConnection =>
-											SubscriberConnection.ConnectCatchUpSubscriber
-											(
-												createConnection,
-												registrationConfiguration.SubscriptionStream,
-												handleEvent,
-												getCheckpoint,
-												registrationConfiguration.GetEventHandlingQueueKey
-											)
-									}
+									typeof(TSubscriber).GetEventStoreName(),
+									createConnection =>
+										SubscriberConnection.ConnectCatchUpSubscriber
+										(
+											createConnection,
+											registrationConfiguration.SubscriptionStream,
+											handleEvent,
+											getCheckpoint,
+											registrationConfiguration.GetEventHandlingQueueKey
+										)
 								}
-						)
+							}
 					)
 				);
         }
@@ -145,26 +129,23 @@ namespace eventstore
                     new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
             return new SubscriberRegistry
                 (
-					new Dictionary<string, ConnectSubscriber>
-					(
-						_registry.ToDictionary(x => x.Key, x => x.Value)
-							.Merge
-							(
-								new Dictionary<string, ConnectSubscriber>
+					Dictionary
+						.Merge
+						(
+							new Dictionary<string, ConnectSubscriber>
+								{
 									{
-										{
-											typeof(TSubscriber).GetEventStoreName(),
-											createConnection =>
-												SubscriberConnection.ConnectVolatileSubscriber
-												(
-													createConnection,
-													registrationConfiguration.SubscriptionStream,
-													handleEvent
-												)
-										}
+										typeof(TSubscriber).GetEventStoreName(),
+										createConnection =>
+											SubscriberConnection.ConnectVolatileSubscriber
+											(
+												createConnection,
+												registrationConfiguration.SubscriptionStream,
+												handleEvent
+											)
 									}
-							)
-					)
+								}
+						)
                 );
         }
 
@@ -186,45 +167,30 @@ namespace eventstore
                     new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
             return new SubscriberRegistry
                 (
-					new Dictionary<string, ConnectSubscriber>
-					(
-						_registry.ToDictionary(x => x.Key, x => x.Value)
-							.Merge
-							(
-								new Dictionary<string, ConnectSubscriber>
+					Dictionary
+						.Merge
+						(
+							new Dictionary<string, ConnectSubscriber>
+								{
 									{
-										{
-											typeof(TSubscriber).GetEventStoreName(),
-											createConnection =>
-												SubscriberConnection.ConnectPersistentSubscriber
-												(
-													createConnection,
-													registrationConfiguration.SubscriptionStream,
-													typeof(TSubscriber).GetEventStoreName(),
-													handleEvent
-												)
-										}
+										typeof(TSubscriber).GetEventStoreName(),
+										createConnection =>
+											SubscriberConnection.ConnectPersistentSubscriber
+											(
+												createConnection,
+												registrationConfiguration.SubscriptionStream,
+												typeof(TSubscriber).GetEventStoreName(),
+												handleEvent
+											)
 									}
-							)
-					)
+								}
+						)
                 );
         }
 
         public static SubscriberRegistry CreateSubscriberRegistry()
         {
             return new SubscriberRegistry(new Dictionary<string, ConnectSubscriber>());
-        }
-
-        public IEnumerator<SubscriberRegistration> GetEnumerator()
-        {
-            return _registry
-                .Select(x => new SubscriberRegistration(x.Key, x.Value))
-                .GetEnumerator();
-        }
-
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return GetEnumerator();
         }
     }
 }

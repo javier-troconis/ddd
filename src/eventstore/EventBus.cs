@@ -32,37 +32,37 @@ namespace eventstore
 	public sealed class EventBus
     {
         private readonly TaskQueue _queue = new TaskQueue();
-        private readonly IDictionary<string, Delegate> _subscriberOperations;
+        private readonly IDictionary<string, object> _state;
 
         private EventBus
             (
 				Func<IEventStoreConnection> createConnection, 
-				SubscriberRegistry subscriberRegistry
+				IReadOnlyDictionary<string, ConnectSubscriber> subscriberRegistry
 			)
         {
-            _subscriberOperations = subscriberRegistry
+            _state = subscriberRegistry
 	            .ToDictionary
 	            (
-		            x => x.Name,
+		            x => x.Key,
 		            x =>
 		            {
 			            async Task<Disconnect> Connect()
 			            {
-				            var connection = await x.Connect(createConnection);
+				            var connection = await x.Value(createConnection);
 				            return () =>
 				            {
 					            connection.Disconnect();
 					            return Connect;
 				            };
 			            }
-			            return (Delegate)new Connect(Connect);
+			            return (object)new Connect(Connect);
 		            }
 	            );
         }
 
         public async Task<StopSubscriberResult> StopSubscriber(string subscriberName)
         {
-            if (!_subscriberOperations.ContainsKey(subscriberName))
+            if (!_state.ContainsKey(subscriberName))
             {
                 return StopSubscriberResult.NotFound;
             }
@@ -73,9 +73,9 @@ namespace eventstore
                     () =>
                     {
                         Disconnect operation;
-                        if ((operation = _subscriberOperations[subscriberName] as Disconnect) != null)
+                        if ((operation = _state[subscriberName] as Disconnect) != null)
                         {
-                            _subscriberOperations[subscriberName] = operation();
+                            _state[subscriberName] = operation();
                         }
                         return Task.CompletedTask;
                     },
@@ -87,12 +87,12 @@ namespace eventstore
 
         public Task StopAllSubscribers()
         {
-            return Task.WhenAll(_subscriberOperations.Select(x => StopSubscriber(x.Key)));
+            return Task.WhenAll(_state.Select(x => StopSubscriber(x.Key)));
         }
 
         public async Task<StartSubscriberResult> StartSubscriber(string subscriberName)
         {
-            if (!_subscriberOperations.ContainsKey(subscriberName))
+            if (!_state.ContainsKey(subscriberName))
             {
                 return StartSubscriberResult.NotFound;
             }
@@ -103,9 +103,9 @@ namespace eventstore
                     async () =>
                     {
                         Connect operation;
-                        if ((operation = _subscriberOperations[subscriberName] as Connect) != null)
+                        if ((operation = _state[subscriberName] as Connect) != null)
                         {
-                            _subscriberOperations[subscriberName] = await operation();
+                            _state[subscriberName] = await operation();
                         }
                     },
                     channelName: subscriberName,
@@ -116,10 +116,10 @@ namespace eventstore
 
         public Task StartAllSubscribers()
         {
-            return Task.WhenAll(_subscriberOperations.Select(x => StartSubscriber(x.Key)));
+            return Task.WhenAll(_state.Select(x => StartSubscriber(x.Key)));
         }
 
-        public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscriberRegistry)
+        public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, IReadOnlyDictionary<string, ConnectSubscriber>> configureSubscriberRegistry)
         {
             var subscriberRegistry = configureSubscriberRegistry(SubscriberRegistry.CreateSubscriberRegistry());
             return new EventBus
