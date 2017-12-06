@@ -10,13 +10,13 @@ namespace shared
         public static IMessageHandler<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this IMessageHandler<T1, Task<T2>> f)
         {
             Func<T1, Task<T2>> handle = f.Handle;
-            return new MessageHandler<Task<T1>, Task<T2>>(handle.ToAsyncInput());
+            return new MessageHandler<Task<T1>, Task<T2>>(handle.Map());
         }
 
         public static IMessageHandler<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this IMessageHandler<T1, T2> f)
         {
             Func<T1, T2> handle = f.Handle;
-            return new MessageHandler<Task<T1>, Task<T2>>(handle.ToAsyncInput());
+            return new MessageHandler<Task<T1>, Task<T2>>(handle.Map());
         }
 
         public static IMessageHandler<T1, T3> ComposeForward<T1, T2, T3>(this IMessageHandler<T1, T2> from, IMessageHandler<T2, T3> to)

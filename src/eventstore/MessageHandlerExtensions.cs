@@ -15,15 +15,9 @@ namespace eventstore
 {
 	public static class MessageHandlerExtensions
 	{
-		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s1, IMessageHandler s2)
-		{
-			return MessageHandlerExtensions.ComposeForward(s1, CreateSubscriberEventHandle((dynamic)s2));
-		}
+		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s1, IMessageHandler s2) => ComposeForward(s1, CreateSubscriberEventHandle((dynamic)s2));
 
-		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s, Func<ResolvedEvent, Task<ResolvedEvent>> f)
-		{
-			return FuncExtensions.ComposeForward(CreateSubscriberEventHandle((dynamic)s), f);
-		}
+		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s, Func<ResolvedEvent, Task<ResolvedEvent>> f) => FuncExtensions.ComposeForward(CreateSubscriberEventHandle((dynamic)s), f);
 
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberEventHandle<TSubscriber>(this TSubscriber s) where TSubscriber : IMessageHandler
 		{

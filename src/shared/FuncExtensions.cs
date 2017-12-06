@@ -40,20 +40,20 @@ namespace shared
 			return x => f2(f1(x));
 		}
 
-		public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, Task<T3>> f2)
-		{
-			return f1.ComposeForward(f2.ToAsyncInput());
-		}
+		//public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, Task<T3>> f2)
+		//{
+		//	return f1.ComposeForward(f2.Map());
+		//}
 
 		public static Func<T1, T3> ComposeBackward<T1, T2, T3>(this Func<T2, T3> f1, Func<T1, T2> f2)
 		{
 			return f2.ComposeForward(f1);
 		}
 
-		public static Func<T1, Task<T3>> ComposeBackward<T1, T2, T3>(this Func<T2, Task<T3>> f1, Func<T1, Task<T2>> f2)
-		{
-			return f2.ComposeForward(f1);
-		}
+		//public static Func<T1, Task<T3>> ComposeBackward<T1, T2, T3>(this Func<T2, Task<T3>> f1, Func<T1, Task<T2>> f2)
+		//{
+		//	return f2.ComposeForward(f1);
+		//}
 
 		public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, object> getEntryKey = null)
 		{
@@ -86,12 +86,12 @@ namespace shared
 			return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
 		}
 
-		public static Func<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this Func<T1, Task<T2>> f)
+		public static Func<Task<T1>, Task<T2>> Map<T1, T2>(this Func<T1, Task<T2>> f)
 		{
 			return async x => await f(await x);
 		}
 
-		public static Func<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this Func<T1, T2> f)
+		public static Func<Task<T1>, Task<T2>> Map<T1, T2>(this Func<T1, T2> f)
 		{
 			return async x => f(await x);
 		}
