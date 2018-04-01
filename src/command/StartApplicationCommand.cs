@@ -1,4 +1,5 @@
 ﻿using command.contracts;
+using shared;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,7 +12,7 @@ namespace command
     {
         public struct ApplicationStarted : IApplicationStartedV1
         {
-            public ApplicationStarted(string applicantSsn)
+            public ApplicationStarted(Ssn applicantSsn)
             {
                 ApplicantSsn = applicantSsn;
             }
@@ -19,8 +20,9 @@ namespace command
             public string ApplicantSsn { get; }
         }
 
-        public static ApplicationStarted StartApplication(string applicantSsn)
+        public static ApplicationStarted StartApplication(Ssn applicantSsn)
         {
+            Ensure.NotDefault(applicantSsn, nameof(applicantSsn));
             return new ApplicationStarted(applicantSsn);
         }
     }

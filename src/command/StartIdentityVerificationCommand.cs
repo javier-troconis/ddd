@@ -10,9 +10,9 @@ namespace command
 {
     public static class StartIdentityVerificationCommand
     {
-        public struct VerifyIdentityResult
+        public struct VerifyApplicantIdentityResult
         {
-            public VerifyIdentityResult(string transactionId, string result)
+            public VerifyApplicantIdentityResult(string transactionId, string result)
             {
                 TransactionId = transactionId;
                 Result = result;
@@ -22,13 +22,13 @@ namespace command
             public string Result { get; }
         }
 
-        public delegate Task<VerifyIdentityResult> VerifyIdentity(string ssn);
+        public delegate Task<VerifyApplicantIdentityResult> VerifyApplicantIdentity(Ssn applicantSsn);
 
-        public class StartIdentityVerificationCommandContext : IMessageHandler<IRecordedEvent<IApplicationStartedV1>, StartIdentityVerificationCommandContext>
+        public struct StartIdentityVerificationCommandContext : IMessageHandler<IRecordedEvent<IApplicationStartedV1>, StartIdentityVerificationCommandContext>
         {
-            public readonly string ApplicantSsn;
+            public readonly Ssn ApplicantSsn;
 
-            public StartIdentityVerificationCommandContext(string applicantSsn)
+            public StartIdentityVerificationCommandContext(Ssn applicantSsn)
             {
                 ApplicantSsn = applicantSsn;
             }
@@ -51,10 +51,9 @@ namespace command
             public string Result { get; }
         }
 
-        public static async Task<IdentityVerificationCompleted> StartIdentityVerification(StartIdentityVerificationCommandContext commandContext, VerifyIdentity verifyIdentity)
+        public static async Task<IdentityVerificationCompleted> StartIdentityVerification(StartIdentityVerificationCommandContext commandContext, VerifyApplicantIdentity verifyApplicantIdentity)
         {
-            Ensure.NotNull(commandContext, nameof(commandContext));
-            var result = await verifyIdentity(commandContext.ApplicantSsn);
+            var result = await verifyApplicantIdentity(commandContext.ApplicantSsn);
             return new IdentityVerificationCompleted(result.TransactionId, result.Result);
         }
     }
