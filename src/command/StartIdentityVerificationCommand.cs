@@ -10,7 +10,7 @@ namespace command
 {
     public static class StartIdentityVerificationCommand
     {
-        public struct VerifyIdentityResult
+        public class VerifyIdentityResult
         {
             public VerifyIdentityResult(string transactionId, string result)
             {
