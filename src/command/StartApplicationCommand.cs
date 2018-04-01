@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace command
 {
-    public static class StartApplication
+    public static class StartApplicationCommand
     {
         public struct ApplicationStarted : IApplicationStartedV1
         {
@@ -19,7 +19,7 @@ namespace command
             public string ApplicantSsn { get; }
         }
 
-        public static ApplicationStarted Execute(string applicantSsn)
+        public static ApplicationStarted StartApplication(string applicantSsn)
         {
             return new ApplicationStarted(applicantSsn);
         }
