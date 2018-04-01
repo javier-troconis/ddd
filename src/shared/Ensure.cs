@@ -4,12 +4,13 @@ namespace shared
 {
     public static class Ensure
     {
-		public static void NotNull<T>(T argument, string argumentName) where T : class
+		public static T NotDefault<T>(T argument, string argumentName)
 		{
-			if (argument == null)
+			if (Equals(default(T), argument))
 			{
-				throw new ArgumentNullException(argumentName);
+				throw new ArgumentException(argumentName);
 			}
+            return argument;
 		}
 	}
 }

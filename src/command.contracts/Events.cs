@@ -2,19 +2,16 @@
 {
     public interface IApplicationStartedV1
     {
+        string ApplicantSsn { get; }
     }
 
-	public interface IApplicationStartedV2 
-	{
-	}
-
-	public interface IApplicationStartedV3
-	{
-	}
-
-	public interface IApplicationSubmittedV1
+    public interface IIdentityVerificationCompletedV1
     {
-		string SubmittedBy { get; }
+        string TransactionId { get; }
+        string Result { get; }
     }
 
+    public interface IApplicationSubmittedV1
+    {	
+    }
 }
