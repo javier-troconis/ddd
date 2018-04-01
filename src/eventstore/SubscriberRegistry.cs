@@ -30,7 +30,7 @@ namespace eventstore
 
 		public CatchupSubscriberRegistrationOptions SetSubscriptionStream<TSubscriptionStream>() where TSubscriptionStream : IMessageHandler
 		{
-			return new CatchupSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreName(), GetEventHandlingQueueKey);
+			return new CatchupSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreObjectName(), GetEventHandlingQueueKey);
 		}
 	}
 
@@ -45,7 +45,7 @@ namespace eventstore
 
 		public VolatileSubscriberRegistrationOptions SetSubscriptionStream<TSubscriptionStream>() where TSubscriptionStream : IMessageHandler
 		{
-			return new VolatileSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreName());
+			return new VolatileSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreObjectName());
 		}
 	}
 
@@ -60,7 +60,7 @@ namespace eventstore
 
 		public PersistentSubscriberRegistrationOptions SetSubscriptionStream<TSubscriptionStream>() where TSubscriptionStream : IMessageHandler
 		{
-			return new PersistentSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreName());
+			return new PersistentSubscriberRegistrationOptions(typeof(TSubscriptionStream).GetEventStoreObjectName());
 		}
 	}
 
@@ -100,13 +100,13 @@ namespace eventstore
         {
             var registrationConfiguration =
                 (configureRegistration ?? (x => x))(
-                    new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName(), resolvedEvent => "default"));
+                    new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreObjectName(), resolvedEvent => "default"));
             return new SubscriberRegistry
                 (
                     new Dictionary<string, ConnectSubscriber>
                         {
                             {
-                                typeof(TSubscriber).GetEventStoreName(),
+                                typeof(TSubscriber).GetEventStoreObjectName(),
                                 createConnection =>
                                     SubscriberConnection.ConnectCatchUpSubscriber
                                     (
@@ -136,13 +136,13 @@ namespace eventstore
         {
             var registrationConfiguration =
                 (configureRegistration ?? (x => x))(
-                    new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
+                    new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreObjectName()));
             return new SubscriberRegistry
                 (
                      new Dictionary<string, ConnectSubscriber>
                         {
                             {
-                                typeof(TSubscriber).GetEventStoreName(),
+                                typeof(TSubscriber).GetEventStoreObjectName(),
                                 createConnection =>
                                     SubscriberConnection.ConnectVolatileSubscriber
                                     (
@@ -171,19 +171,19 @@ namespace eventstore
         {
             var registrationConfiguration =
                 (configureRegistration ?? (x => x))(
-                    new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreName()));
+                    new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreObjectName()));
             return new SubscriberRegistry
                 (
                      new Dictionary<string, ConnectSubscriber>
                         {
                             {
-                                typeof(TSubscriber).GetEventStoreName(),
+                                typeof(TSubscriber).GetEventStoreObjectName(),
                                 createConnection =>
                                     SubscriberConnection.ConnectPersistentSubscriber
                                     (
                                         createConnection,
                                         registrationConfiguration.SubscriptionStream,
-                                        typeof(TSubscriber).GetEventStoreName(),
+                                        typeof(TSubscriber).GetEventStoreObjectName(),
                                         handleEvent
                                     )
                             }

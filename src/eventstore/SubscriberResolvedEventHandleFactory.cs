@@ -42,7 +42,7 @@ namespace eventstore
 		    var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 		    var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<string[]>();
 		    var eventType = topics
-			    .Join(candidateEventTypes, x => x, x => x.GetEventStoreName(), (x, y) => y)
+			    .Join(candidateEventTypes, x => x, x => x.GetEventStoreObjectName(), (x, y) => y)
 			    .FirstOrDefault();
 			if (eventType == default(Type))
 		    {

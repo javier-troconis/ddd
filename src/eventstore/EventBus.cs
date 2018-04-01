@@ -17,114 +17,129 @@ using System.Collections.ObjectModel;
 
 namespace eventstore
 {
-    public enum SubscriberStatus
+    public enum StopSubscriberResult
     {
-        Unknown,
-        Started,
+        NotFound,
         Stopped
     }
 
-    public sealed class EventBus
+    public enum StartSubscriberResult
+    {
+        NotFound,
+        Started
+    }
+
+    public interface IEventBus
+    {
+        Task<StopSubscriberResult> StopSubscriber(string subscriberName);
+        Task StopAllSubscribers();
+        Task<StartSubscriberResult> StartSubscriber(string subscriberName);
+        Task StartAllSubscribers();
+    }
+
+    public sealed class EventBus : IEventBus
     {
         private readonly TaskQueue _queue = new TaskQueue();
-        private readonly IDictionary<string, Delegate> _subscribersOperations;
+        private readonly IDictionary<string, Delegate> _state;
 
-        private EventBus
-            (
-                IDictionary<string, Delegate> subscribersOperations
-            )
+        public EventBus(ISubscriberRegistry subscriberRegistry)
         {
-            _subscribersOperations = subscribersOperations;
+            _state = 
+                subscriberRegistry
+                    .ToDictionary
+                    (
+                        x => x.Key,
+                        x =>
+                        {
+                            async Task<DisconnectSubscriber> ConnectSubscriber(Action<SubscriptionDropReason> subscriptionDropped)
+                            {
+                                var connection = await x.Value
+                                (
+                                    (dropReason, exception) => subscriptionDropped(dropReason)
+                                );
+                                return () =>
+                                {
+                                    connection.Disconnect();
+                                    return ConnectSubscriber;
+                                };
+                            }
+                            return (Delegate)new ConnectSubscriber(ConnectSubscriber);
+                        }
+                    );
         }
 
-        public async Task<SubscriberStatus> StopSubscriber(string subscriberName)
+        public async Task<StopSubscriberResult> StopSubscriber(string subscriberName)
         {
-            if (!_subscribersOperations.ContainsKey(subscriberName))
+            if (!_state.ContainsKey(subscriberName))
             {
-                return SubscriberStatus.Unknown;
+                return StopSubscriberResult.NotFound;
             }
 
-            var tsc = new TaskCompletionSource<SubscriberStatus>();
+            var tsc = new TaskCompletionSource<StopSubscriberResult>();
             await _queue.SendToChannel
-                (
-                    () =>
+            (
+                subscriberName,
+                () =>
+                {
+                    DisconnectSubscriber disconnectSubscriber;
+                    if ((disconnectSubscriber = _state[subscriberName] as DisconnectSubscriber) != null)
                     {
-                        Disconnect operation;
-                        if ((operation = _subscribersOperations[subscriberName] as Disconnect) != null)
-                        {
-                            _subscribersOperations[subscriberName] = operation();
-                        }
-                        return Task.CompletedTask;
-                    },
-                    channelName: subscriberName,
-                    taskSucceeded: x => tsc.SetResult(SubscriberStatus.Stopped)
-                );
+                        _state[subscriberName] = disconnectSubscriber();
+                    }
+                    return Task.CompletedTask;
+                },
+                taskSucceeded: x => tsc.SetResult(StopSubscriberResult.Stopped)
+            );
             return await tsc.Task;
         }
 
         public Task StopAllSubscribers()
         {
-            return Task.WhenAll(_subscribersOperations.Select(x => StopSubscriber(x.Key)));
+            return Task.WhenAll(_state.Select(x => StopSubscriber(x.Key)));
         }
 
-        public async Task<SubscriberStatus> StartSubscriber(string subscriberName)
+        public async Task<StartSubscriberResult> StartSubscriber(string subscriberName)
         {
-            if (!_subscribersOperations.ContainsKey(subscriberName))
+            if (!_state.ContainsKey(subscriberName))
             {
-                return SubscriberStatus.Unknown;
+                return StartSubscriberResult.NotFound;
             }
 
-            var tsc = new TaskCompletionSource<SubscriberStatus>();
+            var tsc = new TaskCompletionSource<StartSubscriberResult>();
             await _queue.SendToChannel
-                (
-                    async () =>
+            (
+                subscriberName,
+                async () =>
+                {
+                    ConnectSubscriber connectSubscriber;
+                    if ((connectSubscriber = _state[subscriberName] as ConnectSubscriber) != null)
                     {
-                        Connect operation;
-                        if ((operation = _subscribersOperations[subscriberName] as Connect) != null)
-                        {
-                            _subscribersOperations[subscriberName] = await operation();
-                        }
-                    },
-                    channelName: subscriberName,
-                    taskSucceeded: x => tsc.SetResult(SubscriberStatus.Started)
-                );
+                        _state[subscriberName] = await connectSubscriber
+                        (
+                            async dropReason =>
+                            {
+                                if (dropReason == SubscriptionDropReason.UserInitiated)
+                                {
+                                    return;
+                                }
+                                await StopSubscriber(subscriberName);
+                                await StartSubscriber(subscriberName);
+                            }
+                        );
+                    }
+                },
+                taskSucceeded: x => tsc.SetResult(StartSubscriberResult.Started)
+            );
             return await tsc.Task;
         }
 
         public Task StartAllSubscribers()
         {
-            return Task.WhenAll(_subscribersOperations.Select(x => StartSubscriber(x.Key)));
+            return Task.WhenAll(_state.Select(x => StartSubscriber(x.Key)));
         }
 
-        public static EventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistry, SubscriberRegistry> configureSubscriberRegistry)
-        {
-            var subscriberRegistry = configureSubscriberRegistry(SubscriberRegistry.CreateSubscriberRegistry());
+        private delegate Task<DisconnectSubscriber> ConnectSubscriber(Action<SubscriptionDropReason> subscriptionDropped);
 
-            return new EventBus
-                (
-                    subscriberRegistry
-                        .ToDictionary
-                        (
-                            x => x.Name,
-                            x =>
-                            {
-	                            async Task<Disconnect> Connect()
-	                            {
-		                            var connection = await x.Connect(createConnection);
-		                            return () =>
-		                            {
-			                            connection.Disconnect();
-			                            return Connect;
-		                            };
-	                            }
-	                            return (Delegate)new Connect(Connect);
-                            }
-                        )
-                );
-        }
-
-        private delegate Task<Disconnect> Connect();
-
-        private delegate Connect Disconnect(); 
+        private delegate ConnectSubscriber DisconnectSubscriber();
     }
 }

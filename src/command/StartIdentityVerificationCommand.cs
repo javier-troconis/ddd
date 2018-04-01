@@ -10,9 +10,9 @@ namespace command
 {
     public static class StartIdentityVerificationCommand
     {
-        public struct VerifyApplicantIdentityResult
+        public struct VerifyIdentityResult
         {
-            public VerifyApplicantIdentityResult(string transactionId, string result)
+            public VerifyIdentityResult(string transactionId, string result)
             {
                 TransactionId = transactionId;
                 Result = result;
@@ -22,7 +22,7 @@ namespace command
             public string Result { get; }
         }
 
-        public delegate Task<VerifyApplicantIdentityResult> VerifyApplicantIdentity(Ssn applicantSsn);
+        public delegate Task<VerifyIdentityResult> VerifyIdentity(Ssn ssn);
 
         public struct StartIdentityVerificationCommandContext : IMessageHandler<IRecordedEvent<IApplicationStartedV1>, StartIdentityVerificationCommandContext>
         {
@@ -51,9 +51,9 @@ namespace command
             public string Result { get; }
         }
 
-        public static async Task<IdentityVerificationCompleted> StartIdentityVerification(StartIdentityVerificationCommandContext commandContext, VerifyApplicantIdentity verifyApplicantIdentity)
+        public static async Task<IdentityVerificationCompleted> StartIdentityVerification(StartIdentityVerificationCommandContext commandContext, VerifyIdentity verifyIdentity)
         {
-            var result = await verifyApplicantIdentity(commandContext.ApplicantSsn);
+            var result = await verifyIdentity(commandContext.ApplicantSsn);
             return new IdentityVerificationCompleted(result.TransactionId, result.Result);
         }
     }

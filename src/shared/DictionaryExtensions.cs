@@ -9,7 +9,7 @@ namespace shared
 {
     public static class DictionaryExtensions
     {
-        public static IDictionary<TKey, TValue> Merge2<TKey, TValue>(this IDictionary<TKey, TValue> x, IDictionary<TKey, TValue> y)
+        public static IDictionary<TKey, TValue> Merge<TKey, TValue>(this IDictionary<TKey, TValue> x, IDictionary<TKey, TValue> y)
         {
             return x
                 .Except(x.Join(y, z => z.Key, z => z.Key, (a, b) => a))

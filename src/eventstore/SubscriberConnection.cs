@@ -8,6 +8,7 @@ using shared;
 
 namespace eventstore
 {
+  
     public struct SubscriberConnection
     {
 	    public readonly Action Disconnect;
@@ -22,7 +23,8 @@ namespace eventstore
 		    string streamName,
 		    Func<ResolvedEvent, Task> handleEvent,
 		    Func<Task<long?>> getCheckpoint,
-		    Func<ResolvedEvent, string> getEventHandlingQueueKey)
+		    Func<ResolvedEvent, string> getEventHandlingQueueKey,
+            Action<SubscriptionDropReason, Exception> subscriptionDropped = null)
 	    {
 			var queue = new TaskQueue();
 		    var connection = createConnection();
@@ -37,14 +39,14 @@ namespace eventstore
 					var channelName = getEventHandlingQueueKey(resolvedEvent);
 					return queue.SendToChannel
 					(
-						() => handleEvent(resolvedEvent),
-                        channelName
+                        channelName,
+						() => handleEvent(resolvedEvent)
 					);
 				}, 
 				subscriptionDropped: (subscription, dropReason, exception) =>
 				{
-					
-				});
+                    subscriptionDropped?.Invoke(dropReason, exception);
+                });
 		    return new SubscriberConnection(
 			    () =>
 			    {
@@ -56,7 +58,8 @@ namespace eventstore
 	    public static async Task<SubscriberConnection> ConnectVolatileSubscriber(
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
-		    Func<ResolvedEvent, Task> handleEvent)
+		    Func<ResolvedEvent, Task> handleEvent,
+            Action<SubscriptionDropReason, Exception> subscriptionDropped = null)
 	    {
 		    var connection = createConnection();
 		    await connection.ConnectAsync();
@@ -66,8 +69,8 @@ namespace eventstore
 				(subscription, resolvedEvent) => handleEvent(resolvedEvent), 
 				subscriptionDropped: (subscription, dropReason, exception) =>
 				{
-					
-				});
+                    subscriptionDropped?.Invoke(dropReason, exception);
+                });
 			return new SubscriberConnection(
 				() =>
 				{
@@ -80,14 +83,17 @@ namespace eventstore
 			Func<IEventStoreConnection> createConnection,
 		    string streamName,
 		    string groupName,
-		    Func<ResolvedEvent, Task> handleEvent)
+		    Func<ResolvedEvent, Task> handleEvent,
+            Action<SubscriptionDropReason, Exception> subscriptionDropped = null)
 	    {
 			var connection = createConnection();
 		    await connection.ConnectAsync();
-			
-			// retry if ps doesn't exist ?
-		    while (true)
+
+            while (true)
 		    {
+                // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
+                var isCloseConnectionCalledByUser = false;
+                //
 			    try
 			    {
 				    var s = await connection.ConnectToPersistentSubscriptionAsync(
@@ -107,17 +113,23 @@ namespace eventstore
 					    },
 					    subscriptionDropped: (subscription, dropReason, exception) =>
 					    {
-
-					    },
+                            // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
+                            if (!isCloseConnectionCalledByUser && dropReason == SubscriptionDropReason.UserInitiated)
+                            {
+                                dropReason = SubscriptionDropReason.ConnectionClosed;
+                            }
+                            //
+                            subscriptionDropped?.Invoke(dropReason, exception);
+                        },
 					    autoAck: false);
 				    return new SubscriberConnection(
 					    () =>
 					    {
-						    s.Stop(TimeSpan.FromSeconds(30));
+						    s.Stop(TimeSpan.FromSeconds(15));
 						    connection.Close();
 					    });
 			    }
-			    catch (Exception ex)
+			    catch
 			    {
 				    await Task.Delay(TimeSpan.FromSeconds(1));
 			    }
@@ -126,4 +138,5 @@ namespace eventstore
 
 
 	}
+    
 }

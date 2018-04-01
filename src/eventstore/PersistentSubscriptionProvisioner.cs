@@ -57,12 +57,12 @@ namespace eventstore
                     new Func<string, Task>[] {
                         targetSubscriptionGroupName =>
                             {
-                                var subscriptionGroupName = typeof(TSubscriptionGroup).GetEventStoreName();
+                                var subscriptionGroupName = typeof(TSubscriptionGroup).GetEventStoreObjectName();
                                 if(!subscriptionGroupName.MatchesWildcard(targetSubscriptionGroupName))
                                 {
                                     return Task.CompletedTask;
                                 }
-                                var streamName = typeof(TSubscription).GetEventStoreName();
+                                var streamName = typeof(TSubscription).GetEventStoreObjectName();
                                 var persistentSubscriptionSettings = (configurePersistentSubscription ?? (x => x))(
                                     PersistentSubscriptionSettings
                                         .Create()

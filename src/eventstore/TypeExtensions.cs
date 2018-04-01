@@ -12,21 +12,19 @@ namespace eventstore
         {
             return subscriberType
 				.GetInterfaces()
-				.Where(x => 
-					x.IsGenericType 
-						&& x.GetGenericTypeDefinition() == typeof(IMessageHandler<,>))
+				.Where(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(IMessageHandler<,>))
 				.ToArray();
         }
 
         public static string GetStreamName(this Type entityType, Guid identity, string category = "")
         {
-            var streamName = $"{entityType.GetEventStoreName()}_{identity.ToString("N").ToLower()}";
+            var streamName = $"{entityType.GetEventStoreObjectName()}_{identity.ToString("N").ToLower()}";
 	        return string.IsNullOrEmpty(category) ? streamName : category + "-" + streamName;
         }
 
-        public static string GetEventStoreName(this Type type)
+        public static string GetEventStoreObjectName(this Type type)
         {
-            return type.FullName.Replace('.', '_').Replace('+', '_').ToLower();
+            return type.FullName.GetEventStoreObjectName();
         }
 
 		// use full clr name, and deserialize using it, instead of relying on the subscriber handling types
@@ -34,7 +32,7 @@ namespace eventstore
         {
 	        return eventType
 		        .GetInterfaces()
-		        .Select(x => x.GetEventStoreName())
+		        .Select(x => x.GetEventStoreObjectName())
 				.ToArray();
         }
     }
