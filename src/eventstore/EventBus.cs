@@ -40,11 +40,11 @@ namespace eventstore
     public sealed class EventBus : IEventBus
     {
         private readonly TaskQueue _queue = new TaskQueue();
-        private readonly IDictionary<string, Delegate> _state;
+        private readonly IDictionary<string, Delegate> _subscribers;
 
-        public EventBus(ISubscriberRegistry subscriberRegistry)
+        public EventBus(Func<IEventStoreConnection> createConnection, ISubscriberRegistry subscriberRegistry)
         {
-            _state = 
+            _subscribers = 
                 subscriberRegistry
                     .ToDictionary
                     (
@@ -55,7 +55,7 @@ namespace eventstore
                             {
                                 var connection = await x.Value
                                 (
-                                    (dropReason, exception) => subscriptionDropped(dropReason)
+	                                createConnection, (dropReason, exception) => subscriptionDropped(dropReason)
                                 );
                                 return () =>
                                 {
@@ -70,7 +70,7 @@ namespace eventstore
 
         public async Task<StopSubscriberResult> StopSubscriber(string subscriberName)
         {
-            if (!_state.ContainsKey(subscriberName))
+            if (!_subscribers.ContainsKey(subscriberName))
             {
                 return StopSubscriberResult.NotFound;
             }
@@ -82,9 +82,9 @@ namespace eventstore
                 () =>
                 {
                     DisconnectSubscriber disconnectSubscriber;
-                    if ((disconnectSubscriber = _state[subscriberName] as DisconnectSubscriber) != null)
+                    if ((disconnectSubscriber = _subscribers[subscriberName] as DisconnectSubscriber) != null)
                     {
-                        _state[subscriberName] = disconnectSubscriber();
+                        _subscribers[subscriberName] = disconnectSubscriber();
                     }
                     return Task.CompletedTask;
                 },
@@ -95,12 +95,12 @@ namespace eventstore
 
         public Task StopAllSubscribers()
         {
-            return Task.WhenAll(_state.Select(x => StopSubscriber(x.Key)));
+            return Task.WhenAll(_subscribers.Select(x => StopSubscriber(x.Key)));
         }
 
         public async Task<StartSubscriberResult> StartSubscriber(string subscriberName)
         {
-            if (!_state.ContainsKey(subscriberName))
+            if (!_subscribers.ContainsKey(subscriberName))
             {
                 return StartSubscriberResult.NotFound;
             }
@@ -112,9 +112,9 @@ namespace eventstore
                 async () =>
                 {
                     ConnectSubscriber connectSubscriber;
-                    if ((connectSubscriber = _state[subscriberName] as ConnectSubscriber) != null)
+                    if ((connectSubscriber = _subscribers[subscriberName] as ConnectSubscriber) != null)
                     {
-                        _state[subscriberName] = await connectSubscriber
+                        _subscribers[subscriberName] = await connectSubscriber
                         (
                             async dropReason =>
                             {
@@ -135,7 +135,7 @@ namespace eventstore
 
         public Task StartAllSubscribers()
         {
-            return Task.WhenAll(_state.Select(x => StartSubscriber(x.Key)));
+            return Task.WhenAll(_subscribers.Select(x => StartSubscriber(x.Key)));
         }
 
         private delegate Task<DisconnectSubscriber> ConnectSubscriber(Action<SubscriptionDropReason> subscriptionDropped);

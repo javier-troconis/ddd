@@ -10,12 +10,9 @@ using System.Collections.ObjectModel;
 
 namespace eventstore
 {
-    public interface ISubscriberRegistration
-    {
+	public delegate Task<SubscriberConnection> ConnectSubscriber(Func<IEventStoreConnection> createConnection, Action<SubscriptionDropReason, Exception> subscriptionDropped = null);
 
-    }
-
-    public interface ISubscriberRegistry : IReadOnlyDictionary<string, ISubscriberRegistration>
+	public interface ISubscriberRegistry : IReadOnlyDictionary<string, ConnectSubscriber>
     {
         
     }
