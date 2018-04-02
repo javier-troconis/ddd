@@ -15,20 +15,6 @@ namespace command
 	{
 		public static void Main(string[] args)
 		{
-
-
-
-			var connectionFactory = new EventStoreConnectionFactory(
-				EventStoreSettings.ClusterDns,
-				EventStoreSettings.InternalHttpPort,
-				EventStoreSettings.Username,
-				EventStoreSettings.Password,
-				x => x
-					.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)));
-			var connection = connectionFactory.CreateConnection();
-			connection.ConnectAsync().Wait();
-			IEventStore eventStore = new eventstore.EventStore(connection);
-
 			/*
 			while (true)
 			{
@@ -68,27 +54,57 @@ namespace command
 			}
 			*/
 
+
+			var connectionFactory = new EventStoreConnectionFactory(
+				EventStoreSettings.ClusterDns,
+				EventStoreSettings.InternalHttpPort,
+				EventStoreSettings.Username,
+				EventStoreSettings.Password,
+				x => x
+					.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)));
+			var connection = connectionFactory.CreateConnection();
+			connection.ConnectAsync().Wait();
+			IEventStore eventStore = new eventstore.EventStore(connection);
+
 			while (true)
 			{
 				Task.Run(async () =>
 				{
 					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
-					await eventStore.WriteEvent(streamName, ExpectedVersion.NoStream, StartApplicationCommand.StartApplication("123456789"));
-					Console.WriteLine("application started: " + streamName);
-
-					var events = await eventStore.ReadEventsForward(streamName);
-					var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext, StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>((result, resolvedEvent) => result);
-					var commandContext = events.Aggregate(new StartIdentityVerificationCommand.StartIdentityVerificationCommandContext(), fnc);
-					var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(commandContext, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
-					await eventStore.WriteEvent(streamName, 0, newEvent);
-					Console.WriteLine("identity verification completed: " + streamName);
-
+					await StartApplication(eventStore, streamName);
+					await StartIdentityVerifcation(eventStore, streamName);
+					await SubmitApplication(eventStore, streamName);
 					//await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
 					//Console.WriteLine("application submitted: " + streamName);
-
 					await Task.Delay(2000);
 				}).Wait();
 			}
+		}
+
+		private static async Task StartApplication(IEventStore eventStore, string streamName)
+		{
+			await eventStore.WriteEvent(streamName, ExpectedVersion.NoStream, StartApplicationCommand.StartApplication("123456789"));
+			Console.WriteLine("application started: " + streamName);
+		}
+
+		private static async Task StartIdentityVerifcation(IEventStore eventStore, string streamName)
+		{
+			var events = await eventStore.ReadEventsForward(streamName);
+			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext,StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>((result, resolvedEvent) => result);
+			var commandContext = events.Aggregate(new StartIdentityVerificationCommand.StartIdentityVerificationCommandContext(), fnc);
+			var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(commandContext, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
+			await eventStore.WriteEvent(streamName, 0, newEvent);
+			Console.WriteLine("identity verification completed: " + streamName);
+		}
+
+		private static async Task SubmitApplication(IEventStore eventStore, string streamName)
+		{
+			var events = await eventStore.ReadEventsForward(streamName);
+			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<SubmitApplicationCommand.SubmitApplicationCommandContext, SubmitApplicationCommand.SubmitApplicationCommandContext>((result, resolvedEvent) => result);
+			var commandContext = events.Aggregate(new SubmitApplicationCommand.SubmitApplicationCommandContext(), fnc);
+			var newEvent = SubmitApplicationCommand.SubmitApplication(commandContext);
+			await eventStore.WriteEvent(streamName, 1, newEvent);
+			Console.WriteLine("application submitted: " + streamName);
 		}
 	}
 }
