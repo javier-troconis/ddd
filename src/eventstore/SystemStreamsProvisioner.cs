@@ -12,7 +12,7 @@ namespace eventstore
 {
 	public interface ISystemStreamsProvisioner
 	{
-		Task ProvisionSystemStreams();
+		Task ProvisionSystemStreams(UserCredentials credentials);
 	}
 
 	public class SystemStreamsProvisioner : ISystemStreamsProvisioner
@@ -29,15 +29,15 @@ namespace eventstore
             _subscriptionStreamProvisioner = subscriptionStreamProvisioner;
         }
 
-		public Task ProvisionSystemStreams()
+		public Task ProvisionSystemStreams(UserCredentials credentials)
 		{
             return Task.WhenAll
                 (
-                    _topicStreamProvisioner.ProvisionTopicStream(),
+                    _topicStreamProvisioner.ProvisionTopicStream(credentials),
                     _subscriptionStreamProvisioner
                         .RegisterSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
                         .RegisterSubscriptionStream<IProvisionSubscriptionStreamRequests>()
-                        .ProvisionSubscriptionStream()
+                        .ProvisionSubscriptionStream(credentials)
                 );
 		}
 

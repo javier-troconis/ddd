@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.SystemData;
 
 namespace eventstore
 {
@@ -11,22 +12,22 @@ namespace eventstore
     public interface ISubscriptionStreamProvisioner
     {
         ISubscriptionStreamProvisioner RegisterSubscriptionStream<TSubscription>() where TSubscription : IMessageHandler;
-        Task ProvisionSubscriptionStream(string targetSubscriptionStreamName = "*");
+        Task ProvisionSubscriptionStream(UserCredentials credentials, string targetSubscriptionStreamName = "*");
     }
 
     public class SubscriptionStreamProvisioner : ISubscriptionStreamProvisioner
     {
         private readonly IProjectionManager _projectionManager;
-        private readonly IEnumerable<Func<string, Task>> _provisioningTasks;
+        private readonly IEnumerable<Func<UserCredentials, string, Task>> _provisioningTasks;
 
         public SubscriptionStreamProvisioner(IProjectionManager projectionManager)
-            : this(projectionManager, Enumerable.Empty<Func<string, Task>>())
+            : this(projectionManager, Enumerable.Empty<Func<UserCredentials, string,  Task>>())
         {
         }
 
         private SubscriptionStreamProvisioner(
             IProjectionManager projectionManager,
-            IEnumerable<Func<string, Task>> provisioningTasks
+            IEnumerable<Func<UserCredentials, string,  Task>> provisioningTasks
             )
         {
             _projectionManager = projectionManager;
@@ -65,8 +66,8 @@ fromAll()
             return new SubscriptionStreamProvisioner(
                 _projectionManager,
                 _provisioningTasks.Concat(
-                    new Func<string, Task>[] {
-                        targetSubscriptionStreamName =>
+                    new Func<UserCredentials, string, Task>[] {
+                        (credentials, targetSubscriptionStreamName) =>
                             {
                                 var subscriptionStreamName = typeof(TSubscription).GetEventStoreObjectName();
                                 if(!subscriptionStreamName.MatchesWildcard(targetSubscriptionStreamName))
@@ -77,15 +78,15 @@ fromAll()
                                 var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
                                 var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreObjectName());
                                 var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionStreamName);
-                                return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionStreamName, query);
+                                return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionStreamName, query, credentials);
                             }
                     })
             );
         }
 
-        public Task ProvisionSubscriptionStream(string targetSubscriptionStreamName = "*")
+        public Task ProvisionSubscriptionStream(UserCredentials credentials, string targetSubscriptionStreamName = "*")
         {
-            return Task.WhenAll(_provisioningTasks.Select(x => x(targetSubscriptionStreamName)));
+            return Task.WhenAll(_provisioningTasks.Select(x => x(credentials, targetSubscriptionStreamName)));
         }
     }
 }

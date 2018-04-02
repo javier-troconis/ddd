@@ -10,7 +10,7 @@ namespace eventstore
 {
     public interface ITopicStreamProvisioner
     {
-        Task ProvisionTopicStream();
+        Task ProvisionTopicStream(UserCredentials credentials);
     }
 
     public class TopicStreamProvisioner : ITopicStreamProvisioner
@@ -25,7 +25,7 @@ namespace eventstore
             _projectionManager = projectionManager;
         }
 
-        public Task ProvisionTopicStream()
+        public Task ProvisionTopicStream(UserCredentials credentials)
         {
             const string queryName = "topic";
             const string queryTemplate =
@@ -48,7 +48,7 @@ fromAll()
     }});";
 
 			var query = string.Format(queryTemplate, queryName);
-            return _provisioningTasksQueue.SendToChannel(queryName, () => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query));
+            return _provisioningTasksQueue.SendToChannel(queryName, () => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query, credentials));
         }
     }
 }

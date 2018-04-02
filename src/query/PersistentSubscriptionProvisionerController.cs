@@ -24,8 +24,7 @@ namespace query
 				.RegisterPersistentSubscription<Subscriber3>()
 				.RegisterPersistentSubscription<IProvisionSubscriptionStreamRequests, SubscriptionStreamProvisionerController>(
 					x => x
-                        .WithMaxRetriesOf(0)
-                        .PreferDispatchToSingle()
+                        .StartFromCurrent()
                     )
 				.ProvisionPersistentSubscription(message.Data.PersistentSubscriptionGroup);
 		}
