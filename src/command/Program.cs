@@ -54,6 +54,9 @@ namespace command
 			}
 			*/
 
+			//await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
+			//Console.WriteLine("application submitted: " + streamName);
+
 
 			var connectionFactory = new EventStoreConnectionFactory(
 				EventStoreSettings.ClusterDns,
@@ -72,10 +75,8 @@ namespace command
 				{
 					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
 					await StartApplication(eventStore, streamName);
-					await StartIdentityVerifcation(eventStore, streamName);
+					await StartIdentityVerification(eventStore, streamName);
 					await SubmitApplication(eventStore, streamName);
-					//await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
-					//Console.WriteLine("application submitted: " + streamName);
 					await Task.Delay(2000);
 				}).Wait();
 			}
@@ -87,11 +88,13 @@ namespace command
 			Console.WriteLine("application started: " + streamName);
 		}
 
-		private static async Task StartIdentityVerifcation(IEventStore eventStore, string streamName)
+		private static async Task StartIdentityVerification(IEventStore eventStore, string streamName)
 		{
+			// extract
 			var events = await eventStore.ReadEventsForward(streamName);
 			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext,StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>((result, resolvedEvent) => result);
 			var commandContext = events.Aggregate(new StartIdentityVerificationCommand.StartIdentityVerificationCommandContext(), fnc);
+			//
 			var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(commandContext, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
 			await eventStore.WriteEvent(streamName, 0, newEvent);
 			Console.WriteLine("identity verification completed: " + streamName);
@@ -99,9 +102,11 @@ namespace command
 
 		private static async Task SubmitApplication(IEventStore eventStore, string streamName)
 		{
+			// extract
 			var events = await eventStore.ReadEventsForward(streamName);
 			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<SubmitApplicationCommand.SubmitApplicationCommandContext, SubmitApplicationCommand.SubmitApplicationCommandContext>((result, resolvedEvent) => result);
 			var commandContext = events.Aggregate(new SubmitApplicationCommand.SubmitApplicationCommandContext(), fnc);
+			//
 			var newEvent = SubmitApplicationCommand.SubmitApplication(commandContext);
 			await eventStore.WriteEvent(streamName, 1, newEvent);
 			Console.WriteLine("application submitted: " + streamName);
