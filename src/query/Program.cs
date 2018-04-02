@@ -31,22 +31,24 @@ namespace query
 				EventBus.CreateEventBus
 				(
 					createConnection,
-					registry => registry
+					z => z
 						//.RegisterVolatileSubscriber
 						//(
 						//	new Subscriber1()
 						//)
-						.RegisterCatchupSubscriber<Subscriber2>
+						.RegisterCatchupSubscriber
 						(
-							new Subscriber2()
-								.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint),
-							CheckpointReader<Subscriber2>.ReadCheckpoint
+							new Subscriber2(),
+							CheckpointReader<Subscriber2>.ReadCheckpoint,
+							setRegistrationOptions : y => y.SetEventHandlingProcessor(m => m.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint))
 						)
 						//.RegisterPersistentSubscriber
 						//(
 						//	new Subscriber3()
 						//)
 				);
+
+			consumerEventBus.StartAllSubscribers();
 
 			var infrastructureEventBus =
 				EventBus.CreateEventBus
@@ -67,16 +69,14 @@ namespace query
 								new ProjectionManager(
 									EventStoreSettings.ClusterDns,
 									EventStoreSettings.ExternalHttpPort,
-									EventStoreSettings.Username,
-									EventStoreSettings.Password,
 									new ConsoleLogger()))),
-							x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+							x => x.SetSubscriptionStreamName(typeof(IProvisionSubscriptionStreamRequests))
 						)
 						.RegisterVolatileSubscriber
 						(
 							new PersistentSubscriptionProvisionerController(new PersistentSubscriptionProvisioner(
 								new PersistentSubscriptionManager(createConnection))),
-							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
+							x => x.SetSubscriptionStreamName(typeof(IProvisionPersistentSubscriptionRequests))
 						)
 				);
 			infrastructureEventBus

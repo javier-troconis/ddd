@@ -36,7 +36,7 @@ namespace eventstore
         private readonly int _externalHttpPort;
         private readonly ILogger _logger;
 
-        public ProjectionManager(string clusterDns, int externalHttpPort, string username, string password, ILogger logger)
+        public ProjectionManager(string clusterDns, int externalHttpPort, ILogger logger)
         {
             _clusterDns = clusterDns;
             _externalHttpPort = externalHttpPort;

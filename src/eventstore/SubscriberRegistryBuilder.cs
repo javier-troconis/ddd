@@ -269,9 +269,8 @@ namespace eventstore
 				)
 			);
 		}
-       
 
-        public static SubscriberRegistryBuilder CreateSubscriberRegistryBuilder()
+        internal static SubscriberRegistryBuilder CreateSubscriberRegistryBuilder()
         {
             return new SubscriberRegistryBuilder(new Dictionary<string, ConnectSubscriber>());
         } 

@@ -67,10 +67,10 @@ namespace eventstore
 		IMessageHandler<IRecordedEvent<IStartSubscriber>, Task>,
 		IMessageHandler<IRecordedEvent<IStopSubscriber>, Task>
 	{
-		private readonly EventBus _eventBus;
+		private readonly IEventBus _eventBus;
 		private readonly IEventPublisher _eventPublisher;
 
-		public EventBusController(EventBus eventBus, IEventPublisher eventPublisher)
+		public EventBusController(IEventBus eventBus, IEventPublisher eventPublisher)
 		{
 			_eventBus = eventBus;
 			_eventPublisher = eventPublisher;
@@ -79,7 +79,7 @@ namespace eventstore
 		public async Task Handle(IRecordedEvent<IStartSubscriber> message)
 		{
 			var status = await _eventBus.StartSubscriber(message.Data.SubscriberName);
-			if (status == SubscriberStatus.Started)
+			if (status == StartSubscriberResult.Started)
 			{
 				await _eventPublisher.PublishEvent
 				(
@@ -92,7 +92,7 @@ namespace eventstore
 		public async Task Handle(IRecordedEvent<IStopSubscriber> message)
 		{
 			var status = await _eventBus.StopSubscriber(message.Data.SubscriberName);
-			if (status == SubscriberStatus.Stopped)
+			if (status == StopSubscriberResult.Stopped)
 			{
 				await _eventPublisher.PublishEvent
 				(

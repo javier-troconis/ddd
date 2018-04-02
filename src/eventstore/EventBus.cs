@@ -42,7 +42,7 @@ namespace eventstore
         private readonly TaskQueue _queue = new TaskQueue();
         private readonly IDictionary<string, Delegate> _subscribers;
 
-        public EventBus(Func<IEventStoreConnection> createConnection, ISubscriberRegistry subscriberRegistry)
+        internal EventBus(Func<IEventStoreConnection> createConnection, ISubscriberRegistry subscriberRegistry)
         {
             _subscribers = 
                 subscriberRegistry
@@ -141,5 +141,10 @@ namespace eventstore
         private delegate Task<DisconnectSubscriber> ConnectSubscriber(Action<SubscriptionDropReason> subscriptionDropped);
 
         private delegate ConnectSubscriber DisconnectSubscriber();
+
+	    public static IEventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistryBuilder, ISubscriberRegistry> setSubscriberRegistry)
+	    {
+		    return new EventBus(createConnection, setSubscriberRegistry(SubscriberRegistryBuilder.CreateSubscriberRegistryBuilder()));
+	    }
     }
 }

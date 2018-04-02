@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using EventStore.ClientAPI.SystemData;
 
 namespace eventstore
 {
@@ -47,7 +48,7 @@ fromAll()
     }});";
 
 			var query = string.Format(queryTemplate, queryName);
-            return _provisioningTasksQueue.SendToChannel(() => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query), queryName);
+            return _provisioningTasksQueue.SendToChannel(queryName, () => _projectionManager.CreateOrUpdateContinuousProjection(queryName, query));
         }
     }
 }

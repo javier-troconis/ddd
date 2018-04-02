@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using eventstore;
  using EventStore.ClientAPI;
  using EventStore.ClientAPI.Common.Log;
+ using EventStore.ClientAPI.SystemData;
 
 
 namespace management
@@ -32,8 +33,8 @@ namespace management
 				EventBus.CreateEventBus
 				(
 				createConnection,
-				registry => registry
-					.RegisterPersistentSubscriber
+				z =>
+					z.RegisterPersistentSubscriber
 					(
 						new RestartSubscriberWorkflow1Controller(eventPublisher)
 					)
@@ -49,8 +50,8 @@ namespace management
 				EventBus.CreateEventBus
 				(
 					createConnection,
-					registry => registry
-						.RegisterVolatileSubscriber
+					z =>
+						z.RegisterVolatileSubscriber
 						(
 							new EventBusController
 							(
@@ -64,16 +65,14 @@ namespace management
 								new ProjectionManager(
 									EventStoreSettings.ClusterDns,
 									EventStoreSettings.ExternalHttpPort,
-									EventStoreSettings.Username,
-									EventStoreSettings.Password,
 									new ConsoleLogger()))),
-							x => x.SetSubscriptionStream<IProvisionSubscriptionStreamRequests>()
+							x => x.SetSubscriptionStreamName(typeof(IProvisionSubscriptionStreamRequests))
 						)
 						.RegisterVolatileSubscriber
 						(
 							new PersistentSubscriptionProvisionerController(new PersistentSubscriptionProvisioner(
 								new PersistentSubscriptionManager(createConnection))),
-							x => x.SetSubscriptionStream<IProvisionPersistentSubscriptionRequests>()
+							x => x.SetSubscriptionStreamName(typeof(IProvisionPersistentSubscriptionRequests))
 						)
 				);
 	        infrastructureEventBus
@@ -97,8 +96,6 @@ namespace management
 						var projectionManager = new ProjectionManager(
 							EventStoreSettings.ClusterDns,
 							EventStoreSettings.ExternalHttpPort,
-							EventStoreSettings.Username,
-							EventStoreSettings.Password,
 							new ConsoleLogger());
                         var topicStreamProvisioner = new TopicStreamProvisioner(projectionManager);
                         var subscriptionStreamProvisioner = new SubscriptionStreamProvisioner(projectionManager);

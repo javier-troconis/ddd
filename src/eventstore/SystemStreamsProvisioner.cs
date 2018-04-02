@@ -5,7 +5,7 @@ using System.Linq;
 using System.Net;
 
 using EventStore.ClientAPI.Exceptions;
-
+using EventStore.ClientAPI.SystemData;
 using shared;
 
 namespace eventstore

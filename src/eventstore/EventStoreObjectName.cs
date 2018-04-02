@@ -24,5 +24,10 @@ namespace eventstore
         {
             return new EventStoreObjectName(value);
         }
-    }
+
+	    public static implicit operator EventStoreObjectName(Type value)
+	    {
+		    return new EventStoreObjectName(value.GetEventStoreObjectName());
+	    }
+	}
 }
