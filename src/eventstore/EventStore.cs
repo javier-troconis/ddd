@@ -77,6 +77,7 @@ namespace eventstore
 	{
 		Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
 		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent = null);
+		Task<WriteResult> WriteEvent(string streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent = null);
 		Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata);
 	}
 
@@ -111,6 +112,11 @@ namespace eventstore
 						)
 				);
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
+		}
+
+		public Task<WriteResult> WriteEvent(string streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent)
+		{
+			return WriteEvents(streamName, streamExpectedVersion, new[] {@event}, configureEvent);
 		}
 
 		public async Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber)

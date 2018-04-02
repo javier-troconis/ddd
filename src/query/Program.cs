@@ -38,9 +38,9 @@ namespace query
 						//)
 						.RegisterCatchupSubscriber
 						(
-							new Subscriber2(),
-							CheckpointReader<Subscriber2>.ReadCheckpoint,
-							setRegistrationOptions : y => y.SetEventHandlingProcessor(m => m.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint))
+							new Subscriber3(),
+							CheckpointReader<Subscriber3>.ReadCheckpoint,
+							setRegistrationOptions : y => y.SetEventHandlingProcessor(m => m.ComposeForward(CheckpointWriter<Subscriber3>.WriteCheckpoint))
 						)
 						//.RegisterPersistentSubscriber
 						//(

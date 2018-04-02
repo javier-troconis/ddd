@@ -29,6 +29,7 @@ namespace command
 			connection.ConnectAsync().Wait();
 			IEventStore eventStore = new eventstore.EventStore(connection);
 
+			/*
 			while (true)
 			{
 				Console.WriteLine("1 - IApplicationStartedV1");
@@ -65,27 +66,30 @@ namespace command
 				Console.WriteLine();
 				Console.WriteLine();
 			}
+			*/
 
-			//while (true)
-			//{
-			//	Task.Run(async () =>
-			//	{
-			//		var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
-			//		await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, Command.StartApplicationV3());
-			//		Console.WriteLine("application started: " + streamName);
+			while (true)
+			{
+				Task.Run(async () =>
+				{
+					var streamName = "application-" + Guid.NewGuid().ToString("N").ToLower();
+					await eventStore.WriteEvent(streamName, ExpectedVersion.NoStream, StartApplicationCommand.StartApplication("123456789"));
+					Console.WriteLine("application started: " + streamName);
 
-			//		var events = await eventStore.ReadEventsForward(streamName);
-			//		var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<SubmitApplicationState, SubmitApplicationState>((subscriber, resolvedEvent) => subscriber);
-			//		var state = events.Aggregate(new SubmitApplicationState(), fnc);
+					var events = await eventStore.ReadEventsForward(streamName);
+					var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext, StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>((state, resolvedEvent) => state);
+					var commandContext = events.Aggregate(new StartIdentityVerificationCommand.StartIdentityVerificationCommandContext(), fnc);
 
-			//		var newEvents = Command.SubmitApplicationV1(state, streamName);
-			//		await eventStore.WriteEvents(streamName, 0, newEvents);
-			//		//await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
-			//		Console.WriteLine("application submitted: " + streamName);
+					var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(commandContext, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
+					await eventStore.WriteEvent(streamName, 0, newEvent);
+					Console.WriteLine("identity verification completed: " + streamName);
 
-			//		await Task.Delay(1000);
-			//	}).Wait();
-			//}
+					//await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
+					//Console.WriteLine("application submitted: " + streamName);
+
+					await Task.Delay(2000);
+				}).Wait();
+			}
 		}
 	}
 }
