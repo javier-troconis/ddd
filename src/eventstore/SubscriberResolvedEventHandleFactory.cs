@@ -22,9 +22,9 @@ namespace eventstore
 	    //					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
 	    //				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
-		public static Func<TSubscriber, ResolvedEvent, TResult> CreateSubscriberResolvedEventHandle<TSubscriber, TResult>(Func<TSubscriber, ResolvedEvent, TResult> getUnHandledResult) where TSubscriber : IMessageHandler
+		public static Func<T1, ResolvedEvent, T2> CreateSubscriberResolvedEventHandle<T1, T2>(Func<T1, ResolvedEvent, T2> getResultForUnhandledMessage) where T1 : IMessageHandler
 		{
-			var candidateEventTypes = typeof(TSubscriber)
+			var candidateEventTypes = typeof(T1)
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
 		    return
@@ -32,8 +32,8 @@ namespace eventstore
 			    {
 				    var recordedEvent = TryDeserializeEvent(candidateEventTypes, resolvedEvent);
 				    return recordedEvent == null
-					    ? getUnHandledResult(subscriber, resolvedEvent)
-					    : EventHandler<TResult>.HandleEvent(subscriber, (dynamic)recordedEvent);
+					    ? getResultForUnhandledMessage(subscriber, resolvedEvent)
+					    : EventHandler<T2>.HandleEvent(subscriber, (dynamic)recordedEvent);
 			    };
 	    }
 
@@ -65,11 +65,11 @@ namespace eventstore
 		    return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
 	    }
 
-	    private static class EventHandler<TOut>
+	    private static class EventHandler<T>
 	    {
-		    public static TOut HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
+		    public static T HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
 		    {
-			    var handler = (IMessageHandler<TRecordedEvent, TOut>)subscriber;
+			    var handler = (IMessageHandler<TRecordedEvent, T>)subscriber;
 			    return handler.Handle(recordedEvent);
 		    }
 	    }
