@@ -13,18 +13,8 @@ using shared;
 
 namespace eventstore
 {
-	public static class MessageHandlerExtensions
+	internal static class MessageHandlerExtensions
 	{
-		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s1, IMessageHandler s2)
-		{
-			return MessageHandlerExtensions.ComposeForward(s1, CreateSubscriberEventHandle((dynamic)s2));
-		}
-
-		public static Func<ResolvedEvent, Task<ResolvedEvent>> ComposeForward(this IMessageHandler s, Func<ResolvedEvent, Task<ResolvedEvent>> f)
-		{
-			return FuncExtensions.ComposeForward(CreateSubscriberEventHandle((dynamic)s), f);
-		}
-
 		public static Func<ResolvedEvent, Task<ResolvedEvent>> CreateSubscriberEventHandle<TSubscriber>(this TSubscriber s) where TSubscriber : IMessageHandler
 		{
 			var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>

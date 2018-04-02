@@ -79,7 +79,6 @@ namespace command
 					var events = await eventStore.ReadEventsForward(streamName);
 					var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext, StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>((result, resolvedEvent) => result);
 					var commandContext = events.Aggregate(new StartIdentityVerificationCommand.StartIdentityVerificationCommandContext(), fnc);
-
 					var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(commandContext, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
 					await eventStore.WriteEvent(streamName, 0, newEvent);
 					Console.WriteLine("identity verification completed: " + streamName);
