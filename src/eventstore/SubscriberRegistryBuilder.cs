@@ -14,12 +14,12 @@ namespace eventstore
         string SubscriptionStreamName { get; }
         string SubscriberName { get; }
         Func<ResolvedEvent, string> GetEventHandlingQueueName { get; }
-	    Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> ProcessEventHandling { get; }
+	    Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> ProcessEventHandling { get; }
 	}
 
     public class CatchupSubscriberRegistrationOptions : ICatchupSubscriberRegistrationOptions
     {
-        internal CatchupSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, string subscriberName, Func<ResolvedEvent, string> getEventHandlingQueueName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+        internal CatchupSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, string subscriberName, Func<ResolvedEvent, string> getEventHandlingQueueName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> processEventHandling)
         {
             SubscriptionStreamName = subscriptionStreamName;
             SubscriberName = subscriberName;
@@ -47,7 +47,7 @@ namespace eventstore
             return new CatchupSubscriberRegistrationOptions(SubscriptionStreamName, subscriberNamingConvention(SubscriberName), GetEventHandlingQueueName, ProcessEventHandling);
         }
 
-	    public CatchupSubscriberRegistrationOptions SetEventHandlingProcessor(Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+	    public CatchupSubscriberRegistrationOptions SetEventHandlingProcessor(Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> processEventHandling)
 	    {
 			return new CatchupSubscriberRegistrationOptions(SubscriptionStreamName, SubscriberName, GetEventHandlingQueueName, processEventHandling);
 		}
@@ -55,19 +55,19 @@ namespace eventstore
         public string SubscriptionStreamName { get; }
         public string SubscriberName { get; }
         public Func<ResolvedEvent, string> GetEventHandlingQueueName { get; }
-		public Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> ProcessEventHandling { get; }
+		public Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> ProcessEventHandling { get; }
 	}
 
     public interface IVolatileSubscriberRegistrationOptions
     {
         string SubscriptionStreamName { get; }
         string SubscriberName { get; }
-	    Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> ProcessEventHandling { get; }
+	    Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> ProcessEventHandling { get; }
 	}
 
     public class VolatileSubscriberRegistrationOptions : IVolatileSubscriberRegistrationOptions
     {
-        internal VolatileSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+        internal VolatileSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> processEventHandling)
         {
             SubscriptionStreamName = subscriptionStreamName;
             SubscriberName = subscriberName;
@@ -89,14 +89,14 @@ namespace eventstore
             return new VolatileSubscriberRegistrationOptions(SubscriptionStreamName, subscriberNamingConvention(SubscriberName), ProcessEventHandling);
         }
 
-	    public VolatileSubscriberRegistrationOptions SetEventHandlingProcessor(Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+	    public VolatileSubscriberRegistrationOptions SetEventHandlingProcessor(Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> processEventHandling)
 	    {
 		    return new VolatileSubscriberRegistrationOptions(SubscriptionStreamName, SubscriberName, processEventHandling);
 	    }
 
 		public string SubscriptionStreamName { get; }
         public string SubscriberName { get; }
-		public Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> ProcessEventHandling { get; }
+		public Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> ProcessEventHandling { get; }
 	}
 
     public interface IPersistentSubscriberRegistrationOptions
@@ -104,12 +104,12 @@ namespace eventstore
         string SubscriberName { get; }
         string SubscriptionStreamName { get; }
         string SubscriptionGroupName { get; }
-	    Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> ProcessEventHandling { get; }
+	    Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> ProcessEventHandling { get; }
 	}
 
     public class PersistentSubscriberRegistrationOptions : IPersistentSubscriberRegistrationOptions
     {
-        internal PersistentSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, EventStoreObjectName subscriptionGroupName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+        internal PersistentSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, EventStoreObjectName subscriptionGroupName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> processEventHandling)
         {
             SubscriptionStreamName = subscriptionStreamName;
             SubscriptionGroupName = subscriptionGroupName;
@@ -137,7 +137,7 @@ namespace eventstore
             return new PersistentSubscriberRegistrationOptions(SubscriptionStreamName, SubscriptionGroupName, subscriberNamingConvention(SubscriberName), ProcessEventHandling);
         }
 
-	    public PersistentSubscriberRegistrationOptions SetEventHandlingProcessor(Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+	    public PersistentSubscriberRegistrationOptions SetEventHandlingProcessor(Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> processEventHandling)
 	    {
 			return new PersistentSubscriberRegistrationOptions(SubscriptionStreamName, SubscriptionGroupName, SubscriberName, processEventHandling);
 		}
@@ -145,7 +145,7 @@ namespace eventstore
 		public string SubscriberName { get; }
         public string SubscriptionStreamName { get; }
         public string SubscriptionGroupName { get; }
-		public Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> ProcessEventHandling { get; }
+		public Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> ProcessEventHandling { get; }
 	}
 
     public class SubscriberRegistryBuilder : ReadOnlyDictionary<string, ConnectSubscriber>, ISubscriberRegistry
