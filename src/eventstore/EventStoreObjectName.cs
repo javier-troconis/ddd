@@ -8,16 +8,18 @@ namespace eventstore
 {
     public struct EventStoreObjectName
     {
-        private readonly string _value;
+        public readonly string Value;
 
         private EventStoreObjectName(string value)
         {
-            _value = value.GetEventStoreObjectName();
+	        Value = value
+		        .Replace('.', '_')
+		        .Replace("+", "_");
         }
 
-        public static implicit operator string(EventStoreObjectName value)
+		public static implicit operator string(EventStoreObjectName value)
         {
-            return value._value;
+            return value.Value;
         }
 
         public static implicit operator EventStoreObjectName(string value)
@@ -27,7 +29,7 @@ namespace eventstore
 
 	    public static implicit operator EventStoreObjectName(Type value)
 	    {
-		    return new EventStoreObjectName(value.GetEventStoreObjectName());
+		    return new EventStoreObjectName(value.FullName);
 	    }
 	}
 }

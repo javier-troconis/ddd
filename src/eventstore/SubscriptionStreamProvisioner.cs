@@ -69,14 +69,14 @@ fromAll()
                     new Func<UserCredentials, string, Task>[] {
                         (credentials, targetSubscriptionStreamName) =>
                             {
-                                var subscriptionStreamName = typeof(TSubscription).GetEventStoreObjectName();
+                                string subscriptionStreamName = (EventStoreObjectName)typeof(TSubscription);
                                 if(!subscriptionStreamName.MatchesWildcard(targetSubscriptionStreamName))
                                 {
                                     return Task.CompletedTask;
                                 }
                                 var subscriptionType = typeof(TSubscription);
                                 var handlingTypes = subscriptionType.GetMessageHandlerTypes().Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-                                var topics = handlingTypes.Select(handlingType => handlingType.GetEventStoreObjectName());
+                                var topics = handlingTypes.Select(handlingType => ((EventStoreObjectName)handlingType).Value);
                                 var query = string.Format(queryTemplate, string.Join(",\n", topics.Select(topic => $"'{topic}'")), subscriptionStreamName);
                                 return _projectionManager.CreateOrUpdateContinuousProjection(subscriptionStreamName, query, credentials);
                             }

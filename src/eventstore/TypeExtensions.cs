@@ -18,21 +18,16 @@ namespace eventstore
 
         public static string GetStreamName(this Type entityType, Guid identity, string category = "")
         {
-            var streamName = $"{entityType.GetEventStoreObjectName()}_{identity.ToString("N").ToLower()}";
+            var streamName = $"{(EventStoreObjectName)entityType}_{identity.ToString("N").ToLower()}";
 	        return string.IsNullOrEmpty(category) ? streamName : category + "-" + streamName;
         }
 
-        public static string GetEventStoreObjectName(this Type type)
-        {
-            return type.FullName.GetEventStoreObjectName();
-        }
-
-		// use full clr name, and deserialize using it, instead of relying on the subscriber handling types
 		public static string[] GetEventTopics(this Type eventType)
         {
 	        return eventType
 		        .GetInterfaces()
-		        .Select(x => x.GetEventStoreObjectName())
+				.Where(x => Attribute.IsDefined(x, typeof(TopicAttribute)))
+		        .Select(x => ((EventStoreObjectName)x).Value)
 				.ToArray();
         }
     }

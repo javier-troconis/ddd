@@ -22,12 +22,12 @@ namespace eventstore
 
     public interface IProjectionManager
     {
-        Task CreateOrUpdateContinuousProjection(string name, string query, UserCredentials credentials = null);
-        Task ResetProjection(string name, UserCredentials credentials = null);
-        Task DisableProjection(string name, UserCredentials credentials = null);
-        Task EnableProjection(string name, UserCredentials credentials = null);
-        Task<IProjectionStatistics> GetProjectionStatistics(string name, UserCredentials credentials = null);
-        Task<bool> CompareProjectionQuery(string name, string query, UserCredentials credentials = null);
+        Task CreateOrUpdateContinuousProjection(EventStoreObjectName name, string query, UserCredentials credentials = null);
+        Task ResetProjection(EventStoreObjectName name, UserCredentials credentials = null);
+        Task DisableProjection(EventStoreObjectName name, UserCredentials credentials = null);
+        Task EnableProjection(EventStoreObjectName name, UserCredentials credentials = null);
+        Task<IProjectionStatistics> GetProjectionStatistics(EventStoreObjectName name, UserCredentials credentials = null);
+        Task<bool> CompareProjectionQuery(EventStoreObjectName name, string query, UserCredentials credentials = null);
     }
 
     public sealed class ProjectionManager : IProjectionManager
@@ -43,7 +43,7 @@ namespace eventstore
             _logger = logger;
         }
 
-        public Task CreateOrUpdateContinuousProjection(string name, string query, UserCredentials credentials = null)
+        public Task CreateOrUpdateContinuousProjection(EventStoreObjectName name, string query, UserCredentials credentials = null)
         {
             return Execute
                 (
@@ -69,7 +69,7 @@ namespace eventstore
                 );
         }
 
-        public Task ResetProjection(string name, UserCredentials credentials = null)
+        public Task ResetProjection(EventStoreObjectName name, UserCredentials credentials = null)
         {
             return Execute
             (
@@ -95,7 +95,7 @@ namespace eventstore
             );
         }
 
-        public Task DisableProjection(string name, UserCredentials credentials = null)
+        public Task DisableProjection(EventStoreObjectName name, UserCredentials credentials = null)
         {
             return Execute
             (
@@ -109,7 +109,7 @@ namespace eventstore
             );
         }
 
-        public Task EnableProjection(string name, UserCredentials credentials = null)
+        public Task EnableProjection(EventStoreObjectName name, UserCredentials credentials = null)
         {
             return Execute
             (
@@ -123,7 +123,7 @@ namespace eventstore
             );
         }
 
-        public async Task<IProjectionStatistics> GetProjectionStatistics(string name, UserCredentials credentials = null)
+        public async Task<IProjectionStatistics> GetProjectionStatistics(EventStoreObjectName name, UserCredentials credentials = null)
         {
             return await Execute
                 (
@@ -138,7 +138,7 @@ namespace eventstore
                 );
         }
 
-        public async Task<bool> CompareProjectionQuery(string name, string query, UserCredentials credentials = null)
+        public async Task<bool> CompareProjectionQuery(EventStoreObjectName name, string query, UserCredentials credentials = null)
         {
             return await Execute
             (

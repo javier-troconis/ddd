@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using shared;
 
 namespace command.contracts
 {
-    public interface IApplicationSubmittedV1
+	[Topic]
+	public interface IApplicationSubmittedV1
     {
     }
 }

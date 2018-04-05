@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using shared;
 
 namespace command.contracts
 {
-    public interface IIdentityVerificationCompletedV1
+	[Topic]
+	public interface IIdentityVerificationCompletedV1
     {
         string TransactionId { get; }
         string Result { get; }

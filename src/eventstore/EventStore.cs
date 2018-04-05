@@ -76,9 +76,9 @@ namespace eventstore
 	public interface IEventStore
 	{
 		Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
-		Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent = null);
-		Task<WriteResult> WriteEvent(string streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent = null);
-		Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata);
+		Task<WriteResult> WriteEvents(EventStoreObjectName streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent = null);
+		Task<WriteResult> WriteEvent(EventStoreObjectName streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent = null);
+		Task<WriteResult> WriteStreamMetadata(EventStoreObjectName streamName, long streamExpectedVersion, StreamMetadata metadata);
 	}
 
 	public class EventStore : IEventStore
@@ -90,7 +90,7 @@ namespace eventstore
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public Task<WriteResult> WriteEvents(string streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent)
+		public Task<WriteResult> WriteEvents(EventStoreObjectName streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent)
 		{
 			var eventData = events
 				.Select
@@ -105,16 +105,16 @@ namespace eventstore
                                 @event.GetType().FullName,
                                 @event.GetType().GetEventTopics()
                             )
-                                .PipeForward
-                                (
-                                    configureEvent ?? (x => x)
-                                )
+                            .PipeForward
+                            (
+                                configureEvent ?? (x => x)
+                            )
 						)
 				);
 			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
 		}
 
-		public Task<WriteResult> WriteEvent(string streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent)
+		public Task<WriteResult> WriteEvent(EventStoreObjectName streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent)
 		{
 			return WriteEvents(streamName, streamExpectedVersion, new[] {@event}, configureEvent);
 		}
@@ -162,7 +162,7 @@ namespace eventstore
 			return new EventData(eventConfiguration.EventId, eventConfiguration.EventType, true, eventData, eventMetadata);
 		}
 
-		public Task<WriteResult> WriteStreamMetadata(string streamName, long streamExpectedVersion, StreamMetadata metadata)
+		public Task<WriteResult> WriteStreamMetadata(EventStoreObjectName streamName, long streamExpectedVersion, StreamMetadata metadata)
 		{
 			return _eventStoreConnection.SetStreamMetadataAsync(streamName, streamExpectedVersion, metadata);
 		}

@@ -19,7 +19,7 @@ namespace eventstore
 
     public class CatchupSubscriberRegistrationOptions : ICatchupSubscriberRegistrationOptions
     {
-        internal CatchupSubscriberRegistrationOptions(string subscriptionStreamName, string subscriberName, Func<ResolvedEvent, string> getEventHandlingQueueName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+        internal CatchupSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, string subscriberName, Func<ResolvedEvent, string> getEventHandlingQueueName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
         {
             SubscriptionStreamName = subscriptionStreamName;
             SubscriberName = subscriberName;
@@ -67,7 +67,7 @@ namespace eventstore
 
     public class VolatileSubscriberRegistrationOptions : IVolatileSubscriberRegistrationOptions
     {
-        internal VolatileSubscriberRegistrationOptions(string subscriptionStreamName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+        internal VolatileSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
         {
             SubscriptionStreamName = subscriptionStreamName;
             SubscriberName = subscriberName;
@@ -109,7 +109,7 @@ namespace eventstore
 
     public class PersistentSubscriberRegistrationOptions : IPersistentSubscriberRegistrationOptions
     {
-        internal PersistentSubscriberRegistrationOptions(string subscriptionStreamName, string subscriptionGroupName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
+        internal PersistentSubscriberRegistrationOptions(EventStoreObjectName subscriptionStreamName, EventStoreObjectName subscriptionGroupName, string subscriberName, Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task<ResolvedEvent>>> processEventHandling)
         {
             SubscriptionStreamName = subscriptionStreamName;
             SubscriptionGroupName = subscriptionGroupName;
@@ -158,7 +158,7 @@ namespace eventstore
         
         public SubscriberRegistryBuilder RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, ICatchupSubscriberRegistrationOptions> setRegistrationOptions = null) where TSubscriber : IMessageHandler
         {
-	        var registrationOptions = new CatchupSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreObjectName(), typeof(TSubscriber).GetEventStoreObjectName(), resolvedEvent => string.Empty, x => x).PipeForward(setRegistrationOptions ?? (x => x));
+	        var registrationOptions = new CatchupSubscriberRegistrationOptions(typeof(TSubscriber), (EventStoreObjectName)typeof(TSubscriber), resolvedEvent => string.Empty, x => x).PipeForward(setRegistrationOptions ?? (x => x));
 			return RegisterCatchupSubscriber
             (
 				registrationOptions.SubscriberName,
@@ -197,7 +197,7 @@ namespace eventstore
         
         public SubscriberRegistryBuilder RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, IVolatileSubscriberRegistrationOptions> setRegistrationOptions = null) where TSubscriber : IMessageHandler
         {
-			var registrationOptions = new VolatileSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreObjectName(), typeof(TSubscriber).GetEventStoreObjectName(), x => x).PipeForward(setRegistrationOptions ?? (x => x));
+			var registrationOptions = new VolatileSubscriberRegistrationOptions(typeof(TSubscriber), (EventStoreObjectName)typeof(TSubscriber), x => x).PipeForward(setRegistrationOptions ?? (x => x));
 			return RegisterVolatileSubscriber
             (
 				registrationOptions.SubscriberName,
@@ -235,7 +235,7 @@ namespace eventstore
 
         public SubscriberRegistryBuilder RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<PersistentSubscriberRegistrationOptions, IPersistentSubscriberRegistrationOptions> setRegistrationOptions = null) where TSubscriber : IMessageHandler
         {
-			var registrationOptions = new PersistentSubscriberRegistrationOptions(typeof(TSubscriber).GetEventStoreObjectName(), typeof(TSubscriber).GetEventStoreObjectName(), typeof(TSubscriber).GetEventStoreObjectName(), x => x).PipeForward(setRegistrationOptions ?? (x => x));
+			var registrationOptions = new PersistentSubscriberRegistrationOptions(typeof(TSubscriber), typeof(TSubscriber), (EventStoreObjectName)typeof(TSubscriber), x => x).PipeForward(setRegistrationOptions ?? (x => x));
 			return RegisterPersistentSubscriber
                 (
 					registrationOptions.SubscriberName,
