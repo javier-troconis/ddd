@@ -14,30 +14,35 @@ namespace eventstore
 {
     public static class SubscriberResolvedEventHandleFactory
     {
-	    //private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
-	    //		new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
-	    //			.Memoize(
-	    //				new MemoryCache(new MemoryCacheOptions()),
-	    //				new MemoryCacheEntryOptions()
-	    //					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
-	    //				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
+		//private static readonly Func<Type, ResolvedEvent, object> TryDeserializeEventWithCaching =
+		//		new Func<Type, ResolvedEvent, object>(TryDeserializeEvent)
+		//			.Memoize(
+		//				new MemoryCache(new MemoryCacheOptions()),
+		//				new MemoryCacheEntryOptions()
+		//					.SetSlidingExpiration(TimeSpan.FromSeconds(5)),
+		//				(eventType, resolvedEvent) => eventType == null ? string.Empty : eventType.FullName + resolvedEvent.Event.EventId);
 
 		public static Func<T1, ResolvedEvent, T2> CreateSubscriberResolvedEventHandle<T1, T2>(Func<T1, ResolvedEvent, T2> getResultForUnhandledMessage) where T1 : IMessageHandler
 		{
 			var candidateEventTypes = typeof(T1)
 				.GetMessageHandlerTypes()
 				.Select(x => x.GetGenericArguments()[0].GetGenericArguments()[0]);
-		    return
-			    (subscriber, resolvedEvent) =>
-			    {
-				    var recordedEvent = TryDeserializeEvent(candidateEventTypes, resolvedEvent);
-				    return recordedEvent == null
-					    ? getResultForUnhandledMessage(subscriber, resolvedEvent)
-					    : EventHandler<T2>.HandleEvent(subscriber, (dynamic)recordedEvent);
-			    };
-	    }
+			return
+				(handler, resolvedEvent) =>
+				{
+					var recordedEvent = TryDeserializeEvent(candidateEventTypes, resolvedEvent);
+					return recordedEvent == null
+						? getResultForUnhandledMessage(handler, resolvedEvent)
+						: EventHandler<T2>.HandleEvent(handler, (dynamic)recordedEvent);
+				};
+		}
 
-	    private static object TryDeserializeEvent(IEnumerable<Type> candidateEventTypes, ResolvedEvent resolvedEvent)
+		public static Func<T1, ResolvedEvent, T1> CreateSubscriberResolvedEventHandle<T1>() where T1 : IMessageHandler
+		{
+			return CreateSubscriberResolvedEventHandle<T1, T1>((handler, resolvedEvent) => handler);
+		}
+
+		private static object TryDeserializeEvent(IEnumerable<Type> candidateEventTypes, ResolvedEvent resolvedEvent)
 	    {
 		    var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
 		    var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<string[]>();
@@ -67,10 +72,9 @@ namespace eventstore
 
 	    private static class EventHandler<T>
 	    {
-		    public static T HandleEvent<TRecordedEvent>(IMessageHandler subscriber, TRecordedEvent recordedEvent)
+		    public static T HandleEvent<TRecordedEvent>(IMessageHandler handler, TRecordedEvent recordedEvent)
 		    {
-			    var handler = (IMessageHandler<TRecordedEvent, T>)subscriber;
-			    return handler.Handle(recordedEvent);
+				return ((IMessageHandler<TRecordedEvent, T>)handler).Handle(recordedEvent);
 		    }
 	    }
 	}

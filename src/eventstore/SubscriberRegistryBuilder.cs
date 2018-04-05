@@ -159,11 +159,16 @@ namespace eventstore
         public SubscriberRegistryBuilder RegisterCatchupSubscriber<TSubscriber>(TSubscriber subscriber, Func<Task<long?>> getCheckpoint, Func<CatchupSubscriberRegistrationOptions, ICatchupSubscriberRegistrationOptions> setRegistrationOptions = null) where TSubscriber : IMessageHandler
         {
 	        var registrationOptions = new CatchupSubscriberRegistrationOptions(typeof(TSubscriber), (EventStoreObjectName)typeof(TSubscriber), resolvedEvent => string.Empty, x => x).PipeForward(setRegistrationOptions ?? (x => x));
+	        var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
 			return RegisterCatchupSubscriber
             (
 				registrationOptions.SubscriberName,
 				registrationOptions.SubscriptionStreamName,
-                registrationOptions.ProcessEventHandling(subscriber.CreateSubscriberEventHandle()),
+                registrationOptions.ProcessEventHandling(async resolvedEvent =>
+                {
+	                await handleEvent(subscriber, resolvedEvent);
+	                return resolvedEvent;
+                }),
                 getCheckpoint,
 				registrationOptions.GetEventHandlingQueueName
 			);
@@ -198,11 +203,16 @@ namespace eventstore
         public SubscriberRegistryBuilder RegisterVolatileSubscriber<TSubscriber>(TSubscriber subscriber, Func<VolatileSubscriberRegistrationOptions, IVolatileSubscriberRegistrationOptions> setRegistrationOptions = null) where TSubscriber : IMessageHandler
         {
 			var registrationOptions = new VolatileSubscriberRegistrationOptions(typeof(TSubscriber), (EventStoreObjectName)typeof(TSubscriber), x => x).PipeForward(setRegistrationOptions ?? (x => x));
+	        var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
 			return RegisterVolatileSubscriber
             (
 				registrationOptions.SubscriberName,
 				registrationOptions.SubscriptionStreamName,
-				registrationOptions.ProcessEventHandling(subscriber.CreateSubscriberEventHandle())
+				registrationOptions.ProcessEventHandling(async resolvedEvent =>
+				{
+					await handleEvent(subscriber, resolvedEvent);
+					return resolvedEvent;
+				})
 			);
         }
 
@@ -236,12 +246,17 @@ namespace eventstore
         public SubscriberRegistryBuilder RegisterPersistentSubscriber<TSubscriber>(TSubscriber subscriber, Func<PersistentSubscriberRegistrationOptions, IPersistentSubscriberRegistrationOptions> setRegistrationOptions = null) where TSubscriber : IMessageHandler
         {
 			var registrationOptions = new PersistentSubscriberRegistrationOptions(typeof(TSubscriber), typeof(TSubscriber), (EventStoreObjectName)typeof(TSubscriber), x => x).PipeForward(setRegistrationOptions ?? (x => x));
+	        var handleEvent = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<TSubscriber, Task>(delegate { return Task.CompletedTask; });
 			return RegisterPersistentSubscriber
                 (
 					registrationOptions.SubscriberName,
 					registrationOptions.SubscriptionStreamName,
 					registrationOptions.SubscriptionGroupName,
-					registrationOptions.ProcessEventHandling(subscriber.CreateSubscriberEventHandle())
+					registrationOptions.ProcessEventHandling(async resolvedEvent =>
+					{
+						await handleEvent(subscriber, resolvedEvent);
+						return resolvedEvent;
+					})
 				);
         }
 

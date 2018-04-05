@@ -92,7 +92,7 @@ namespace command
 		{
 			// extract
 			var events = await eventStore.ReadEventsForward(streamName);
-			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext,StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>((result, resolvedEvent) => result);
+			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>();
 			var commandContext = events.Aggregate(new StartIdentityVerificationCommand.StartIdentityVerificationCommandContext(), fnc);
 			//
 			var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(commandContext, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
@@ -104,7 +104,7 @@ namespace command
 		{
 			// extract
 			var events = await eventStore.ReadEventsForward(streamName);
-			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<SubmitApplicationCommand.SubmitApplicationCommandContext, SubmitApplicationCommand.SubmitApplicationCommandContext>((result, resolvedEvent) => result);
+			var fnc = SubscriberResolvedEventHandleFactory.CreateSubscriberResolvedEventHandle<SubmitApplicationCommand.SubmitApplicationCommandContext>();
 			var commandContext = events.Aggregate(new SubmitApplicationCommand.SubmitApplicationCommandContext(), fnc);
 			//
 			var newEvent = SubmitApplicationCommand.SubmitApplication(commandContext);
