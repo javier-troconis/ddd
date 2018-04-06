@@ -39,8 +39,7 @@ namespace eventstore
 
     public sealed class EventBus : IEventBus, ISubscribeRegistrationHandler
 	{
-        //private readonly TaskQueue _queue = new TaskQueue();
-        private readonly ConcurrentDictionary<string, SubscriberConnection> _subscriberConnections = new ConcurrentDictionary<string, SubscriberConnection>();
+        private readonly ConcurrentDictionary<ISubscriberRegistration, SubscriberConnection> _subscriberConnections = new ConcurrentDictionary<ISubscriberRegistration, SubscriberConnection>();
 
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly ISubscriberRegistry _subscriberRegistry;
@@ -49,28 +48,6 @@ namespace eventstore
 		{
 			_createConnection = createConnection;
 			_subscriberRegistry = subscriberRegistry;
-			//_subscribers = 
-			//    subscriberRegistry
-			//        .ToDictionary
-			//        (
-			//            x => x.Key,
-			//            x =>
-			//            {
-			//                async Task<DisconnectSubscriber> ConnectSubscriber(Action<SubscriptionDropReason> subscriptionDropped)
-			//                {
-			//                    var connection = await x.Value
-			//                    (
-			//                     createConnection, (dropReason, exception) => subscriptionDropped(dropReason)
-			//                    );
-			//                    return () =>
-			//                    {
-			//                        connection.Disconnect();
-			//                        return ConnectSubscriber;
-			//                    };
-			//                }
-			//                return (Delegate)new ConnectSubscriber(ConnectSubscriber);
-			//            }
-			//        );
 		}
 
         public StopSubscriberResult StopSubscriber(string subscriberName)
@@ -79,27 +56,11 @@ namespace eventstore
             {
                 return StopSubscriberResult.NotFound;
             }
-	        if(_subscriberConnections.TryGetValue(subscriberName, out var subscriberConnection))
+	        if(_subscriberConnections.TryGetValue(_subscriberRegistry[subscriberName], out var subscriberConnection))
 	        {
 		        subscriberConnection.Disconnect();
 	        }
 	        return StopSubscriberResult.Stopped;
-	        //var tsc = new TaskCompletionSource<StopSubscriberResult>();
-	        //await _queue.SendToChannel
-	        //(
-	        //    subscriberName,
-	        //    () =>
-	        //    {
-	        //        DisconnectSubscriber disconnectSubscriber;
-	        //        if ((disconnectSubscriber = _subscribers[subscriberName] as DisconnectSubscriber) != null)
-	        //        {
-	        //            _subscribers[subscriberName] = disconnectSubscriber();
-	        //        }
-	        //        return Task.CompletedTask;
-	        //    },
-	        //    taskSucceeded: x => tsc.SetResult(StopSubscriberResult.Stopped)
-	        //);
-	        //return await tsc.Task;
         }
 
         public void StopAllSubscribers()
@@ -118,33 +79,6 @@ namespace eventstore
             }
 			await _subscriberRegistry[subscriberName].Handle(this);
 	        return StartSubscriberResult.Started;
-			//var tsc = new TaskCompletionSource<StartSubscriberResult>();
-   //         await _queue.SendToChannel
-   //         (
-   //             subscriberName,
-   //             async () =>
-   //             {
-	                
-	  //              //ConnectSubscriber connectSubscriber;
-	  //              //if ((connectSubscriber = _subscribers[subscriberName] as ConnectSubscriber) != null)
-	  //              //{
-	  //              //    _subscribers[subscriberName] = await connectSubscriber
-	  //              //    (
-	  //              //        async dropReason =>
-	  //              //        {
-	  //              //            if (dropReason == SubscriptionDropReason.UserInitiated)
-	  //              //            {
-	  //              //                return;
-	  //              //            }
-	  //              //            await StopSubscriber(subscriberName);
-	  //              //            await StartSubscriber(subscriberName);
-	  //              //        }
-	  //              //    );
-	  //              //}
-   //             },
-   //             taskSucceeded: x => tsc.SetResult(StartSubscriberResult.Started)
-   //         );
-   //         return await tsc.Task;
         }
 
         public Task StartAllSubscribers()
@@ -159,6 +93,40 @@ namespace eventstore
 
 		async Task IMessageHandler<CatchUpSubscriberRegistration, Task>.Handle(CatchUpSubscriberRegistration message)
 		{
+			SubscriberConnection connection;
+			if(_subscriberConnections.
+			(
+				message,
+				k =>
+				{
+					
+				},
+
+				//SubscriberConnection.ConnectCatchUpSubscriber
+				//(
+				//	_createConnection,
+				//	message.SubscriptionStreamName,
+				//	message.HandleEvent,
+				//	message.GetCheckpoint,
+				//	message.GetEventHandlingQueueKey,
+				//	async (dropReason, ex) =>
+				//	{
+				//		if (dropReason == SubscriptionDropReason.UserInitiated)
+				//		{
+				//			return;
+				//		}
+				//		StopSubscriber("");
+				//		await StartSubscriber("");
+				//	}
+				//)
+			);
+
+
+			if (_subscriberConnections.TryGetValue(message, out SubscriberConnection c))
+			{
+				
+			}
+
 			var subscriberConnection = await SubscriberConnection.ConnectCatchUpSubscriber
 				(
 					_createConnection, 
@@ -216,9 +184,5 @@ namespace eventstore
 				}
 			);
 		}
-
-		private delegate Task<DisconnectSubscriber> ConnectSubscriber(Action<SubscriptionDropReason> subscriptionDropped);
-
-		private delegate ConnectSubscriber DisconnectSubscriber();
 	}
 }
