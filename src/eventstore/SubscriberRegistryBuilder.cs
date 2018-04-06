@@ -148,9 +148,9 @@ namespace eventstore
 		public Func<Func<ResolvedEvent, Task<ResolvedEvent>>, Func<ResolvedEvent, Task>> ProcessEventHandling { get; }
 	}
 
-    public class SubscriberRegistryBuilder : ReadOnlyDictionary<string, ConnectSubscriber>, ISubscriberRegistry
+    public class SubscriberRegistryBuilder : ReadOnlyDictionary<string, ISubscriberRegistration>, ISubscriberRegistry
     {
-        private SubscriberRegistryBuilder(IDictionary<string, ConnectSubscriber> dictionary) : base(dictionary)
+        private SubscriberRegistryBuilder(IDictionary<string, ISubscriberRegistration> dictionary) : base(dictionary)
         {
           
         }
@@ -180,20 +180,27 @@ namespace eventstore
                 (
                     Dictionary.Merge
                     (
-                        new Dictionary<string, ConnectSubscriber>
+                        new Dictionary<string, ISubscriberRegistration>
                             {
                                 {
                                     subscriberName,
-	                                (createConnection, subscriptionDropped) =>
-		                                SubscriberConnection.ConnectCatchUpSubscriber
-		                                (
-			                                createConnection,
-			                                subscriptionStreamName,
-			                                handleEvent,
-			                                getCheckpoint,
-											getEventHandlingQueueKey ?? (x => string.Empty),
-											subscriptionDropped
-										)
+									new CatchUpSubscriberRegistration
+									(
+										subscriptionStreamName,
+										handleEvent,
+										getCheckpoint,
+										getEventHandlingQueueKey ?? (x => string.Empty)
+									)
+	         //                       (createConnection, subscriptionDropped) =>
+		        //                        SubscriberConnection.ConnectCatchUpSubscriber
+		        //                        (
+			       //                         createConnection,
+			       //                         subscriptionStreamName,
+			       //                         handleEvent,
+			       //                         getCheckpoint,
+										//	getEventHandlingQueueKey ?? (x => string.Empty),
+										//	subscriptionDropped
+										//)
 								}
                             }
                     )
@@ -222,18 +229,23 @@ namespace eventstore
 			(
 				Dictionary.Merge
 				(
-					new Dictionary<string, ConnectSubscriber>
+					new Dictionary<string, ISubscriberRegistration>
 					{
 						{
 							subscriberName,
-							(createConnection, subscriptionDropped) =>
-								SubscriberConnection.ConnectVolatileSubscriber
-								(
-									createConnection,
-									subscriptionStreamName,
-									handleEvent,
-									subscriptionDropped
-								)
+							new VolatileSubscriberRegistration
+							(
+								subscriptionStreamName,
+								handleEvent
+							)
+							//(createConnection, subscriptionDropped) =>
+							//	SubscriberConnection.ConnectVolatileSubscriber
+							//	(
+							//		createConnection,
+							//		subscriptionStreamName,
+							//		handleEvent,
+							//		subscriptionDropped
+							//	)
 						}
 					}
 				)
@@ -266,19 +278,25 @@ namespace eventstore
 			(
 				Dictionary.Merge
 				(
-					new Dictionary<string, ConnectSubscriber>
+					new Dictionary<string, ISubscriberRegistration>
 					{
 						{
 							subscriberName,
-							(createConnection, subscriptionDropped) =>
-								SubscriberConnection.ConnectPersistentSubscriber
-								(
-									createConnection,
-									subscriptionStreamName,
-									subscriptionGroupName,
-									handleEvent,
-									subscriptionDropped
-								)
+							new PersistentSubscriberRegistration
+							(
+								subscriptionStreamName,
+								subscriptionGroupName,
+								handleEvent
+							)
+							//(createConnection, subscriptionDropped) =>
+							//	SubscriberConnection.ConnectPersistentSubscriber
+							//	(
+							//		createConnection,
+							//		subscriptionStreamName,
+							//		subscriptionGroupName,
+							//		handleEvent,
+							//		subscriptionDropped
+							//	)
 						}
 					}
 				)
@@ -287,7 +305,7 @@ namespace eventstore
 
         internal static SubscriberRegistryBuilder CreateSubscriberRegistryBuilder()
         {
-            return new SubscriberRegistryBuilder(new Dictionary<string, ConnectSubscriber>());
+            return new SubscriberRegistryBuilder(new Dictionary<string, ISubscriberRegistration>());
         } 
     }
 }

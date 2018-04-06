@@ -7,8 +7,8 @@ namespace shared
         
     }
 
-    public interface IMessageHandler<in TIn, out TOut> : IMessageHandler
+    public interface IMessageHandler<in T1, out T2> : IMessageHandler
     {
-        TOut Handle(TIn message);
+        T2 Handle(T1 message);
 	}
 }
