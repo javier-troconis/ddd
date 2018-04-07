@@ -164,11 +164,14 @@ namespace eventstore
             (
 				registrationOptions.SubscriberName,
 				registrationOptions.SubscriptionStreamName,
-                registrationOptions.ProcessEventHandling(async resolvedEvent =>
-                {
-	                await handleEvent(subscriber, resolvedEvent);
-	                return resolvedEvent;
-                }),
+                registrationOptions.ProcessEventHandling
+                (
+                    async resolvedEvent =>
+                    {
+	                    await handleEvent(subscriber, resolvedEvent);
+	                    return resolvedEvent;
+                    }
+                ),
                 getCheckpoint,
 				registrationOptions.GetEventHandlingQueueName
 			);
@@ -191,16 +194,6 @@ namespace eventstore
 										getCheckpoint,
 										getEventHandlingQueueKey ?? (x => string.Empty)
 									)
-	         //                       (createConnection, subscriptionDropped) =>
-		        //                        SubscriberConnection.ConnectCatchUpSubscriber
-		        //                        (
-			       //                         createConnection,
-			       //                         subscriptionStreamName,
-			       //                         handleEvent,
-			       //                         getCheckpoint,
-										//	getEventHandlingQueueKey ?? (x => string.Empty),
-										//	subscriptionDropped
-										//)
 								}
                             }
                     )
@@ -215,11 +208,14 @@ namespace eventstore
             (
 				registrationOptions.SubscriberName,
 				registrationOptions.SubscriptionStreamName,
-				registrationOptions.ProcessEventHandling(async resolvedEvent =>
-				{
-					await handleEvent(subscriber, resolvedEvent);
-					return resolvedEvent;
-				})
+				registrationOptions.ProcessEventHandling
+                (
+                    async resolvedEvent =>
+				    {
+					    await handleEvent(subscriber, resolvedEvent);
+					    return resolvedEvent;
+				    }
+                )
 			);
         }
 
@@ -238,14 +234,6 @@ namespace eventstore
 								subscriptionStreamName,
 								handleEvent
 							)
-							//(createConnection, subscriptionDropped) =>
-							//	SubscriberConnection.ConnectVolatileSubscriber
-							//	(
-							//		createConnection,
-							//		subscriptionStreamName,
-							//		handleEvent,
-							//		subscriptionDropped
-							//	)
 						}
 					}
 				)
@@ -264,11 +252,14 @@ namespace eventstore
 					registrationOptions.SubscriberName,
 					registrationOptions.SubscriptionStreamName,
 					registrationOptions.SubscriptionGroupName,
-					registrationOptions.ProcessEventHandling(async resolvedEvent =>
-					{
-						await handleEvent(subscriber, resolvedEvent);
-						return resolvedEvent;
-					})
+					registrationOptions.ProcessEventHandling
+                    (
+                        async resolvedEvent =>
+					    {
+						    await handleEvent(subscriber, resolvedEvent);
+						    return resolvedEvent;
+					    }
+                    )
 				);
         }
 
@@ -288,15 +279,6 @@ namespace eventstore
 								subscriptionGroupName,
 								handleEvent
 							)
-							//(createConnection, subscriptionDropped) =>
-							//	SubscriberConnection.ConnectPersistentSubscriber
-							//	(
-							//		createConnection,
-							//		subscriptionStreamName,
-							//		subscriptionGroupName,
-							//		handleEvent,
-							//		subscriptionDropped
-							//	)
 						}
 					}
 				)

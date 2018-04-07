@@ -13,7 +13,7 @@ namespace eventstore
 	//public delegate Task<SubscriberConnection> ConnectSubscriber(Func<IEventStoreConnection> createConnection, Action<SubscriptionDropReason, Exception> subscriptionDropped = null);
 	public class CatchUpSubscriberRegistration : ISubscriberRegistration
 	{
-		public EventStoreObjectName SubscriptionStreamName { get; }
+		public string SubscriptionStreamName { get; }
 		public Func<ResolvedEvent, Task> HandleEvent { get; }
 		public Func<Task<long?>> GetCheckpoint { get; }
 		public Func<ResolvedEvent, string> GetEventHandlingQueueKey { get; }
@@ -34,7 +34,7 @@ namespace eventstore
 
 	public class VolatileSubscriberRegistration : ISubscriberRegistration
 	{
-		public EventStoreObjectName SubscriptionStreamName { get; }
+		public string SubscriptionStreamName { get; }
 		public Func<ResolvedEvent, Task> HandleEvent { get; }
 
 		public VolatileSubscriberRegistration(EventStoreObjectName subscriptionStreamName, Func<ResolvedEvent, Task> handleEvent)
@@ -51,8 +51,8 @@ namespace eventstore
 
 	public class PersistentSubscriberRegistration : ISubscriberRegistration
 	{
-		public EventStoreObjectName SubscriptionStreamName { get; }
-		public EventStoreObjectName SubscriptionGroupName { get; }
+		public string SubscriptionStreamName { get; }
+		public string SubscriptionGroupName { get; }
 		public Func<ResolvedEvent, Task> HandleEvent { get; }
 
 		public PersistentSubscriberRegistration(EventStoreObjectName subscriptionStreamName, EventStoreObjectName subscriptionGroupName, Func<ResolvedEvent, Task> handleEvent)
