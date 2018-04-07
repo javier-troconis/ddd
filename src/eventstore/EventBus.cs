@@ -37,10 +37,9 @@ namespace eventstore
         Task StartAllSubscribers();
     }
 
-    public sealed class EventBus : IEventBus, ISubscribeRegistrationHandler
+    public sealed class EventBus : IEventBus, ISubscriberRegistrationsHandler
 	{
         private readonly ConcurrentDictionary<ISubscriberRegistration, SubscriberConnection> _subscriberConnections = new ConcurrentDictionary<ISubscriberRegistration, SubscriberConnection>();
-
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly ISubscriberRegistry _subscriberRegistry;
 
@@ -93,39 +92,39 @@ namespace eventstore
 
 		async Task IMessageHandler<CatchUpSubscriberRegistration, Task>.Handle(CatchUpSubscriberRegistration message)
 		{
-			SubscriberConnection connection;
-			if(_subscriberConnections.
-			(
-				message,
-				k =>
-				{
+			//SubscriberConnection connection;
+			//if(_subscriberConnections.
+			//(
+			//	message,
+			//	k =>
+			//	{
 					
-				},
+			//	},
 
-				//SubscriberConnection.ConnectCatchUpSubscriber
-				//(
-				//	_createConnection,
-				//	message.SubscriptionStreamName,
-				//	message.HandleEvent,
-				//	message.GetCheckpoint,
-				//	message.GetEventHandlingQueueKey,
-				//	async (dropReason, ex) =>
-				//	{
-				//		if (dropReason == SubscriptionDropReason.UserInitiated)
-				//		{
-				//			return;
-				//		}
-				//		StopSubscriber("");
-				//		await StartSubscriber("");
-				//	}
-				//)
-			);
+			//	//SubscriberConnection.ConnectCatchUpSubscriber
+			//	//(
+			//	//	_createConnection,
+			//	//	message.SubscriptionStreamName,
+			//	//	message.HandleEvent,
+			//	//	message.GetCheckpoint,
+			//	//	message.GetEventHandlingQueueKey,
+			//	//	async (dropReason, ex) =>
+			//	//	{
+			//	//		if (dropReason == SubscriptionDropReason.UserInitiated)
+			//	//		{
+			//	//			return;
+			//	//		}
+			//	//		StopSubscriber("");
+			//	//		await StartSubscriber("");
+			//	//	}
+			//	//)
+			//);
 
 
-			if (_subscriberConnections.TryGetValue(message, out SubscriberConnection c))
-			{
+			//if (_subscriberConnections.TryGetValue(message, out SubscriberConnection c))
+			//{
 				
-			}
+			//}
 
 			var subscriberConnection = await SubscriberConnection.ConnectCatchUpSubscriber
 				(

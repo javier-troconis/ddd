@@ -26,7 +26,7 @@ namespace eventstore
 			GetEventHandlingQueueKey = getEventHandlingQueueKey;
 		}
 
-		Task IMessageHandler<ISubscribeRegistrationHandler, Task>.Handle(ISubscribeRegistrationHandler message)
+		Task IMessageHandler<ISubscriberRegistrationsHandler, Task>.Handle(ISubscriberRegistrationsHandler message)
 		{
 			return message.Handle(this);
 		}
@@ -43,7 +43,7 @@ namespace eventstore
 			HandleEvent = handleEvent;
 		}
 
-		Task IMessageHandler<ISubscribeRegistrationHandler, Task>.Handle(ISubscribeRegistrationHandler message)
+		Task IMessageHandler<ISubscriberRegistrationsHandler, Task>.Handle(ISubscriberRegistrationsHandler message)
 		{
 			return message.Handle(this);
 		}
@@ -62,13 +62,13 @@ namespace eventstore
 			HandleEvent = handleEvent;
 		}
 
-		Task IMessageHandler<ISubscribeRegistrationHandler, Task>.Handle(ISubscribeRegistrationHandler message)
+		Task IMessageHandler<ISubscriberRegistrationsHandler, Task>.Handle(ISubscriberRegistrationsHandler message)
 		{
 			return message.Handle(this);
 		}
 	}
 
-	public interface ISubscribeRegistrationHandler : 
+	public interface ISubscriberRegistrationsHandler : 
 		IMessageHandler<CatchUpSubscriberRegistration, Task>,
 		IMessageHandler<VolatileSubscriberRegistration, Task>,
 		IMessageHandler<PersistentSubscriberRegistration, Task>
@@ -76,7 +76,7 @@ namespace eventstore
 		
 	}
 
-	public interface ISubscriberRegistration : IMessageHandler<ISubscribeRegistrationHandler, Task>
+	public interface ISubscriberRegistration : IMessageHandler<ISubscriberRegistrationsHandler, Task>
 	{
 		
 	}
