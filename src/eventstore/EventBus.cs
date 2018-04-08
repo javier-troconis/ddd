@@ -39,7 +39,7 @@ namespace eventstore
 
     public sealed class EventBus : IEventBus, ISubscriberRegistrationsHandler
 	{
-        private readonly ConcurrentDictionary<ISubscriberRegistration, SubscriberConnection> _subscriberConnections = new ConcurrentDictionary<ISubscriberRegistration, SubscriberConnection>();
+        private readonly ConcurrentDictionary<ISubscriberRegistration, Lazy<Task<SubscriberConnection>>> _subscriberConnections = new ConcurrentDictionary<ISubscriberRegistration, Lazy<Task<SubscriberConnection>>>();
 		private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly ISubscriberRegistry _subscriberRegistry;
 
@@ -55,9 +55,9 @@ namespace eventstore
             {
                 return StopSubscriberResult.NotFound;
             }
-	        if(_subscriberConnections.TryGetValue(_subscriberRegistry[subscriberName], out var subscriberConnection))
+	        if(_subscriberConnections.TryRemove(_subscriberRegistry[subscriberName], out var subscriberConnection))
 	        {
-		        subscriberConnection.Disconnect();
+		        subscriberConnection.Value.Disconnect();
 	        }
 	        return StopSubscriberResult.Stopped;
         }
@@ -90,8 +90,9 @@ namespace eventstore
 		    return new EventBus(createConnection, setSubscriberRegistry(SubscriberRegistryBuilder.CreateSubscriberRegistryBuilder()));
 	    }
 
-		async Task IMessageHandler<CatchUpSubscriberRegistration, Task>.Handle(CatchUpSubscriberRegistration message)
+		Task IMessageHandler<CatchUpSubscriberRegistration, Task>.Handle(CatchUpSubscriberRegistration message)
 		{
+            
 			//SubscriberConnection connection;
 			//if(_subscriberConnections.
 			//(
@@ -126,23 +127,18 @@ namespace eventstore
 				
 			//}
 
-			var subscriberConnection = await SubscriberConnection.ConnectCatchUpSubscriber
-				(
-					_createConnection, 
-					message.SubscriptionStreamName, 
-					message.HandleEvent, 
-					message.GetCheckpoint, 
-					message.GetEventHandlingQueueKey,
-					async (dropReason, ex) =>
-					{
-						if (dropReason == SubscriptionDropReason.UserInitiated)
-						{
-							return;
-						}
-						StopSubscriber("");
-						await StartSubscriber("");
-					}
-				);
+			var subscriberConnection = new Lazy<Task<SubscriberConnection>>
+            (
+                () => SubscriberConnection.ConnectCatchUpSubscriber
+			        (
+				        _createConnection, 
+				        message.SubscriptionStreamName, 
+				        message.HandleEvent, 
+				        message.GetCheckpoint, 
+				        message.GetEventHandlingQueueKey,
+                        OnSubcriptionDropped("")
+                    )
+            );
 		}
 
 		async Task IMessageHandler<VolatileSubscriberRegistration, Task>.Handle(VolatileSubscriberRegistration message)
@@ -152,16 +148,8 @@ namespace eventstore
 				_createConnection,
 				message.SubscriptionStreamName,
 				message.HandleEvent,
-				async (dropReason, ex) =>
-				{
-					if (dropReason == SubscriptionDropReason.UserInitiated)
-					{
-						return;
-					}
-					StopSubscriber("");
-					await StartSubscriber("");
-				}
-			);
+                OnSubcriptionDropped("")
+            );
 		}
 
 		async Task IMessageHandler<PersistentSubscriberRegistration, Task>.Handle(PersistentSubscriberRegistration message)
@@ -172,16 +160,22 @@ namespace eventstore
 				message.SubscriptionStreamName,
 				message.SubscriptionGroupName,
 				message.HandleEvent,
-				async (dropReason, ex) =>
-				{
-					if (dropReason == SubscriptionDropReason.UserInitiated)
-					{
-						return;
-					}
-					StopSubscriber("");
-					await StartSubscriber("");
-				}
-			);
+                OnSubcriptionDropped("")
+            );
 		}
-	}
+
+        private Action<SubscriptionDropReason, Exception> OnSubcriptionDropped(string subscriberName)
+        {
+            return async (dropReason, ex) =>
+            {
+                if (dropReason == SubscriptionDropReason.UserInitiated)
+                {
+                    return;
+                }
+                StopSubscriber("");
+                await StartSubscriber("");
+            };
+        }
+
+    }
 }
