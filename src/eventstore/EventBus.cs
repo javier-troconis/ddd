@@ -31,8 +31,8 @@ namespace eventstore
 
     public interface IEventBus
     {
-        StopSubscriberResult StopSubscriber(string subscriberName);
-        void StopAllSubscribers();
+        Task<StopSubscriberResult> StopSubscriber(string subscriberName);
+        Task StopAllSubscribers();
         Task<StartSubscriberResult> StartSubscriber(string subscriberName);
         Task StartAllSubscribers();
     }
@@ -40,7 +40,7 @@ namespace eventstore
     public sealed class EventBus : IEventBus, ISubscriberRegistrationsHandler
 	{
         private readonly ConcurrentDictionary<ISubscriberRegistration, Lazy<Task<SubscriberConnection>>> _subscriberConnections = new ConcurrentDictionary<ISubscriberRegistration, Lazy<Task<SubscriberConnection>>>();
-		private readonly Func<IEventStoreConnection> _createConnection;
+        private readonly Func<IEventStoreConnection> _createConnection;
 		private readonly ISubscriberRegistry _subscriberRegistry;
 
 		private EventBus(Func<IEventStoreConnection> createConnection, ISubscriberRegistry subscriberRegistry)
@@ -49,7 +49,7 @@ namespace eventstore
 			_subscriberRegistry = subscriberRegistry;
 		}
 
-        public StopSubscriberResult StopSubscriber(string subscriberName)
+        public async Task<StopSubscriberResult> StopSubscriber(string subscriberName)
         {
             if (!_subscriberRegistry.ContainsKey(subscriberName))
             {
@@ -57,17 +57,14 @@ namespace eventstore
             }
 	        if(_subscriberConnections.TryRemove(_subscriberRegistry[subscriberName], out var subscriberConnection))
 	        {
-		        subscriberConnection.Value.Disconnect();
-	        }
+                (await subscriberConnection.Value).Disconnect();
+            }
 	        return StopSubscriberResult.Stopped;
         }
 
-        public void StopAllSubscribers()
+        public Task StopAllSubscribers()
         {
-	        foreach (var subscriberRegistration in _subscriberRegistry)
-	        {
-		        StopSubscriber(subscriberRegistration.Key);
-	        }
+            return Task.WhenAll(_subscriberRegistry.Select(x => StopSubscriber(x.Key)));
         }
 
         public async Task<StartSubscriberResult> StartSubscriber(string subscriberName)
@@ -92,54 +89,19 @@ namespace eventstore
 
 		Task IMessageHandler<CatchUpSubscriberRegistration, Task>.Handle(CatchUpSubscriberRegistration message)
 		{
-            
-			//SubscriberConnection connection;
-			//if(_subscriberConnections.
-			//(
-			//	message,
-			//	k =>
-			//	{
-					
-			//	},
-
-			//	//SubscriberConnection.ConnectCatchUpSubscriber
-			//	//(
-			//	//	_createConnection,
-			//	//	message.SubscriptionStreamName,
-			//	//	message.HandleEvent,
-			//	//	message.GetCheckpoint,
-			//	//	message.GetEventHandlingQueueKey,
-			//	//	async (dropReason, ex) =>
-			//	//	{
-			//	//		if (dropReason == SubscriptionDropReason.UserInitiated)
-			//	//		{
-			//	//			return;
-			//	//		}
-			//	//		StopSubscriber("");
-			//	//		await StartSubscriber("");
-			//	//	}
-			//	//)
-			//);
-
-
-			//if (_subscriberConnections.TryGetValue(message, out SubscriberConnection c))
-			//{
-				
-			//}
-
-			var subscriberConnection = new Lazy<Task<SubscriberConnection>>
+            var subscriberConnection = new Lazy<Task<SubscriberConnection>>
             (
                 () => SubscriberConnection.ConnectCatchUpSubscriber
-			        (
-				        _createConnection, 
-				        message.SubscriptionStreamName, 
-				        message.HandleEvent, 
-				        message.GetCheckpoint, 
-				        message.GetEventHandlingQueueKey,
+                    (
+                        _createConnection,
+                        message.SubscriptionStreamName,
+                        message.HandleEvent,
+                        message.GetCheckpoint,
+                        message.GetEventHandlingQueueKey,
                         OnSubcriptionDropped("")
                     )
             );
-		}
+        }
 
 		async Task IMessageHandler<VolatileSubscriberRegistration, Task>.Handle(VolatileSubscriberRegistration message)
 		{
@@ -172,10 +134,12 @@ namespace eventstore
                 {
                     return;
                 }
-                StopSubscriber("");
+                await StopSubscriber("");
                 await StartSubscriber("");
             };
         }
+
+        
 
     }
 }

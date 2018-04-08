@@ -15,7 +15,7 @@ namespace command
 	{
 		public static void Main(string[] args)
 		{
-			/*
+            /*
 			while (true)
 			{
 				Console.WriteLine("1 - IApplicationStartedV1");
@@ -54,8 +54,8 @@ namespace command
 			}
 			*/
 
-			//await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
-			//Console.WriteLine("application submitted: " + streamName);
+            //await OptimisticEventWriter.WriteEvents(eventStore, streamName, ExpectedVersion.NoStream, newEvents, ConflictResolutionStrategy.IgnoreConflicts);
+            //Console.WriteLine("application submitted: " + streamName);
 
 
 			var connectionFactory = new EventStoreConnectionFactory(
@@ -80,7 +80,8 @@ namespace command
 					await Task.Delay(2000);
 				}).Wait();
 			}
-		}
+            
+        }
 
 		private static async Task StartApplication(IEventStore eventStore, string streamName)
 		{
