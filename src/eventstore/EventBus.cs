@@ -89,18 +89,23 @@ namespace eventstore
 
 		Task IMessageHandler<CatchUpSubscriberRegistration, Task>.Handle(CatchUpSubscriberRegistration message)
 		{
-            var subscriberConnection = new Lazy<Task<SubscriberConnection>>
-            (
-                () => SubscriberConnection.ConnectCatchUpSubscriber
+            var subscriberConnection = _subscriberConnections.GetOrAdd
+                (
+                    message, 
+                    new Lazy<Task<SubscriberConnection>>
                     (
-                        _createConnection,
-                        message.SubscriptionStreamName,
-                        message.HandleEvent,
-                        message.GetCheckpoint,
-                        message.GetEventHandlingQueueKey,
-                        OnSubcriptionDropped("")
+                        () => SubscriberConnection.ConnectCatchUpSubscriber
+                            (
+                                _createConnection,
+                                message.SubscriptionStreamName,
+                                message.HandleEvent,
+                                message.GetCheckpoint,
+                                message.GetEventHandlingQueueKey,
+                                RestartSubscriber("")
+                            )
                     )
-            );
+                );
+            return subscriberConnection.Value;
         }
 
 		async Task IMessageHandler<VolatileSubscriberRegistration, Task>.Handle(VolatileSubscriberRegistration message)
@@ -110,7 +115,7 @@ namespace eventstore
 				_createConnection,
 				message.SubscriptionStreamName,
 				message.HandleEvent,
-                OnSubcriptionDropped("")
+                RestartSubscriber("")
             );
 		}
 
@@ -122,11 +127,11 @@ namespace eventstore
 				message.SubscriptionStreamName,
 				message.SubscriptionGroupName,
 				message.HandleEvent,
-                OnSubcriptionDropped("")
+                RestartSubscriber("")
             );
 		}
 
-        private Action<SubscriptionDropReason, Exception> OnSubcriptionDropped(string subscriberName)
+        private Action<SubscriptionDropReason, Exception> RestartSubscriber(string subscriberName)
         {
             return async (dropReason, ex) =>
             {
