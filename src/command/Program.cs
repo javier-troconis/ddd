@@ -80,7 +80,6 @@ namespace command
 					await Task.Delay(2000);
 				}).Wait();
 			}
-            
         }
 
 		private static async Task StartApplication(IEventStore eventStore, string streamName)
@@ -91,17 +90,17 @@ namespace command
 
 		private static async Task StartIdentityVerification(IEventStore eventStore, string streamName)
 		{
-			var commandContext = await eventStore.AggregateEventsForward<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>(streamName);
-			var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(commandContext, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
-			await eventStore.WriteEvent(streamName, 0, newEvent);
+			var context = await eventStore.AggregateEventsForward<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>(streamName);
+			var @event = await StartIdentityVerificationCommand.StartIdentityVerification(context, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
+			await eventStore.WriteEvent(streamName, 0, @event);
 			Console.WriteLine("identity verification completed: " + streamName);
 		}
 
 		private static async Task SubmitApplication(IEventStore eventStore, string streamName)
 		{
-			var commandContext = await eventStore.AggregateEventsForward<SubmitApplicationCommand.SubmitApplicationCommandContext>(streamName);
-			var newEvent = SubmitApplicationCommand.SubmitApplication(commandContext);
-			await eventStore.WriteEvent(streamName, 1, newEvent);
+			var context = await eventStore.AggregateEventsForward<SubmitApplicationCommand.SubmitApplicationCommandContext>(streamName);
+			var @event = SubmitApplicationCommand.SubmitApplication(context);
+			await eventStore.WriteEvent(streamName, 1, @event);
 			Console.WriteLine("application submitted: " + streamName);
 		}
 	}

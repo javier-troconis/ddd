@@ -51,9 +51,9 @@ namespace command
             public string Result { get; }
         }
 
-        public static async Task<IdentityVerificationCompleted> StartIdentityVerification(StartIdentityVerificationCommandContext commandContext, VerifyIdentity verifyIdentity)
+        public static async Task<IdentityVerificationCompleted> StartIdentityVerification(StartIdentityVerificationCommandContext context, VerifyIdentity verifyIdentity)
         {
-            var result = await verifyIdentity(commandContext.ApplicantSsn);
+            var result = await verifyIdentity(context.ApplicantSsn);
             return new IdentityVerificationCompleted(result.TransactionId, result.Result);
         }
     }

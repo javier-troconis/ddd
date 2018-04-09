@@ -30,9 +30,9 @@ namespace command
 
         }
 
-        public static ApplicationSubmitted SubmitApplication(SubmitApplicationCommandContext commandContext)
+        public static ApplicationSubmitted SubmitApplication(SubmitApplicationCommandContext context)
         {
-            if (!commandContext.IsIdentityVerificationCompleted)
+            if (!context.IsIdentityVerificationCompleted)
             {
                 throw new Exception("identity verification has not been completed");
             }
