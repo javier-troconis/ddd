@@ -90,7 +90,7 @@ namespace command
 
 		private static async Task StartIdentityVerification(IEventStore eventStore, string streamName)
 		{
-			var context = await eventStore.AggregateEventsForward<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>(streamName);
+			var context = (await eventStore.ReadEventsForward(streamName)).Aggregate<StartIdentityVerificationCommand.StartIdentityVerificationCommandContext>();
 			var @event = await StartIdentityVerificationCommand.StartIdentityVerification(context, ssn => Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed")));
 			await eventStore.WriteEvent(streamName, 0, @event);
 			Console.WriteLine("identity verification completed: " + streamName);
@@ -98,7 +98,7 @@ namespace command
 
 		private static async Task SubmitApplication(IEventStore eventStore, string streamName)
 		{
-			var context = await eventStore.AggregateEventsForward<SubmitApplicationCommand.SubmitApplicationCommandContext>(streamName);
+			var context = (await eventStore.ReadEventsForward(streamName)).Aggregate<SubmitApplicationCommand.SubmitApplicationCommandContext>();
 			var @event = SubmitApplicationCommand.SubmitApplication(context);
 			await eventStore.WriteEvent(streamName, 1, @event);
 			Console.WriteLine("application submitted: " + streamName);
