@@ -10,7 +10,6 @@ using System.Collections.ObjectModel;
 
 namespace eventstore
 {
-	//public delegate Task<SubscriberConnection> ConnectSubscriber(Func<IEventStoreConnection> createConnection, Action<SubscriptionDropReason, Exception> subscriptionDropped = null);
 	public class CatchUpSubscriberRegistration : ISubscriberRegistration
 	{
 		public string SubscriptionStreamName { get; }

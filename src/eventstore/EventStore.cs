@@ -73,9 +73,11 @@ namespace eventstore
 		}
 	}
 
-	public interface IEventStore
+  
+    public interface IEventStore
 	{
-		Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
+        Task<T> AggregateEventsForward<T>(string streamName, long fromEventNumber = 0) where T : IMessageHandler, new();
+        Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
 		Task<WriteResult> WriteEvents(EventStoreObjectName streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent = null);
 		Task<WriteResult> WriteEvent(EventStoreObjectName streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent = null);
 		Task<WriteResult> WriteStreamMetadata(EventStoreObjectName streamName, long streamExpectedVersion, StreamMetadata metadata);
@@ -119,7 +121,15 @@ namespace eventstore
 			return WriteEvents(streamName, streamExpectedVersion, new[] {@event}, configureEvent);
 		}
 
-		public async Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber)
+        public async Task<T> AggregateEventsForward<T>(string streamName, long fromEventNumber) where T : IMessageHandler, new()
+        {
+            var events = await ReadEventsForward(streamName, fromEventNumber);
+            var seed = new T();
+            var folder = ResolvedEventHandleFactory.CreateResolvedEventHandle<T>();
+            return events.Aggregate(seed, folder);
+        }
+
+        public async Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber)
 		{
 			const int defaultSliceSize = 10;
 
