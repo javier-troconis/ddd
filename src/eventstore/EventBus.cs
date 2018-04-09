@@ -55,16 +55,13 @@ namespace eventstore
             {
                 return StopSubscriberResult.NotFound;
             }
-	        if(_subscriberConnections.TryRemove(_subscriberRegistry[subscriberName], out var subscriberConnection))
-	        {
-                (await subscriberConnection.Value).Disconnect();
-            }
-	        return StopSubscriberResult.Stopped;
+            await StopSubscriber(_subscriberRegistry[subscriberName]);
+            return StopSubscriberResult.Stopped;
         }
 
         public Task StopAllSubscribers()
         {
-            return Task.WhenAll(_subscriberRegistry.Select(x => StopSubscriber(x.Key)));
+            return Task.WhenAll(_subscriberRegistry.Select(x => StopSubscriber(x.Value)));
         }
 
         public async Task<StartSubscriberResult> StartSubscriber(string subscriberName)
@@ -73,13 +70,13 @@ namespace eventstore
             {
                 return StartSubscriberResult.NotFound;
             }
-			await _subscriberRegistry[subscriberName].Handle(this);
-	        return StartSubscriberResult.Started;
+            await StartSubscriber(_subscriberRegistry[subscriberName]);
+            return StartSubscriberResult.Started;
         }
 
         public Task StartAllSubscribers()
         {
-            return Task.WhenAll(_subscriberRegistry.Select(x => StartSubscriber(x.Key)));
+            return Task.WhenAll(_subscriberRegistry.Select(x => StartSubscriber(x.Value)));
         }
 
 	    public static IEventBus CreateEventBus(Func<IEventStoreConnection> createConnection, Func<SubscriberRegistryBuilder, ISubscriberRegistry> setSubscriberRegistry)
@@ -89,7 +86,9 @@ namespace eventstore
 
 		Task IMessageHandler<CatchUpSubscriberRegistration, Task>.Handle(CatchUpSubscriberRegistration message)
 		{
-            var subscriberConnection = _subscriberConnections.GetOrAdd
+            return 
+            (
+                _subscriberConnections.GetOrAdd
                 (
                     message, 
                     new Lazy<Task<SubscriberConnection>>
@@ -101,37 +100,57 @@ namespace eventstore
                                 message.HandleEvent,
                                 message.GetCheckpoint,
                                 message.GetEventHandlingQueueKey,
-                                RestartSubscriber("")
+                                RestartSubscriber(message)
                             )
                     )
-                );
-            return subscriberConnection.Value;
+                )
+            ).Value;
         }
 
-		async Task IMessageHandler<VolatileSubscriberRegistration, Task>.Handle(VolatileSubscriberRegistration message)
+		Task IMessageHandler<VolatileSubscriberRegistration, Task>.Handle(VolatileSubscriberRegistration message)
 		{
-			var subscriberConnection = await SubscriberConnection.ConnectVolatileSubscriber
-			(
-				_createConnection,
-				message.SubscriptionStreamName,
-				message.HandleEvent,
-                RestartSubscriber("")
-            );
-		}
+            return
+            (
+                _subscriberConnections.GetOrAdd
+                (
+                    message,
+                    new Lazy<Task<SubscriberConnection>>
+                    (
+                        () => SubscriberConnection.ConnectVolatileSubscriber
+                            (
+                                _createConnection,
+                                message.SubscriptionStreamName,
+                                message.HandleEvent,
+                                RestartSubscriber(message)
+                            )
+                    )
+                )
+            ).Value;
+        }
 
-		async Task IMessageHandler<PersistentSubscriberRegistration, Task>.Handle(PersistentSubscriberRegistration message)
+		Task IMessageHandler<PersistentSubscriberRegistration, Task>.Handle(PersistentSubscriberRegistration message)
 		{
-			var subscriberConnection = await SubscriberConnection.ConnectPersistentSubscriber
-			(
-				_createConnection,
-				message.SubscriptionStreamName,
-				message.SubscriptionGroupName,
-				message.HandleEvent,
-                RestartSubscriber("")
-            );
-		}
+            return
+            (
+                _subscriberConnections.GetOrAdd
+                (
+                    message,
+                    new Lazy<Task<SubscriberConnection>>
+                    (
+                        () => SubscriberConnection.ConnectPersistentSubscriber
+                            (
+                                _createConnection,
+                                message.SubscriptionStreamName,
+                                message.SubscriptionGroupName,
+                                message.HandleEvent,
+                                RestartSubscriber(message)
+                            )
+                    )
+                )
+            ).Value;
+        }
 
-        private Action<SubscriptionDropReason, Exception> RestartSubscriber(string subscriberName)
+        private Action<SubscriptionDropReason, Exception> RestartSubscriber(ISubscriberRegistration subscriberRegistration)
         {
             return async (dropReason, ex) =>
             {
@@ -139,12 +158,22 @@ namespace eventstore
                 {
                     return;
                 }
-                await StopSubscriber("");
-                await StartSubscriber("");
+                await StopSubscriber(subscriberRegistration);
+                await StartSubscriber(subscriberRegistration);
             };
         }
 
-        
+        private Task StartSubscriber(ISubscriberRegistration subscriberRegistration)
+        {
+            return subscriberRegistration.Handle(this);
+        }
 
+        private async Task StopSubscriber(ISubscriberRegistration subscriberRegistration)
+        {
+            if (_subscriberConnections.TryRemove(subscriberRegistration, out var subscriberConnection))
+            {
+                (await subscriberConnection.Value).Disconnect();
+            }
+        }
     }
 }
