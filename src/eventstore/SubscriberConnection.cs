@@ -45,14 +45,10 @@ namespace eventstore
 				}, 
 				subscriptionDropped: (subscription, dropReason, exception) =>
 				{
+					connection.Close();
                     subscriptionDropped?.Invoke(dropReason, exception);
                 });
-		    return new SubscriberConnection(
-			    () =>
-			    {
-				    s.Stop();
-					connection.Close();
-			    });
+		    return new SubscriberConnection(s.Stop);
 		}
 
 	    public static async Task<SubscriberConnection> ConnectVolatileSubscriber(
@@ -69,14 +65,10 @@ namespace eventstore
 				(subscription, resolvedEvent) => handleEvent(resolvedEvent), 
 				subscriptionDropped: (subscription, dropReason, exception) =>
 				{
+					connection.Close();
                     subscriptionDropped?.Invoke(dropReason, exception);
                 });
-			return new SubscriberConnection(
-				() =>
-				{
-					s.Close();
-					connection.Close();
-				});
+			return new SubscriberConnection(s.Close);
 		}
 
 	    public static async Task<SubscriberConnection> ConnectPersistentSubscriber(
@@ -87,53 +79,46 @@ namespace eventstore
             Action<SubscriptionDropReason, Exception> subscriptionDropped = null)
 	    {
 			var connection = createConnection();
-		    await connection.ConnectAsync();
 
-            while (true)
-		    {
-                // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
-                var isCloseConnectionCalledByUser = false;
-                //
-			    try
-			    {
-				    var s = await connection.ConnectToPersistentSubscriptionAsync(
-					    streamName,
-					    groupName,
-					    async (subscription, resolvedEvent) =>
-					    {
-						    try
-						    {
-							    await handleEvent(resolvedEvent);
-							    subscription.Acknowledge(resolvedEvent);
-						    }
-						    catch (Exception ex)
-						    {
-							    subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
-						    }
-					    },
-					    subscriptionDropped: (subscription, dropReason, exception) =>
-					    {
-                            // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
-                            if (!isCloseConnectionCalledByUser && dropReason == SubscriptionDropReason.UserInitiated)
-                            {
-                                dropReason = SubscriptionDropReason.ConnectionClosed;
-                            }
-                            //
-                            subscriptionDropped?.Invoke(dropReason, exception);
-                        },
-					    autoAck: false);
-				    return new SubscriberConnection(
-					    () =>
-					    {
-						    s.Stop(TimeSpan.FromSeconds(15));
-						    connection.Close();
-					    });
-			    }
-			    catch
-			    {
-				    await Task.Delay(TimeSpan.FromSeconds(1));
-			    }
-		    }
+			await connection.ConnectAsync();
+
+            // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
+            var isSubscriptionDroppedByUser = false;
+            //
+			    
+			var s = await connection.ConnectToPersistentSubscriptionAsync(
+				streamName,
+				groupName,
+				async (subscription, resolvedEvent) =>
+				{
+					try
+					{
+						await handleEvent(resolvedEvent);
+						subscription.Acknowledge(resolvedEvent);
+					}
+					catch (Exception ex)
+					{
+						subscription.Fail(resolvedEvent, PersistentSubscriptionNakEventAction.Unknown, ex.Message);
+					}
+				},
+				subscriptionDropped: (subscription, dropReason, exception) =>
+				{
+                    // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
+                    if (!isSubscriptionDroppedByUser && dropReason == SubscriptionDropReason.UserInitiated)
+                    {
+                        dropReason = SubscriptionDropReason.ConnectionClosed;
+                    }
+                    //
+					connection.Close();
+                    subscriptionDropped?.Invoke(dropReason, exception);
+                },
+				autoAck: false);
+			return new SubscriberConnection(
+				() =>
+				{
+					isSubscriptionDroppedByUser = true;
+					s.Stop(TimeSpan.FromSeconds(15));
+				});
 	    }
 
 
