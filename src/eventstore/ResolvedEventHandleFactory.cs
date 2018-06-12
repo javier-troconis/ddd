@@ -8,6 +8,7 @@ using ImpromptuInterface;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using shared;
+using Dynamitey;
 using System.Collections.ObjectModel;
 
 namespace eventstore
@@ -61,13 +62,13 @@ namespace eventstore
                 resolvedEvent.Event.EventNumber,
                 resolvedEvent.Event.Created,
                 resolvedEvent.Event.EventId,
-                CorrelationId = eventMetadata.TryGetValue(EventHeaderKey.CorrelationId, out object correlationId) ? Guid.Parse((string)correlationId) : default(Guid?),
+                CorrelationId = eventMetadata.TryGetValue(EventHeaderKey.CorrelationId, out var correlationId) ? Guid.Parse((string)correlationId) : default(Guid?),
                 Metadata = eventMetadata.SkipWhile(x => x.Key == EventHeaderKey.CorrelationId || x.Key == EventHeaderKey.Topics).ToDictionary(x => x.Key, x => x.Value),
 				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
 		    };
 
 		    var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);
-		    return Impromptu.CoerceConvert(recordedEvent, recordedEventType);
+		    return Dynamic.CoerceConvert(recordedEvent, recordedEventType);
 	    }
 
 	    private static class EventHandler<T>

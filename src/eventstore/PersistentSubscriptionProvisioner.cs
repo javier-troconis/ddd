@@ -5,7 +5,6 @@ using System.Threading.Tasks;
 
 using EventStore.ClientAPI;
 
-using ImpromptuInterface.InvokeExt;
 using shared;
 
 namespace eventstore
