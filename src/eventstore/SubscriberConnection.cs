@@ -83,7 +83,7 @@ namespace eventstore
 			await connection.ConnectAsync();
 
             // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
-            var isSubscriptionDroppedByUser = false;
+            var closeConnectionInitiatedByUser = false;
             //
 			    
 			var s = await connection.ConnectToPersistentSubscriptionAsync(
@@ -104,7 +104,7 @@ namespace eventstore
 				subscriptionDropped: (subscription, dropReason, exception) =>
 				{
                     // workaround due to a bug in the eventstore -> https://eventstore.freshdesk.com/support/tickets/831
-                    if (!isSubscriptionDroppedByUser && dropReason == SubscriptionDropReason.UserInitiated)
+                    if (!closeConnectionInitiatedByUser && dropReason == SubscriptionDropReason.UserInitiated)
                     {
                         dropReason = SubscriptionDropReason.ConnectionClosed;
                     }
@@ -116,7 +116,7 @@ namespace eventstore
 			return new SubscriberConnection(
 				() =>
 				{
-					isSubscriptionDroppedByUser = true;
+					closeConnectionInitiatedByUser = true;
 					s.Stop(TimeSpan.FromSeconds(15));
 				});
 	    }
