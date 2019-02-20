@@ -127,7 +127,6 @@ namespace management
                         return;
                 }
                 Console.WriteLine();
-	            Console.WriteLine();
 			}
         }
     }
