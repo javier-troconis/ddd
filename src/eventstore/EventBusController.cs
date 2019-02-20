@@ -3,21 +3,25 @@ using shared;
 
 namespace eventstore
 {
+	[Topic]
 	public interface IStopSubscriber
 	{
 		string SubscriberName { get; }
 	}
 
+	[Topic]
 	public interface ISubscriberStopped
 	{
 		string SubscriberName { get; }
 	}
 
+	[Topic]
 	public interface IStartSubscriber
 	{
 		string SubscriberName { get; }
 	}
 
+	[Topic]
 	public interface ISubscriberStarted
 	{
 		string SubscriberName { get; }

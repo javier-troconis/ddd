@@ -1,9 +1,11 @@
 ﻿
 
+using shared;
+
 namespace eventstore
 {
-
-    public interface IProvisionSubscriptionStreamRequested
+	[Topic]
+	public interface IProvisionSubscriptionStreamRequested
 	{
 		string SubscriptionStream { get; }
 	}

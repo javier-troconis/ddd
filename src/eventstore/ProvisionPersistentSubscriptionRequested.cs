@@ -1,11 +1,15 @@
 ﻿
 
+using shared;
+
 namespace eventstore
 {
+	[Topic]
 	public interface IProvisionPersistentSubscriptionRequested
 	{
 		string PersistentSubscriptionGroup { get; }
 	}
+
 
 	internal class ProvisionPersistentSubscriptionRequested : IProvisionPersistentSubscriptionRequested
 	{
