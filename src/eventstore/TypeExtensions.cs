@@ -10,8 +10,8 @@ namespace eventstore
     {
         public static string GetStreamName(this Type entityType, Guid identity, string category = "")
         {
-            var streamName = $"{(EventStoreObjectName)entityType}_{identity.ToString("N").ToLower()}";
-            return string.IsNullOrEmpty(category) ? streamName : category + "-" + streamName;
+	        var streamName = (EventStoreObjectName) entityType + "_" + identity.ToString("N").ToLower();
+			return string.IsNullOrEmpty(category) ? streamName : category + "-" + streamName;
         }
 
         public static string[] GetEventTopics(this Type eventType)
