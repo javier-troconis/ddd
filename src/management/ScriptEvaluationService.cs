@@ -55,8 +55,6 @@ namespace management
 			{
 				return;
 			}
-			Console.WriteLine("Started script: " + scriptInstanceId);
-			Console.WriteLine("Running script activity: " + nextActivity.ActivityName);
 			var nextActivityRequest = nextActivity.GetActivityRequest(scriptData);
 			await _eventPublisher.PublishEvent
 			(
@@ -81,6 +79,7 @@ namespace management
 				streamName: $"{scriptDefinition.ScriptType}_{scriptInstanceId:N}",
 				expectedVersion: -1
 			);
+			Console.WriteLine("Running script activity: " + nextActivity.ActivityName);
 		}
 
 		public async Task StartNextScriptActivity<TScriptData>(IScriptDefinition<TScriptData> scriptDefinition, GetNextScriptActivity<TScriptData> getNextScriptActivity, ScriptExecutionContext<TScriptData> scriptExecutionContext)
@@ -92,10 +91,8 @@ namespace management
 			var nextActivity = getNextScriptActivity(scriptDefinition.Activities, scriptExecutionContext.ScriptData, scriptExecutionContext.ActivityId);
 			if (nextActivity.Equals(default(ScriptActivity<TScriptData>)))
 			{
-				Console.WriteLine("Finished script: " + scriptExecutionContext.ScriptInstanceId);
 				return;
 			}
-			Console.WriteLine("Running script activity: " + nextActivity.ActivityName);
 			var nextActivityRequest = nextActivity.GetActivityRequest(scriptExecutionContext.ScriptData);
 			try
 			{
@@ -122,6 +119,7 @@ namespace management
 					streamName: $"{scriptExecutionContext.ScriptType}_{scriptExecutionContext.ScriptInstanceId:N}",
 					expectedVersion: scriptExecutionContext.ExpectedVersion
 				);
+				Console.WriteLine("Running script activity: " + nextActivity.ActivityName);
 			}
 			catch (WrongExpectedVersionException)
 			{

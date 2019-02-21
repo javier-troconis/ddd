@@ -34,18 +34,18 @@ namespace query
 					z => z
 						.RegisterVolatileSubscriber
 						(
-							new Subscriber2()
+							new Subscriber1()
 						)
 						.RegisterCatchupSubscriber
 						(
-							new Subscriber3(),
-							CheckpointReader<Subscriber3>.ReadCheckpoint,
-							setRegistrationOptions : y => y.SetEventHandlingProcessor(m => m.ComposeForward(CheckpointWriter<Subscriber3>.WriteCheckpoint))
+							new Subscriber2(),
+							CheckpointReader<Subscriber2>.ReadCheckpoint,
+							setRegistrationOptions : y => y.SetEventHandlingProcessor(m => m.ComposeForward(CheckpointWriter<Subscriber2>.WriteCheckpoint))
 						)
-						//.RegisterPersistentSubscriber
-						//(
-						//	new Subscriber3()
-						//)
+						.RegisterPersistentSubscriber
+						(
+							new Subscriber3()
+						)
 				);
 
 			consumerEventBus
