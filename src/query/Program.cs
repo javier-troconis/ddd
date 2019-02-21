@@ -32,10 +32,10 @@ namespace query
 				(
 					createConnection,
 					z => z
-						//.RegisterVolatileSubscriber
-						//(
-						//	new Subscriber1()
-						//)
+						.RegisterVolatileSubscriber
+						(
+							new Subscriber2()
+						)
 						.RegisterCatchupSubscriber
 						(
 							new Subscriber3(),
@@ -48,7 +48,8 @@ namespace query
 						//)
 				);
 
-			consumerEventBus.StartAllSubscribers();
+			consumerEventBus
+				.StartAllSubscribers();
 
 			var infrastructureEventBus =
 				EventBus.CreateEventBus

@@ -85,7 +85,8 @@ namespace management
 				Console.WriteLine("6 - restart(stop -> start) query_subscriber3");
 
 				var option = Console.ReadKey().KeyChar;
-                switch (option)
+	            Console.WriteLine();
+				switch (option)
                 {
                     case '1':
 						var projectionManager = new ProjectionManager(
@@ -122,7 +123,6 @@ namespace management
 					default:
                         return;
                 }
-                Console.WriteLine();
 			}
         }
     }

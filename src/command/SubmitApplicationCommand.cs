@@ -10,7 +10,7 @@ namespace command
 {
     public static class SubmitApplicationCommand
     {
-        public struct SubmitApplicationCommandContext : IMessageHandler<IRecordedEvent<IIdentityVerificationCompletedV1>, SubmitApplicationCommandContext>
+        public struct SubmitApplicationCommandContext : IMessageHandler<IRecordedEvent<IIdentityVerificationCompleted_V1>, SubmitApplicationCommandContext>
         {
             public readonly bool IsIdentityVerificationCompleted;
 
@@ -19,13 +19,13 @@ namespace command
                 IsIdentityVerificationCompleted = isIdentityVerificationCompleted;
             }
 
-            public SubmitApplicationCommandContext Handle(IRecordedEvent<IIdentityVerificationCompletedV1> message)
+            public SubmitApplicationCommandContext Handle(IRecordedEvent<IIdentityVerificationCompleted_V1> message)
             {
                 return new SubmitApplicationCommandContext(true);
             }
         }
 
-        public struct ApplicationSubmitted : IApplicationSubmittedV1
+        public struct ApplicationSubmitted : IApplicationSubmitted_V1
         {
 
         }

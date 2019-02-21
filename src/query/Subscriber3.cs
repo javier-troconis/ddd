@@ -9,25 +9,25 @@ using eventstore;
 namespace query
 {
     public class Subscriber3 :
-        IMessageHandler<IRecordedEvent<IApplicationStartedV1>, Task>, 
-		IMessageHandler<IRecordedEvent<IIdentityVerificationCompletedV1>, Task>,
-	    IMessageHandler<IRecordedEvent<IApplicationSubmittedV1>, Task>
+        IMessageHandler<IRecordedEvent<IApplicationStarted_V1>, Task>, 
+		IMessageHandler<IRecordedEvent<IIdentityVerificationCompleted_V1>, Task>,
+	    IMessageHandler<IRecordedEvent<IApplicationSubmitted_V1>, Task>
 	{
-        public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
+        public Task Handle(IRecordedEvent<IApplicationStarted_V1> message)
         {
-            Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationStartedV1)}");
+            Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationStarted_V1)}");
             return Task.CompletedTask;
         }
 
-		public Task Handle(IRecordedEvent<IIdentityVerificationCompletedV1> message)
+		public Task Handle(IRecordedEvent<IIdentityVerificationCompleted_V1> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IIdentityVerificationCompletedV1)}");
+			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IIdentityVerificationCompleted_V1)}");
 			return Task.CompletedTask;
 		}
 
-		public Task Handle(IRecordedEvent<IApplicationSubmittedV1> message)
+		public Task Handle(IRecordedEvent<IApplicationSubmitted_V1> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationSubmittedV1)}");
+			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationSubmitted_V1)}");
 			return Task.CompletedTask;
 		}
 	}
