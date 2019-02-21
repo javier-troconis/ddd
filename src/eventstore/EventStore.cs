@@ -34,10 +34,10 @@ namespace eventstore
 
 		public EventConfiguration SetCorrelationId(Guid correlationId)
 		{
-            return SetMetadata(EventHeaderKey.CorrelationId, correlationId);
+            return SetMetadataEntry(EventHeaderKey.CorrelationId, correlationId);
         }
 
-		public EventConfiguration SetMetadata(string key, object value)
+		public EventConfiguration SetMetadataEntry(string key, object value)
 		{
 			return new EventConfiguration(
 				EventId,
@@ -55,7 +55,7 @@ namespace eventstore
 
 		public EventConfiguration CopyMetadata(IReadOnlyDictionary<string, object> metadata)
 		{
-			return metadata.Aggregate(this, (y, z) => y.SetMetadata(z.Key, z.Value));
+			return metadata.Aggregate(this, (y, z) => y.SetMetadataEntry(z.Key, z.Value));
 		}
 
 		internal static EventConfiguration Create(Guid eventId, string eventType, string[] topics)

@@ -16,12 +16,15 @@ namespace management
 		public Task Handle(IRecordedEvent<IProvisionPersistentSubscriptionRequested> message)
 		{
 			return _persistentSubscriptionProvisioner
-				//.RegisterPersistentSubscription<RestartSubscriberWorkflow1Controller>()
-				//.RegisterPersistentSubscription<RestartSubscriberWorkflow2Controller>()
+				.RegisterPersistentSubscription<RestartSubscriberScriptController>(
+					x => x
+						.WithMaxRetriesOf(0)
+						.StartFromCurrent()
+				)
 				.RegisterPersistentSubscription<IProvisionSubscriptionStreamRequests, SubscriptionStreamProvisionerController>(
 					x => x
                         .WithMaxRetriesOf(0)
-                        .PreferDispatchToSingle()
+						.StartFromCurrent()
                     )
 				.ProvisionPersistentSubscription(message.Data.PersistentSubscriptionGroup);
 		}

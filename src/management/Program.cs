@@ -29,37 +29,32 @@ namespace management
             IEventPublisher eventPublisher = new EventPublisher(new eventstore.EventStore(connection));
 
 
-			//var consumerEventBus =
-			//	EventBus.CreateEventBus
-			//	(
-			//	createConnection,
-			//	z =>
-			//		z.RegisterPersistentSubscriber
-			//		(
-			//			new RestartSubscriberWorkflow1Controller(eventPublisher)
-			//		)
-			//		.RegisterPersistentSubscriber
-			//		(
-			//			new RestartSubscriberWorkflow2Controller(eventPublisher)
-			//		)
-			//	);
-	  //      consumerEventBus
-		 //       .StartAllSubscribers();
+			var consumerEventBus =
+				EventBus.CreateEventBus
+				(
+				createConnection,
+				z =>
+					z.RegisterPersistentSubscriber
+					(
+						new RestartSubscriberScriptController(new ScriptEvaluationService(eventPublisher), new RestartSubscriberScriptDefinition())
+					)
+				);
+			consumerEventBus
+				.StartAllSubscribers();
 
 			var infrastructureEventBus =
 				EventBus.CreateEventBus
 				(
 					createConnection,
 					z => z
-						
-						//.RegisterVolatileSubscriber
-						//(
-						//	new EventBusController
-						//	(
-						//		consumerEventBus,
-						//		eventPublisher
-						//	)
-						//)
+						.RegisterVolatileSubscriber
+						(
+							new EventBusController
+							(
+								consumerEventBus,
+								eventPublisher
+							)
+						)
 						.RegisterPersistentSubscriber
 						(
 							new SubscriptionStreamProvisionerController(new SubscriptionStreamProvisioner(
@@ -85,10 +80,9 @@ namespace management
                 Console.WriteLine("1 - provision system streams");
 				Console.WriteLine("2 - provision persistent subscriptions");
 				Console.WriteLine("3 - provision subscription streams");
-	   //         Console.WriteLine("4 - start query_subscriber2");
-	   //         Console.WriteLine("5 - stop query_subscriber2");
-				//Console.WriteLine("6 - restart(stop -> start) query_subscriber2 - workflow1");
-	   //         Console.WriteLine("7 - restart(stop -> start) query_subscriber2 - workflow2");
+	            Console.WriteLine("4 - start query_subscriber3");
+	            Console.WriteLine("5 - stop query_subscriber3");
+				Console.WriteLine("6 - restart(stop -> start) query_subscriber3");
 
 				var option = Console.ReadKey().KeyChar;
                 switch (option)
@@ -111,18 +105,22 @@ namespace management
 						var subscriptionStreamProvisioningRequestor = new ProvisionProvisionSubscriptionStreamRequestor(eventPublisher);
 						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamProvision("*");
                         break;
-	    //            case '4':
-		   //             eventPublisher.PublishEvent(new StartSubscriber("query_subscriber2"));
-		   //             break;
-					//case '5':
-					//	eventPublisher.PublishEvent(new StopSubscriber("query_subscriber2"));
-					//	break;
-	    //            case '6':
-					//	eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow1(Guid.NewGuid(), "query_subscriber2"));
-					//	break;
-	    //            case '7':
-		   //             eventPublisher.PublishEvent(new StartRestartSubscriberWorkflow2(Guid.NewGuid(), "query_subscriber2"));
-		   //             break;
+					case '4':
+						eventPublisher.PublishEvent(new StartSubscriber("query_Subscriber3"));
+						break;
+					case '5':
+						eventPublisher.PublishEvent(new StopSubscriber("query_Subscriber3"));
+						break;
+					case '6':
+						var scriptInstanceId = Guid.NewGuid();
+						var scriptData =
+							new RestartSubscriberScriptData
+							{
+								SubscriberName = "query_Subscriber3"
+							};
+						IScriptEvaluationService scriptEvaluationService = new ScriptEvaluationService(eventPublisher);
+						scriptEvaluationService.StartScript(scriptInstanceId, new RestartSubscriberScriptDefinition(), ScriptFlowType.AscendingSequence, scriptData);
+						break;
 					default:
                         return;
                 }
