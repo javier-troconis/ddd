@@ -98,12 +98,10 @@ namespace management
 						systemStreamProvisioner.ProvisionSystemStreams(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
                         break;
                     case '2':
-						var persistentSubscriptionProvisioningRequestor = new ProvisionPersistentSubscriptionRequestor(eventPublisher);
-						persistentSubscriptionProvisioningRequestor.RequestPersistentSubscriptionProvision("*");
+	                    eventPublisher.PublishEvent(new ProvisionPersistentSubscriptionRequested("*"));
                         break;
 					case '3':
-						var subscriptionStreamProvisioningRequestor = new ProvisionProvisionSubscriptionStreamRequestor(eventPublisher);
-						subscriptionStreamProvisioningRequestor.RequestSubscriptionStreamProvision("*");
+						eventPublisher.PublishEvent(new ProvisionSubscriptionStreamRequested("*"));
                         break;
 					case '4':
 						eventPublisher.PublishEvent(new StartSubscriber("query_Subscriber3"));

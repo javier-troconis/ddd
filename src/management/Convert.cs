@@ -12,7 +12,8 @@ namespace management
 		public static ScriptExecutionContext<TScriptData> ToScriptExecutionContext<TScriptData>(IReadOnlyDictionary<string, object> messageMetadata)
 		{
 			return messageMetadata.TryGetValue(EventMetadataKey.ScriptExecutionContext, out var data) ?
-				JsonConvert.DeserializeObject<ScriptExecutionContext<TScriptData>>((string)data) : default(ScriptExecutionContext<TScriptData>);
+				JsonConvert.DeserializeObject<ScriptExecutionContext<TScriptData>>((string)data) : 
+					default(ScriptExecutionContext<TScriptData>);
 		}
 	}
 }

@@ -10,7 +10,7 @@ namespace eventstore
 		string SubscriptionStream { get; }
 	}
 
-	internal class ProvisionSubscriptionStreamRequested : IProvisionSubscriptionStreamRequested
+	public class ProvisionSubscriptionStreamRequested : IProvisionSubscriptionStreamRequested
 	{
 	    public ProvisionSubscriptionStreamRequested(string subscriptionStream)
 	    {

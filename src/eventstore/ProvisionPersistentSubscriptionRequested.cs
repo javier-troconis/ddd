@@ -11,7 +11,7 @@ namespace eventstore
 	}
 
 
-	internal class ProvisionPersistentSubscriptionRequested : IProvisionPersistentSubscriptionRequested
+	public class ProvisionPersistentSubscriptionRequested : IProvisionPersistentSubscriptionRequested
 	{
 	    public ProvisionPersistentSubscriptionRequested(string persistentSubscriptionGroup)
 	    {

@@ -15,19 +15,19 @@ namespace query
 	{
         public Task Handle(IRecordedEvent<IApplicationStartedV1> message)
         {
-            Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationStartedV1)} {message.EventId}");
+            Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationStartedV1)}");
             return Task.CompletedTask;
         }
 
 		public Task Handle(IRecordedEvent<IIdentityVerificationCompletedV1> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IIdentityVerificationCompletedV1)} {message.EventId}");
+			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IIdentityVerificationCompletedV1)}");
 			return Task.CompletedTask;
 		}
 
 		public Task Handle(IRecordedEvent<IApplicationSubmittedV1> message)
 		{
-			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationSubmittedV1)} {message.EventId}");
+			Console.WriteLine($"{nameof(Subscriber3)} - {message.EventStreamId} - {nameof(IApplicationSubmittedV1)}");
 			return Task.CompletedTask;
 		}
 	}
