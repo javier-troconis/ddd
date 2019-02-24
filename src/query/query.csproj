@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>query</Description>
     <Authors>jtroconis</Authors>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <AssemblyName>query</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>query</PackageId>

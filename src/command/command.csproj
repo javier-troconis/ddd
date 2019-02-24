@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>command</Description>
     <Authors>jtroconis</Authors>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <AssemblyName>command</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>command</PackageId>

@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>management</Description>
     <Authors>jtroconis</Authors>
-    <TargetFramework>net462</TargetFramework>
+    <TargetFramework>net472</TargetFramework>
     <AssemblyName>management</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>management</PackageId>
