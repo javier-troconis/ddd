@@ -168,8 +168,8 @@ namespace eventstore
                 (
                     async resolvedEvent =>
                     {
-	                    await handleEvent(subscriber, resolvedEvent);
-	                    return resolvedEvent;
+                        await handleEvent(subscriber, resolvedEvent);
+                        return resolvedEvent;
                     }
                 ),
                 getCheckpoint,

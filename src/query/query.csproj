@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>query</Description>
     <Authors>jtroconis</Authors>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <AssemblyName>query</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>query</PackageId>
@@ -21,7 +21,4 @@
     <ProjectReference Include="..\eventstore\eventstore.csproj" />
     <ProjectReference Include="..\management.contracts\management.contracts.csproj" />
   </ItemGroup>
-
- 
-
 </Project>

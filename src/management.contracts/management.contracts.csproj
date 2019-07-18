@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>management.contracts</Description>
     <Authors>jtroconis</Authors>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <AssemblyName>management.contracts</AssemblyName>
     <PackageId>management.contracts</PackageId>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>

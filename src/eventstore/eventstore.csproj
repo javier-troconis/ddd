@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>eventstore</Description>
     <Authors>jtroconis</Authors>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <AssemblyName>eventstore</AssemblyName>
     <PackageId>eventstore</PackageId>
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>

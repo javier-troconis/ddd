@@ -3,7 +3,7 @@
   <PropertyGroup>
     <Description>command</Description>
     <Authors>jtroconis</Authors>
-    <TargetFramework>net472</TargetFramework>
+    <TargetFramework>netcoreapp2.2</TargetFramework>
     <AssemblyName>command</AssemblyName>
     <OutputType>Exe</OutputType>
     <PackageId>command</PackageId>
