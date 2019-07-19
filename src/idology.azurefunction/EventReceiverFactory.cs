@@ -23,10 +23,12 @@ namespace idology.azurefunction
     public class EventReceiverFactory : IEventReceiverFactory
     {
         private readonly Singleton<Task<BroadcastBlock<ResolvedEvent>>> _instanceProvider = new Singleton<Task<BroadcastBlock<ResolvedEvent>>>();
+        private readonly Uri _uri;
         private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
 
-        public EventReceiverFactory(Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        public EventReceiverFactory(Uri uri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
         {
+            _uri = uri;
             _configureConnection = configureConnection;
         }
 
@@ -42,7 +44,7 @@ namespace idology.azurefunction
                         {
                             var connectionSettingsBuilder = _configureConnection(ConnectionSettings.Create());
                             var connectionSettings = connectionSettingsBuilder.Build();
-                            var connection = EventStoreConnection.Create(connectionSettings);
+                            var connection = EventStoreConnection.Create(connectionSettings, _uri);
                             return connection;
                         },
                     registry => registry.RegisterVolatileSubscriber("script", "$ce-script", bb.SendAsync)

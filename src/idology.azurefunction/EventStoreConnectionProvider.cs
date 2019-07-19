@@ -18,10 +18,12 @@ namespace idology.azurefunction
     public class EventStoreConnectionProvider : IEventStoreConnectionProvider
     {
         private readonly Singleton<Task<IEventStoreConnection>> _instanceProvider = new Singleton<Task<IEventStoreConnection>>();
+        private readonly Uri _uri;
         private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
 
-        public EventStoreConnectionProvider(Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        public EventStoreConnectionProvider(Uri uri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
         {
+            _uri = uri;
             _configureConnection = configureConnection;
         }
 
@@ -31,7 +33,7 @@ namespace idology.azurefunction
             {
                 var connectionSettingsBuilder = _configureConnection(ConnectionSettings.Create());
                 var connectionSettings = connectionSettingsBuilder.Build();
-                var connection = EventStoreConnection.Create(connectionSettings);
+                var connection = EventStoreConnection.Create(connectionSettings, _uri);
                 await connection.ConnectAsync();
                 return connection;
             });
