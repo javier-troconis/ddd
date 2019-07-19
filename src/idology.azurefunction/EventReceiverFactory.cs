@@ -45,7 +45,7 @@ namespace idology.azurefunction
                             var connection = EventStoreConnection.Create(connectionSettings);
                             return connection;
                         },
-                    registry => registry.RegisterVolatileSubscriber("subscriberName", "subscriptionStreamName", bb.SendAsync)
+                    registry => registry.RegisterVolatileSubscriber("script", "$ce-script", bb.SendAsync)
                 );
                 await eventBus.StartAllSubscribers();
                 return bb;

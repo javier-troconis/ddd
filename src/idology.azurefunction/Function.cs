@@ -8,7 +8,9 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using azurefunction;
+using eventstore;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.TestHost;
@@ -31,9 +33,12 @@ namespace idology.azurefunction
             [Dependency(typeof(IEventReceiverFactory))] IEventReceiverFactory eventReceiverFactory, 
 	        ILogger logger)
 	    {
-	        var eventReceiver = await eventReceiverFactory.CreateEventReceiver(x => x.IsResolved, logger);
-            
-            return new HttpResponseMessage(HttpStatusCode.Accepted);
+	        var eventId = Guid.NewGuid();
+	        var eventReceiver = await eventReceiverFactory.CreateEventReceiver(x => Equals(x.Event.EventId, eventId), logger);
+	        var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
+	        await eventStoreConnection.AppendToStreamAsync($"script-{Guid.NewGuid():N}", ExpectedVersion.NoStream, new[]{new EventData(eventId, "x", false, new byte[0], new byte[0])}, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+	        var result = await eventReceiver.Receive(ct);
+            return new HttpResponseMessage(HttpStatusCode.OK){Content = new StringContent(result.Event.EventId.ToString())};
 	    }
     }
 }
