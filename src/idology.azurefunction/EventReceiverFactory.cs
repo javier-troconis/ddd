@@ -10,11 +10,9 @@ using shared;
 
 namespace idology.azurefunction
 {
-    public delegate Task<ResolvedEvent> StartEventSubscriber(CancellationToken cancellationToken);
-
-    public interface IEventReceiverFactoryProvider
+    public interface IEventReceiverFactory
     {
-        Task<IEventReceiver> CreateEventReceiver(Predicate<ResolvedEvent> eventFilter, Microsoft.Extensions.Logging.ILogger logger);
+        Task<IEventReceiver> CreateEventReceiver(Predicate<ResolvedEvent> filter, Microsoft.Extensions.Logging.ILogger logger);
     }
 
     public interface IEventReceiver
@@ -22,12 +20,12 @@ namespace idology.azurefunction
         Task<ResolvedEvent> Receive(CancellationToken cancellationToken);
     }
 
-    public class EventReceiverFactoryProvider : IEventReceiverFactoryProvider
+    public class EventReceiverFactory : IEventReceiverFactory
     {
         private readonly Singleton<Task<BroadcastBlock<ResolvedEvent>>> _instanceProvider = new Singleton<Task<BroadcastBlock<ResolvedEvent>>>();
         private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
 
-        public EventReceiverFactoryProvider(Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        public EventReceiverFactory(Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
         {
             _configureConnection = configureConnection;
         }

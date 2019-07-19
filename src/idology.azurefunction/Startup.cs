@@ -6,6 +6,7 @@ using System.Threading.Tasks.Dataflow;
 using azurefunction;
 using eventstore;
 using EventStore.ClientAPI;
+using EventStore.ClientAPI.SystemData;
 using idology.azurefunction;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.WebJobs;
@@ -22,45 +23,8 @@ namespace idology.azurefunction
         {
             builder.AddDependencyInjection();
 
-            var deferredEventStoreConnection = new Lazy<Task<IEventStoreConnection>>(async () =>
-            {
-                Func<IEventStoreConnection> createConnection = new EventStoreConnectionFactory(
-                        EventStoreSettings.ClusterDns,
-                        EventStoreSettings.InternalHttpPort,
-                        EventStoreSettings.Username,
-                        EventStoreSettings.Password,
-                        x => x.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)))
-                    .CreateConnection;
-                var connection = createConnection();
-                await connection.ConnectAsync();
-                return connection;
-            });
-            builder.Services.AddSingleton(deferredEventStoreConnection);
-
-            var deferredCreateReceiveEvent = new Lazy<Task<Func<Predicate<ResolvedEvent>, Func<CancellationToken, Task<ResolvedEvent>>>>>( 
-                    async () =>
-                    {
-                        var bb = new BroadcastBlock<ResolvedEvent>(x => x);
-                        var eventBus = EventBus.CreateEventBus
-                        (
-                            () => new EventStoreConnectionFactory(
-                                    EventStoreSettings.ClusterDns,
-                                    EventStoreSettings.InternalHttpPort,
-                                    EventStoreSettings.Username,
-                                    EventStoreSettings.Password,
-                                    x => x.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)))
-                                .CreateConnection(),
-                            registry => registry.RegisterVolatileSubscriber("subscriberName", "subscriptionStreamName", bb.SendAsync)
-                        );
-                        await eventBus.StartAllSubscribers();
-                        return filter =>
-                        {
-                            var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
-                            bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, filter);
-                            return wob.ReceiveAsync;
-                        };
-                    });
-            builder.Services.AddSingleton(deferredCreateReceiveEvent);
+            builder.Services.AddSingleton<IEventStoreConnectionProvider>(new EventStoreConnectionProvider(x => x.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))));
+            builder.Services.AddSingleton<IEventReceiverFactory>(new EventReceiverFactory(x => x.SetDefaultUserCredentials(new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password))));
         }
     }
 }

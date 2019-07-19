@@ -27,17 +27,12 @@ namespace idology.azurefunction
 	        CancellationToken ct, 
 	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "api/v1/ofaccompliance")] HttpRequestMessage request, 
 	        ExecutionContext ctx,
-	        [Dependency(typeof(Lazy<Task<IEventStoreConnection>>))] Lazy<Task<IEventStoreConnection>> deferredEventStoreConnection,
-            [Dependency(typeof(Lazy<Task<Func<Predicate<ResolvedEvent>, Func<CancellationToken, Task<ResolvedEvent>>>>>))] Lazy<Task<Func<Predicate<ResolvedEvent>, Func<CancellationToken, Task<ResolvedEvent>>>>> deferredCreateReceiveEvent, 
+	        [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
+            [Dependency(typeof(IEventReceiverFactory))] IEventReceiverFactory eventReceiverFactory, 
 	        ILogger logger)
 	    {
-            var createReceiveEventTask = deferredCreateReceiveEvent.Value;
-	        var eventStoreConnectionTask = deferredEventStoreConnection.Value;
-            await Task.WhenAll(createReceiveEventTask, eventStoreConnectionTask);
-
-	        var createReceiveEvent = await createReceiveEventTask;
-            var receiveEvent = createReceiveEvent(x => x.IsResolved);
-	        await receiveEvent(ct);
+	        var eventReceiver = await eventReceiverFactory.CreateEventReceiver(x => x.IsResolved, logger);
+            
             return new HttpResponseMessage(HttpStatusCode.Accepted);
 	    }
     }
