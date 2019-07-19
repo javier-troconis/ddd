@@ -22,18 +22,10 @@ namespace idology.azurefunction
 	public static class Function
 	{
 	    [FunctionName(nameof(EvaluateOfacCompliance))]
-	    public static async Task<HttpResponseMessage> EvaluateOfacCompliance(CancellationToken ct, [HttpTrigger(AuthorizationLevel.Function, "post", Route = "api/v1/ofaccompliance")] HttpRequestMessage request, ExecutionContext ctx, Lazy<Task<Func<ResolvedEvent, Task<ResolvedEvent>>>> deferredEventPipeline, ILogger logger)
+	    public static async Task<HttpResponseMessage> EvaluateOfacCompliance(CancellationToken ct, [HttpTrigger(AuthorizationLevel.Function, "post", Route = "api/v1/ofaccompliance")] HttpRequestMessage request, ExecutionContext ctx, Lazy<Task<Func<Predicate<ResolvedEvent>, CancellationToken, Task<ResolvedEvent>>>> deferredReceiveEvent, ILogger logger)
 	    {
-
-	        BroadcastBlock<>
-
-
-
-            var eventPipeline = await deferredEventPipeline.Value;
-
-	        var correlationId = Guid.NewGuid();
-	        Func<ResolvedEvent, Task> handleEvent = null;
-            //eventPipeline.AddEventHandler(correlationId, handleEvent, ct);
+            var receiveEvent = await deferredReceiveEvent.Value;
+	        var receiveEventTask = receiveEvent(x => x.IsResolved, ct);
             return new HttpResponseMessage(HttpStatusCode.Accepted);
 	    }
     }

@@ -1,5 +1,8 @@
 ﻿using System;
+using System.ComponentModel;
+using System.Threading;
 using System.Threading.Tasks;
+using System.Threading.Tasks.Dataflow;
 using azurefunction;
 using eventstore;
 using EventStore.ClientAPI;
@@ -34,10 +37,10 @@ namespace idology.azurefunction
             });
             builder.Services.AddSingleton(deferredEventStoreConnection);
 
-            var deferredEventPipeline = new Lazy<Task<Func<ResolvedEvent, Task<ResolvedEvent>>>>( 
+            var deferredEventPipeline = new Lazy<Task<Func<Predicate<ResolvedEvent>, CancellationToken, Task<ResolvedEvent>>>>( 
                     async () =>
                     {
-                        Func<ResolvedEvent, Task<ResolvedEvent>> pipeline = Task.FromResult;
+                        var bb = new BroadcastBlock<ResolvedEvent>(x => x);
                         var eventBus = EventBus.CreateEventBus
                         (
                             () => new EventStoreConnectionFactory(
@@ -47,10 +50,15 @@ namespace idology.azurefunction
                                     EventStoreSettings.Password,
                                     x => x.WithConnectionTimeoutOf(TimeSpan.FromMinutes(1)))
                                 .CreateConnection(),
-                            registry => registry.RegisterVolatileSubscriber("subscriberName", "subscriptionStreamName", pipeline)
+                            registry => registry.RegisterVolatileSubscriber("subscriberName", "subscriptionStreamName", bb.SendAsync)
                         );
                         await eventBus.StartAllSubscribers();
-                        return pipeline;
+                        return (filter, ct) =>
+                        {
+                            var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
+                            bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, filter);
+                            return wob.ReceiveAsync(ct);
+                        };
                     });
             builder.Services.AddSingleton(deferredEventPipeline);
         }
