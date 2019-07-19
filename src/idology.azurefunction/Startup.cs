@@ -37,7 +37,7 @@ namespace idology.azurefunction
             });
             builder.Services.AddSingleton(deferredEventStoreConnection);
 
-            var deferredEventPipeline = new Lazy<Task<Func<Predicate<ResolvedEvent>, CancellationToken, Task<ResolvedEvent>>>>( 
+            var deferredCreateReceiveEvent = new Lazy<Task<Func<Predicate<ResolvedEvent>, Func<CancellationToken, Task<ResolvedEvent>>>>>( 
                     async () =>
                     {
                         var bb = new BroadcastBlock<ResolvedEvent>(x => x);
@@ -53,14 +53,14 @@ namespace idology.azurefunction
                             registry => registry.RegisterVolatileSubscriber("subscriberName", "subscriptionStreamName", bb.SendAsync)
                         );
                         await eventBus.StartAllSubscribers();
-                        return (filter, ct) =>
+                        return filter =>
                         {
                             var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
                             bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, filter);
-                            return wob.ReceiveAsync(ct);
+                            return wob.ReceiveAsync;
                         };
                     });
-            builder.Services.AddSingleton(deferredEventPipeline);
+            builder.Services.AddSingleton(deferredCreateReceiveEvent);
         }
     }
 }
