@@ -23,9 +23,9 @@ namespace idology.azurefunction
         {
             builder.AddDependencyInjection();
             builder.Services.AddSingleton<IEventStoreConnectionProvider>(new EventStoreConnectionProvider(
-                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:{EventStoreSettings.ExternalHttpPort}"), x => x));
+                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x));
             builder.Services.AddSingleton<IEventReceiverFactory>(new EventReceiverFactory(
-                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:{EventStoreSettings.ExternalHttpPort}"), x => x));
+                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x));
         }
     }
 }

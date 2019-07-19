@@ -27,7 +27,7 @@ namespace idology.azurefunction
 	    [FunctionName(nameof(EvaluateOfacCompliance))]
 	    public static async Task<HttpResponseMessage> EvaluateOfacCompliance(
 	        CancellationToken ct, 
-	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "api/v1/ofaccompliance")] HttpRequestMessage request, 
+	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "x")] HttpRequestMessage request, 
 	        ExecutionContext ctx,
 	        [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
             [Dependency(typeof(IEventReceiverFactory))] IEventReceiverFactory eventReceiverFactory, 
