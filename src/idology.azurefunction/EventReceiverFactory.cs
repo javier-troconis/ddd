@@ -23,15 +23,16 @@ namespace idology.azurefunction
     public class EventReceiverFactory : IEventReceiverFactory
     {
         private readonly Singleton<Task<BroadcastBlock<ResolvedEvent>>> _instanceProvider = new Singleton<Task<BroadcastBlock<ResolvedEvent>>>();
-        private readonly Uri _uri;
+        private readonly Uri _eventStoreConnectionUri;
         private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
 
-        public EventReceiverFactory(Uri uri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        public EventReceiverFactory(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
         {
-            _uri = uri;
+            _eventStoreConnectionUri = eventStoreConnectionUri;
             _configureConnection = configureConnection;
         }
 
+        // return ISourceBlock<TOutput> ?
         public async Task<IEventReceiver> CreateEventReceiver(Predicate<ResolvedEvent> filter, Microsoft.Extensions.Logging.ILogger logger)
         {
             BroadcastBlock<ResolvedEvent> bb;
@@ -44,7 +45,7 @@ namespace idology.azurefunction
                         {
                             var connectionSettingsBuilder = _configureConnection(ConnectionSettings.Create());
                             var connectionSettings = connectionSettingsBuilder.Build();
-                            var connection = EventStoreConnection.Create(connectionSettings, _uri);
+                            var connection = EventStoreConnection.Create(connectionSettings, _eventStoreConnectionUri);
                             return connection;
                         },
                     registry => registry.RegisterVolatileSubscriber("script", "$ce-script", bb.SendAsync)
