@@ -12,7 +12,7 @@ namespace idology.azurefunction
 {
     public interface IEventReceiverFactory
     {
-        Task<IEventReceiver> CreateEventReceiver(Predicate<ResolvedEvent> filter, Microsoft.Extensions.Logging.ILogger logger);
+        Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> filter);
     }
 
     public interface IEventReceiver
@@ -25,15 +25,19 @@ namespace idology.azurefunction
         private readonly Singleton<Task<BroadcastBlock<ResolvedEvent>>> _instanceProvider = new Singleton<Task<BroadcastBlock<ResolvedEvent>>>();
         private readonly Uri _eventStoreConnectionUri;
         private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
+        private readonly string _receiverName;
+        private readonly string _sourceStreamName;
 
-        public EventReceiverFactory(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        public EventReceiverFactory(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection, string receiverName, EventStoreObjectName sourceStreamName)
         {
             _eventStoreConnectionUri = eventStoreConnectionUri;
             _configureConnection = configureConnection;
+            _receiverName = receiverName;
+            _sourceStreamName = sourceStreamName;
         }
 
         // return ISourceBlock<TOutput> ?
-        public async Task<IEventReceiver> CreateEventReceiver(Predicate<ResolvedEvent> filter, Microsoft.Extensions.Logging.ILogger logger)
+        public async Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> filter)
         {
             BroadcastBlock<ResolvedEvent> bb;
             bb = await _instanceProvider.GetInstance(async () =>
@@ -48,7 +52,7 @@ namespace idology.azurefunction
                             var connection = EventStoreConnection.Create(connectionSettings, _eventStoreConnectionUri);
                             return connection;
                         },
-                    registry => registry.RegisterVolatileSubscriber("script", "$ce-script", bb.SendAsync)
+                    registry => registry.RegisterVolatileSubscriber(_receiverName, _sourceStreamName, bb.SendAsync)
                 );
                 await eventBus.StartAllSubscribers();
                 return bb;

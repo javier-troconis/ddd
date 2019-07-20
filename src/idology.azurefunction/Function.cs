@@ -34,9 +34,9 @@ namespace idology.azurefunction
 	        ILogger logger)
 	    {
 	        var eventId = Guid.NewGuid();
-	        var eventReceiver = await eventReceiverFactory.CreateEventReceiver(x => Equals(x.Event.EventId, eventId), logger);
+	        var eventReceiver = await eventReceiverFactory.CreateEventReceiver(logger, x => Equals(x.Event.EventId, eventId));
 	        var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
-	        await eventStoreConnection.AppendToStreamAsync($"script-{Guid.NewGuid():N}", ExpectedVersion.NoStream, new[]{new EventData(eventId, "command", false, new byte[0], new byte[0])}, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+	        await eventStoreConnection.AppendToStreamAsync($"identityverification-{Guid.NewGuid():N}", ExpectedVersion.NoStream, new[]{new EventData(eventId, "verifyidentity", false, new byte[0], new byte[0])}, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
 	        var result = await eventReceiver.Receive(ct);
             return new HttpResponseMessage(HttpStatusCode.OK){Content = new StringContent(result.Event.EventId.ToString())};
 	    }
