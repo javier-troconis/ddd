@@ -12,7 +12,7 @@ namespace idology.azurefunction
 {
     public interface IEventReceiverFactory
     {
-        Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> filter);
+        Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> eventFilter);
     }
 
     public interface IEventReceiver
@@ -36,8 +36,7 @@ namespace idology.azurefunction
             _sourceStreamName = sourceStreamName;
         }
 
-        // return ISourceBlock<TOutput> ?
-        public async Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> filter)
+        public async Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> eventFilter)
         {
             BroadcastBlock<ResolvedEvent> bb;
             bb = await _instanceProvider.GetInstance(async () =>
@@ -58,7 +57,7 @@ namespace idology.azurefunction
                 return bb;
             });
             var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
-            bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, filter);
+            bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
             return new EventReceiver(wob.ReceiveAsync);
         }
 

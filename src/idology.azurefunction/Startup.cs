@@ -25,7 +25,7 @@ namespace idology.azurefunction
             builder.Services.AddSingleton<IEventStoreConnectionProvider>(new EventStoreConnectionProvider(
                 new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x));
             builder.Services.AddSingleton<IEventReceiverFactory>(new EventReceiverFactory(
-                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x, "identityverification", "$ce-identityverification"));
+                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x, "et-verifyidentity", "$et-verifyidentity"));
         }
     }
 }

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Threading;
@@ -13,6 +14,7 @@ using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
@@ -33,12 +35,33 @@ namespace idology.azurefunction
             [Dependency(typeof(IEventReceiverFactory))] IEventReceiverFactory eventReceiverFactory, 
 	        ILogger logger)
 	    {
-	        var eventId = Guid.NewGuid();
-	        var eventReceiver = await eventReceiverFactory.CreateEventReceiver(logger, x => Equals(x.Event.EventId, eventId));
+	        var correlationId = ctx.InvocationId.ToString();
+            var eventReceiver = await eventReceiverFactory.CreateEventReceiver(logger, 
+                x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
+	        
 	        var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
-	        await eventStoreConnection.AppendToStreamAsync($"identityverification-{Guid.NewGuid():N}", ExpectedVersion.NoStream, new[]{new EventData(eventId, "verifyidentity", false, new byte[0], new byte[0])}, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream, 
+	            new[]
+	            {
+	                new EventData(Guid.NewGuid(), "verifyidentity", false, new byte[0], 
+	                    new Dictionary<string, string> {{EventHeaderKey.CorrelationId, correlationId}}.ToJsonBytes()
+	                )
+	            }, 
+                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
+	        );
+
 	        var result = await eventReceiver.Receive(ct);
-            return new HttpResponseMessage(HttpStatusCode.OK){Content = new StringContent(result.Event.EventId.ToString())};
+            return new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = 
+                    new StringContent(new
+                        {
+                            commandCorrelationId = correlationId,
+                            eventCorrelationId = result.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId]
+                        }.ToJson(), 
+                        Encoding.UTF8, "application/json"
+                    )
+            };
 	    }
     }
 }

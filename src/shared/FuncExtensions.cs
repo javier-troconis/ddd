@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Runtime.InteropServices.ComTypes;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -42,7 +44,7 @@ namespace shared
 
 		public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, Task<T3>> f2)
 		{
-			return f1.ComposeForward(f2.ToAsyncInput());
+			return f1.ComposeForward(f2.ToAsync());
 		}
 
 		public static Func<T1, T3> ComposeBackward<T1, T2, T3>(this Func<T2, T3> f1, Func<T1, T2> f2)
@@ -86,17 +88,17 @@ namespace shared
 			return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
 		}
 
-		public static Func<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this Func<T1, Task<T2>> f)
+		public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, Task<T2>> f)
 		{
 			return async x => await f(await x);
 		}
 
-		public static Func<Task<T1>, Task<T2>> ToAsyncInput<T1, T2>(this Func<T1, T2> f)
+		public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, T2> f)
 		{
 			return async x => f(await x);
 		}
 
-		public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, T2> f, TimeSpan time, CancellationToken cancellationToken)
+        public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, T2> f, TimeSpan time, CancellationToken cancellationToken)
 		{
 			return x =>
 				Task.Delay(time, cancellationToken)
@@ -110,5 +112,15 @@ namespace shared
 					.ContinueWith(t => f(x), TaskContinuationOptions.NotOnCanceled)
 					.Unwrap();
 		}
+
+	    public static Func<T1, Func<T2, T3>> Curry<T1, T2, T3>(this Func<T1, T2, T3> f)
+	    {
+            return x => y => f(x, y);
+	    }
+
+	    public static Func<T1, T2, T3> Uncurry<T1, T2, T3>(this Func<T1, Func<T2, T3>> f)
+	    {
+	        return (x, y) => f(x)(y);
+	    }
 	}
 }
