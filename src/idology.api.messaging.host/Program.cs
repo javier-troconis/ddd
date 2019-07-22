@@ -23,9 +23,7 @@ namespace idology.api.messaging.host
                 }
 
                 var connection = CreateConnection();
-                
-                var rnd = new Random();
-                
+                    
                 var eventBus = EventBus.CreateEventBus
                 (
                     CreateConnection,
