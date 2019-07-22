@@ -35,35 +35,36 @@ namespace idology.azurefunction
             [Dependency(typeof(IEventReceiverFactory))] IEventReceiverFactory eventReceiverFactory, 
 	        ILogger logger)
 	    {
-	        var correlationId = ctx.InvocationId.ToString();
-            var eventReceiver = await eventReceiverFactory.CreateEventReceiver(logger, 
+            var correlationId = ctx.InvocationId.ToString();
+           
+            var eventReceiver = await eventReceiverFactory.CreateEventReceiver(logger,
                 x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
-	        
-	        var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
-            await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream, 
-	            new[]
-	            {
-	                new EventData(Guid.NewGuid(), "verifyidentity", false, new byte[0], 
-	                    new Dictionary<string, string>
+
+            var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
+            await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
+                new[]
+                {
+                    new EventData(Guid.NewGuid(), "verifyidentity", false, new byte[0],
+                        new Dictionary<string, string>
                         {
                             {
                                 EventHeaderKey.CorrelationId, correlationId
                             }
                         }.ToJsonBytes()
-	                )
-	            }, 
+                    )
+                },
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
-	        );
+            );
 
-	        var result = await eventReceiver.Receive(ct);
+            var result = await eventReceiver.Receive(ct);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
-                Content = 
+                Content =
                     new StringContent(new
-                        {
-                            commandCorrelationId = correlationId,
-                            eventCorrelationId = result.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId]
-                        }.ToJson(), 
+                    {
+                        commandCorrelationId = correlationId,
+                        eventCorrelationId = result.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId]
+                    }.ToJson(),
                         Encoding.UTF8, "application/json"
                     )
             };

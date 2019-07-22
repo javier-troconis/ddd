@@ -14,7 +14,7 @@ namespace idology.api.messaging.host
             Task.Run(async () => 
             {
 
-                IEventStoreConnection createConnection()
+                IEventStoreConnection CreateConnection()
                 {
                     var eventStoreConnectionUri = new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112");
                     var connectionSettingsBuilder = ConnectionSettings.Create();
@@ -22,18 +22,16 @@ namespace idology.api.messaging.host
                     return EventStoreConnection.Create(connectionSettings, eventStoreConnectionUri);
                 }
 
-                var connection = createConnection();
+                var connection = CreateConnection();
                 
                 var rnd = new Random();
                 
                 var eventBus = EventBus.CreateEventBus
                 (
-                    createConnection,
+                    CreateConnection,
                     registry => registry.RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity", 
-                    async x => 
-                    {
-                        await Task.Delay(rnd.Next(5000));
-                        await connection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
+                    x => 
+                        connection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
                             new[]
                             {
                                 new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, new byte[0],
@@ -46,8 +44,7 @@ namespace idology.api.messaging.host
                                 )
                             },
                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
-                        );
-                    })
+                    ))
                 );
 
                 await connection.ConnectAsync();
