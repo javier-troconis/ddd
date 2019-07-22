@@ -44,7 +44,12 @@ namespace idology.azurefunction
 	            new[]
 	            {
 	                new EventData(Guid.NewGuid(), "verifyidentity", false, new byte[0], 
-	                    new Dictionary<string, string> {{EventHeaderKey.CorrelationId, correlationId}}.ToJsonBytes()
+	                    new Dictionary<string, string>
+                        {
+                            {
+                                EventHeaderKey.CorrelationId, correlationId
+                            }
+                        }.ToJsonBytes()
 	                )
 	            }, 
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
