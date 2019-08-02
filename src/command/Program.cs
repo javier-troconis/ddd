@@ -70,21 +70,21 @@ namespace command
 		private static async Task StartApplication_V1(IEventStore eventStore, string streamName)
 		{
 			var newEvent = StartApplicationCommand_V1.StartApplication("123456789");
-			await eventStore.WriteEvent(streamName, ExpectedVersion.NoStream, newEvent);
+			await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, new[] { newEvent });
 			Console.WriteLine("application started: " + streamName);
 		}
 
 		private static async Task StartApplication_V2(IEventStore eventStore, string streamName)
 		{
 			var newEvent = StartApplicationCommand_V2.StartApplication("123456789", "jane@jane.com");
-			await eventStore.WriteEvent(streamName, ExpectedVersion.NoStream, newEvent);
+			await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, new[] { newEvent });
 			Console.WriteLine("application started: " + streamName);
 		}
 
 		private static async Task StartApplication_V3(IEventStore eventStore, string streamName)
 		{
 			var newEvent = StartApplicationCommand_V3.StartApplication("123456789", "jane@jane.com", "jane");
-			await eventStore.WriteEvent(streamName, ExpectedVersion.NoStream, newEvent);
+			await eventStore.WriteEvents(streamName, ExpectedVersion.NoStream, new[] { newEvent });
 			Console.WriteLine("application started: " + streamName);
 		}
 
@@ -95,7 +95,7 @@ namespace command
 			Task<StartIdentityVerificationCommand.VerifyIdentityResult> VerifyIdentity(Ssn ssn) => 
 				Task.FromResult(new StartIdentityVerificationCommand.VerifyIdentityResult(Guid.NewGuid().ToString("N"), "passed"));
 			var newEvent = await StartIdentityVerificationCommand.StartIdentityVerification(context, VerifyIdentity);
-			await eventStore.WriteEvent(streamName, 0, newEvent);
+			await eventStore.WriteEvents(streamName, 0, new[] { newEvent });
 			Console.WriteLine("identity verification completed: " + streamName);
 		}
 
@@ -104,7 +104,7 @@ namespace command
 			var history = await eventStore.ReadEventsForward(streamName);
 			var context = history.Aggregate<SubmitApplicationCommand.SubmitApplicationCommandContext>();
 			var newEvent = SubmitApplicationCommand.SubmitApplication(context);
-			await eventStore.WriteEvent(streamName, 1, newEvent);
+			await eventStore.WriteEvents(streamName, 1, new[] { newEvent });
 			Console.WriteLine("application submitted: " + streamName);
 		}
 	}

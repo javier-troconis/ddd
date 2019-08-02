@@ -45,7 +45,7 @@ namespace eventstore
 
 		private static object TryDeserializeEvent(IEnumerable<Type> candidateEventTypes, ResolvedEvent resolvedEvent)
 	    {
-		    var eventMetadata = JsonConvert.DeserializeObject<Dictionary<string, object>>(Encoding.UTF8.GetString(resolvedEvent.Event.Metadata));
+		    var eventMetadata = Json.ParseJson<Dictionary<string, object>>(resolvedEvent.Event.Metadata);
 		    var topics = ((JArray)eventMetadata[EventHeaderKey.Topics]).ToObject<string[]>();
 		    var eventType = topics
 			    .Join(candidateEventTypes, x => x, x => ((EventStoreObjectName)x).Value, (x, y) => y)
@@ -64,7 +64,7 @@ namespace eventstore
                 resolvedEvent.Event.EventId,
                 CorrelationId = eventMetadata.TryGetValue(EventHeaderKey.CorrelationId, out var correlationId) ? Guid.Parse((string)correlationId) : default(Guid?),
                 Metadata = eventMetadata.SkipWhile(x => x.Key == EventHeaderKey.CorrelationId || x.Key == EventHeaderKey.Topics).ToDictionary(x => x.Key, x => x.Value),
-				Data = JsonConvert.DeserializeObject(Encoding.UTF8.GetString(resolvedEvent.Event.Data))
+				Data = Json.ParseJson<object>(resolvedEvent.Event.Data)
 		    };
 
 		    var recordedEventType = typeof(IRecordedEvent<>).MakeGenericType(eventType);

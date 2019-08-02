@@ -27,7 +27,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "idology.azurefunction", "sr
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "idology.api.messaging.host", "src\idology.api.messaging.host\idology.api.messaging.host.csproj", "{B5619312-F2FF-4B11-9925-A22BE790F5D7}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "idology.api.tests", "src\idology.api.tests\idology.api.tests.csproj", "{71D5191A-C649-478E-8B9A-C2ABEDAA66BC}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "idology.api.tests", "src\idology.api.tests\idology.api.tests.csproj", "{71D5191A-C649-478E-8B9A-C2ABEDAA66BC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

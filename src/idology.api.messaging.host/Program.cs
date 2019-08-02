@@ -22,27 +22,30 @@ namespace idology.api.messaging.host
                     return EventStoreConnection.Create(connectionSettings, eventStoreConnectionUri);
                 }
 
-                var connection = CreateConnection();
-                    
+                var connection = CreateConnection();   
                 var eventBus = EventBus.CreateEventBus
                 (
                     CreateConnection,
-                    registry => registry.RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity", 
-                    x => 
-                        connection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
-                            new[]
-                            {
-                                new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, new byte[0],
-                                    new Dictionary<string, string>
-                                    {
+                    registry => 
+                        registry.RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity", 
+                        x => 
+                            connection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
+                                new[]
+                                {
+                                    new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, new byte[0],
+                                        new Dictionary<string, string>
                                         {
-                                            EventHeaderKey.CorrelationId, x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId]
-                                        }
-                                    }.ToJsonBytes()
-                                )
-                            },
-                            new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
-                    ))
+                                            {
+                                                EventHeaderKey.CorrelationId, x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId]
+                                            },
+                                            {
+                                                EventHeaderKey.CausationId, x.Event.EventId.ToString()
+                                            }
+                                        }.ToJsonBytes()
+                                    )
+                                },
+                                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
+                        ))
                 );
 
                 await connection.ConnectAsync();

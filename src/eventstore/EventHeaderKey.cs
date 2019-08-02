@@ -10,5 +10,6 @@ namespace eventstore
     {
 	    public const string Topics = "topics";
 		public const string CorrelationId = "$correlationId";
-	}
+        public const string CausationId = "$causationId";
+    }
 }

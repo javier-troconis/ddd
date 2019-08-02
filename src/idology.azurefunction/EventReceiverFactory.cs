@@ -12,12 +12,7 @@ namespace idology.azurefunction
 {
     public interface IEventReceiverFactory
     {
-        Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> eventFilter);
-    }
-
-    public interface IEventReceiver
-    {
-        Task<ResolvedEvent> Receive(CancellationToken cancellationToken);
+        Task<Func<CancellationToken, Task<ResolvedEvent>>> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> eventFilter);
     }
 
     public class EventReceiverFactory : IEventReceiverFactory
@@ -36,7 +31,7 @@ namespace idology.azurefunction
             _sourceStreamName = sourceStreamName;
         }
 
-        public async Task<IEventReceiver> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> eventFilter)
+        public async Task<Func<CancellationToken, Task<ResolvedEvent>>> CreateEventReceiver(Microsoft.Extensions.Logging.ILogger logger, Predicate<ResolvedEvent> eventFilter)
         {
             BroadcastBlock<ResolvedEvent> bb;
             bb = await _instanceProvider.GetInstance(async () =>
@@ -58,22 +53,9 @@ namespace idology.azurefunction
             });
             var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
             bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
-            return new EventReceiver(wob.ReceiveAsync);
+            return wob.ReceiveAsync;
         }
 
-        private class EventReceiver : IEventReceiver
-        {
-            private readonly Func<CancellationToken, Task<ResolvedEvent>> _receive;
-
-            public EventReceiver(Func<CancellationToken, Task<ResolvedEvent>> receive)
-            {
-                _receive = receive;
-            }
-
-            public Task<ResolvedEvent> Receive(CancellationToken cancellationToken)
-            {
-                return _receive(cancellationToken);
-            }
-        }
+    
     }
 }

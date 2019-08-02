@@ -78,8 +78,7 @@ namespace eventstore
     public interface IEventStore
 	{
         Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber = 0);
-		Task<WriteResult> WriteEvents(EventStoreObjectName streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent = null);
-		Task<WriteResult> WriteEvent(EventStoreObjectName streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent = null);
+		Task<WriteResult> WriteEvents(EventStoreObjectName streamName, long streamExpectedVersion, ICollection events, Func<EventConfiguration, EventConfiguration> configureEvent = null);
 		Task<WriteResult> WriteStreamMetadata(EventStoreObjectName streamName, long streamExpectedVersion, StreamMetadata metadata);
 	}
 
@@ -92,33 +91,28 @@ namespace eventstore
 			_eventStoreConnection = eventStoreConnection;
 		}
 
-		public Task<WriteResult> WriteEvents(EventStoreObjectName streamName, long streamExpectedVersion, IEnumerable<object> events, Func<EventConfiguration, EventConfiguration> configureEvent)
+		public Task<WriteResult> WriteEvents(EventStoreObjectName streamName, long streamExpectedVersion, ICollection events, Func<EventConfiguration, EventConfiguration> configureEvent)
 		{
-			var eventData = events
-				.Select
-				(
-					@event =>
-						ConvertToEventData
-						(
-							@event,
-                            EventConfiguration.Create
-                            (
-                                Guid.NewGuid(),
-                                @event.GetType().FullName,
-                                @event.GetType().GetEventTopics()
-                            )
-                            .PipeForward
-                            (
-                                configureEvent ?? (x => x)
-                            )
-						)
-				);
-			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventData);
-		}
-
-		public Task<WriteResult> WriteEvent(EventStoreObjectName streamName, long streamExpectedVersion, object @event, Func<EventConfiguration, EventConfiguration> configureEvent)
-		{
-			return WriteEvents(streamName, streamExpectedVersion, new[] {@event}, configureEvent);
+		    var eventsData = new EventData[events.Count];
+		    var eventsEnumerator = events.GetEnumerator();
+		    for (var i = 0; eventsEnumerator.MoveNext(); i++)
+		    {
+		        eventsData[i] = ConvertToEventData
+		        (
+		            eventsEnumerator.Current,
+		            EventConfiguration.Create
+		                (
+		                    Guid.NewGuid(),
+		                    eventsEnumerator.Current.GetType().FullName,
+		                    eventsEnumerator.Current.GetType().GetEventTopics()
+		                )
+		            .PipeForward
+		            (
+		                configureEvent ?? (x => x)
+		            )
+		        );
+		    }
+			return _eventStoreConnection.AppendToStreamAsync(streamName, streamExpectedVersion, eventsData);
 		}
 
         public async Task<IEnumerable<ResolvedEvent>> ReadEventsForward(string streamName, long fromEventNumber)
@@ -148,20 +142,9 @@ namespace eventstore
 
 		private static EventData ConvertToEventData(object @event, EventConfiguration eventConfiguration)
 		{
-			var serializerSettings = new JsonSerializerSettings
-			{
-				TypeNameHandling = TypeNameHandling.None
-			};
-			var eventData = Encoding.UTF8.GetBytes(JsonConvert.SerializeObject(@event, serializerSettings));
-			var eventMetadata = Encoding.UTF8.GetBytes
-			(
-				JsonConvert.SerializeObject
-				(
-					eventConfiguration.Metadata,
-					serializerSettings
-				)
-			);
-			return new EventData(eventConfiguration.EventId, eventConfiguration.EventType, true, eventData, eventMetadata);
+		    var eventData = Json.ToJsonBytes(@event);
+            var eventMetadata = Json.ToJsonBytes(eventConfiguration.Metadata);
+            return new EventData(eventConfiguration.EventId, eventConfiguration.EventType, true, eventData, eventMetadata);
 		}
 
 		public Task<WriteResult> WriteStreamMetadata(EventStoreObjectName streamName, long streamExpectedVersion, StreamMetadata metadata)

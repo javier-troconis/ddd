@@ -37,7 +37,7 @@ namespace idology.azurefunction
 	    {
             var correlationId = ctx.InvocationId.ToString();
            
-            var eventReceiver = await eventReceiverFactory.CreateEventReceiver(logger,
+            var receiveEvent = await eventReceiverFactory.CreateEventReceiver(logger,
                 x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
 
             var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
@@ -56,7 +56,7 @@ namespace idology.azurefunction
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
             );
 
-            var result = await eventReceiver.Receive(ct);
+            var result = await receiveEvent(ct);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content =
