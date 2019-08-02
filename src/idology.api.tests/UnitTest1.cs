@@ -22,14 +22,15 @@ namespace idology.api.tests
         {
             var b = new ConcurrentBag<Res>();
            
-            var n = Enumerable.Range(0, 5).Select(x => new Func<Task>(async () =>
-            {
-                var client = new HttpClient();
-                var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/x"));
-                var content = await response.Content.ReadAsStringAsync();
-                var bn = content.ParseJson<Res>();
-                b.Add(bn);
-            }));
+            var n = Enumerable.Range(0, 5)
+                .Select(x => new Func<Task>(async () =>
+                    {
+                        var client = new HttpClient();
+                        var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/x"));
+                        var content = await response.Content.ReadAsStringAsync();
+                        var bn = content.ParseJson<Res>();
+                        b.Add(bn);
+                    }));
 
             var processor = new ActionBlock<Func<Task>>(x => x(), new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount });
             await Task.WhenAll(n.Select(processor.SendAsync));

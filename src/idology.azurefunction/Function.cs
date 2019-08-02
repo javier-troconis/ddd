@@ -29,9 +29,11 @@ namespace idology.azurefunction
 	    [FunctionName(nameof(EvaluateOfacCompliance))]
 	    public static async Task<HttpResponseMessage> EvaluateOfacCompliance(
 	        CancellationToken ct, 
-	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "x")] HttpRequestMessage request, 
-	        ExecutionContext ctx,
-	        [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
+	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "x/{callbackuri?}")] HttpRequestMessage request, 
+	        // this binding doesn't work
+	        string callbackuri,
+            ExecutionContext ctx,
+            [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
             [Dependency(typeof(IEventReceiverFactory))] IEventReceiverFactory eventReceiverFactory, 
 	        ILogger logger)
 	    {
