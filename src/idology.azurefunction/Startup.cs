@@ -11,8 +11,10 @@ using idology.azurefunction;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Hosting;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.DependencyInjection;
 using shared;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 [assembly: WebJobsStartup(typeof(Startup))]
 namespace idology.azurefunction
@@ -22,10 +24,22 @@ namespace idology.azurefunction
         public void Configure(IWebJobsBuilder builder)
         {
             builder.AddDependencyInjection();
-            builder.Services.AddSingleton<IEventStoreConnectionProvider>(new EventStoreConnectionProvider(
-                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x));
-            builder.Services.AddSingleton<IEventReceiverFactory>(new EventReceiverFactory(
-                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x, "et-verifyidentitysucceeded", "$et-verifyidentitysucceeded"));
+
+            var eventStoreUri =
+                new Uri(
+                    $"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112");
+            var memoryCache = new MemoryCache(new MemoryCacheOptions());
+
+            builder.Services.AddSingleton
+                (
+                    new Func<ILogger, Task<IEventStoreConnection>>(
+                        new GetEventStoreConnectionService(eventStoreUri, x => x).GetEventStoreConnection)
+                            .Memoize(memoryCache, new MemoryCacheEntryOptions{Priority = CacheItemPriority.NeverRemove})
+                );
+            //builder.Services.AddSingleton<Func<ILogger, Task<IEventStoreConnection>>>(new GetEventStoreConnectionService(
+            //    new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x));
+            builder.Services.AddSingleton<IEventReceiverFactory>(new GetEventSourceBlockService(
+                eventStoreUri, x => x, "et-verifyidentitysucceeded", "$et-verifyidentitysucceeded"));
         }
     }
 }
