@@ -68,27 +68,37 @@ namespace shared
 				}).Value;
 		}
 
-		public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, object> getEntryKey = null)
-		{
-			var f1 = new Func<Tuple<T1, T2>, T3>(x => f(x.Item1, x.Item2))
-				.Memoize(
-					cache, 
-					memoryCacheEntryOptions, 
-					getEntryKey == null ? null : new Func<Tuple<T1, T2>, object>(entry => getEntryKey(entry.Item1, entry.Item2)));
-			return (x, y) => f1(new Tuple<T1, T2>(x, y));
-		}
+	    public static Func<Tuple<T1, T2>, T3> Tuplify<T1, T2, T3>(this Func<T1, T2, T3> f)
+	    {
+	        return x => f(x.Item1, x.Item2);
+	    }
 
-		public static Func<T1, T2, T3, T4> Memoize<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, T3, object> getEntryKey = null)
-		{
-			var f1 = new Func<Tuple<T1, T2, T3>, T4>(x => f(x.Item1, x.Item2, x.Item3))
-				.Memoize(
-					cache, 
-					memoryCacheEntryOptions,
-					getEntryKey == null ? null : new Func<Tuple<T1, T2, T3>, object>(entry => getEntryKey(entry.Item1, entry.Item2, entry.Item3)));
-			return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
-		}
+	    public static Func<T1, T2, T3> Detuplify<T1, T2, T3>(this Func<Tuple<T1, T2>, T3> f)
+	    {
+	        return (x, y) => f(new Tuple<T1, T2>(x, y));
+	    }
 
-		public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, Task<T2>> f)
+        //public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, object> getEntryKey = null)
+        //{
+        //	var f1 = new Func<Tuple<T1, T2>, T3>(x => f(x.Item1, x.Item2))
+        //		.Memoize(
+        //			cache, 
+        //			memoryCacheEntryOptions, 
+        //			getEntryKey == null ? null : new Func<Tuple<T1, T2>, object>(entry => getEntryKey(entry.Item1, entry.Item2)));
+        //	return (x, y) => f1(new Tuple<T1, T2>(x, y));
+        //}
+
+        //public static Func<T1, T2, T3, T4> Memoize<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, T3, object> getEntryKey = null)
+        //{
+        //	var f1 = new Func<Tuple<T1, T2, T3>, T4>(x => f(x.Item1, x.Item2, x.Item3))
+        //		.Memoize(
+        //			cache, 
+        //			memoryCacheEntryOptions,
+        //			getEntryKey == null ? null : new Func<Tuple<T1, T2, T3>, object>(entry => getEntryKey(entry.Item1, entry.Item2, entry.Item3)));
+        //	return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
+        //}
+
+        public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, Task<T2>> f)
 		{
 			return async x => await f(await x);
 		}

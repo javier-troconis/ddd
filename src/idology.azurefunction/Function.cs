@@ -34,12 +34,12 @@ namespace idology.azurefunction
 	        string callbackuri,
             ExecutionContext ctx,
             [Dependency(typeof(Func<ILogger, Task<IEventStoreConnection>>))] Func<ILogger, Task<IEventStoreConnection>> getEventStoreConnection,
-            [Dependency(typeof(Func<ILogger, string, Predicate<ResolvedEvent>, Task<Func<CancellationToken, Task<ResolvedEvent>>>>))] Func<string, Predicate<ResolvedEvent>, ILogger, Task<Func<CancellationToken, Task<ResolvedEvent>>>> createEventReceiver, 
+            [Dependency(typeof(Func<ILogger, EventStoreObjectName, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>))] Func<EventStoreObjectName, Predicate<ResolvedEvent>, ILogger, Task<ISourceBlock<ResolvedEvent>>> getEventReceiver, 
 	        ILogger logger)
 	    {
             var correlationId = ctx.InvocationId.ToString();
            
-            var receiveEvent = await createEventReceiver("", x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId), logger);
+            var eventReceiver = await getEventReceiver("", x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId), logger);
 
             var eventStoreConnection = await getEventStoreConnection(logger);
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
@@ -57,7 +57,7 @@ namespace idology.azurefunction
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
             );
 
-            var result = await receiveEvent(ct);
+            var result = await eventReceiver.ReceiveAsync(ct);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content =
