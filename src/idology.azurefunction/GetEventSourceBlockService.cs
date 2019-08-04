@@ -60,7 +60,7 @@ namespace idology.azurefunction
             _configureConnection = configureConnection;
         }
 
-        public Func<Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>> GetEventReceiverFactory(ILogger logger, EventStoreObjectName sourceStreamName)
+        public async Task<ISourceBlock<ResolvedEvent>> GetEventReceiverFactory(ILogger logger, EventStoreObjectName sourceStreamName)
         {
             var bb = new BroadcastBlock<ResolvedEvent>(x => x);
             var eventBus = EventBus.CreateEventBus
@@ -74,14 +74,8 @@ namespace idology.azurefunction
                 },
                 registry => registry.RegisterVolatileSubscriber(sourceStreamName, sourceStreamName, bb.SendAsync)
             );
-            var startAllSubscribersTask = eventBus.StartAllSubscribers();
-            return async eventFilter =>
-            {
-                await startAllSubscribersTask;
-                var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
-                bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
-                return wob;
-            };
+            await eventBus.StartAllSubscribers();
+            return bb;
         }
 
 
