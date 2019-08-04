@@ -34,12 +34,12 @@ namespace idology.azurefunction
 	        string callbackuri,
             ExecutionContext ctx,
             [Dependency(typeof(Func<ILogger, Task<IEventStoreConnection>>))] Func<ILogger, Task<IEventStoreConnection>> getEventStoreConnection,
-            [Dependency(typeof(Func<ILogger, EventStoreObjectName, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>))] Func<EventStoreObjectName, Predicate<ResolvedEvent>, ILogger, Task<ISourceBlock<ResolvedEvent>>> getEventReceiver, 
+            [Dependency(typeof(Func<ILogger, EventStoreObjectName, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>))] Func<ILogger, EventStoreObjectName, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>> getEventReceiver, 
 	        ILogger logger)
 	    {
             var correlationId = ctx.InvocationId.ToString();
            
-            var eventReceiver = await getEventReceiver("", x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId), logger);
+            var eventReceiver = await getEventReceiver(logger, "$et-verifyidentitysucceeded", x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
 
             var eventStoreConnection = await getEventStoreConnection(logger);
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,

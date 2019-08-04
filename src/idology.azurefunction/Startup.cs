@@ -35,15 +35,31 @@ namespace idology.azurefunction
                 .Memoize(memoryCache, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove });
             builder.Services.AddSingleton(getEventStoreConnection);
 
-            var getEventReceiverFactory = new Func<ILogger, EventStoreObjectName, Func<Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>>(
-                    new GetEventReceiverFactoryService(eventStoreUri, x => x).GetEventReceiverFactory)
-                .Tuplify()
-                .Memoize(memoryCache, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove })
-                .Detuplify();
+            /*
+            var getEventReceiverFactory =
+                new Func<ILogger, EventStoreObjectName,
+                        Func<Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>>(
+                        new GetEventReceiverFactoryService(eventStoreUri, x => x).GetEventReceiverFactory)
+                    .Tuplify()
+                    .Memoize(memoryCache, new MemoryCacheEntryOptions {Priority = CacheItemPriority.NeverRemove})
+                    .Detuplify();
+
             builder.Services.AddSingleton<Func<ILogger, EventStoreObjectName, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>>
                 (
-                     (logger, sourceStreamName, eventFilter) => getEventReceiverFactory(logger, sourceStreamName)(eventFilter)
+                    (logger, sourceStreamName, eventFilter) => getEventReceiverFactory(logger, sourceStreamName)(eventFilter)
                 );
+            */
+
+
+
+            var n = new Func<ILogger, EventStoreObjectName, Task<ISourceBlock<ResolvedEvent>>>(
+                    new GetEventReceiverFactoryService(eventStoreUri, x => x).GetStreamSourceBlock)
+                .Tuplify()
+                .Memoize(memoryCache, new MemoryCacheEntryOptions {Priority = CacheItemPriority.NeverRemove});
+
+
+
+
 
 
 

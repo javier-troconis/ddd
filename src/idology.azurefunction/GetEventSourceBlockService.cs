@@ -7,6 +7,7 @@ using System.Threading.Tasks.Dataflow;
 using eventstore;
 using EventStore.ClientAPI;
 using shared;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
 {
@@ -21,7 +22,7 @@ namespace idology.azurefunction
             _configureConnection = configureConnection;
         }
 
-        public async Task<ISourceBlock<ResolvedEvent>> GetEventSourceBlock(Microsoft.Extensions.Logging.ILogger logger, EventStoreObjectName sourceStreamName)
+        public async Task<ISourceBlock<ResolvedEvent>> GetEventSourceBlock(ILogger logger, EventStoreObjectName sourceStreamName)
         {
             var bb = new BroadcastBlock<ResolvedEvent>(x => x);
             var eventBus = EventBus.CreateEventBus
@@ -59,7 +60,7 @@ namespace idology.azurefunction
             _configureConnection = configureConnection;
         }
 
-        public Func<Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>> GetEventReceiverFactory(Microsoft.Extensions.Logging.ILogger logger, EventStoreObjectName sourceStreamName)
+        public Func<Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>> GetEventReceiverFactory(ILogger logger, EventStoreObjectName sourceStreamName)
         {
             var bb = new BroadcastBlock<ResolvedEvent>(x => x);
             var eventBus = EventBus.CreateEventBus
@@ -81,6 +82,32 @@ namespace idology.azurefunction
                 bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
                 return wob;
             };
+        }
+
+
+        public async Task<ISourceBlock<ResolvedEvent>> GetStreamSourceBlock(ILogger logger, EventStoreObjectName sourceStreamName)
+        {
+            var bb = new BroadcastBlock<ResolvedEvent>(x => x);
+            var eventBus = EventBus.CreateEventBus
+            (
+                () =>
+                {
+                    var connectionSettingsBuilder = _configureConnection(ConnectionSettings.Create());
+                    var connectionSettings = connectionSettingsBuilder.Build();
+                    var connection = EventStoreConnection.Create(connectionSettings, _eventStoreConnectionUri);
+                    return connection;
+                },
+                registry => registry.RegisterVolatileSubscriber(sourceStreamName, sourceStreamName, bb.SendAsync)
+            );
+            await eventBus.StartAllSubscribers();
+            return bb;
+        }
+
+        public ISourceBlock<ResolvedEvent> GetEventSourceBlock(ISourceBlock<ResolvedEvent> streamSourceBlock, Predicate<ResolvedEvent> eventFilter)
+        {
+            var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
+            streamSourceBlock.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
+            return wob;
         }
     }
 }

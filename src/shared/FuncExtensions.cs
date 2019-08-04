@@ -39,7 +39,7 @@ namespace shared
 
 		public static Func<T1, T3> ComposeForward<T1, T2, T3>(this Func<T1, T2> f1, Func<T2, T3> f2)
 		{
-			return x => f2(f1(x));
+			return a => f2(f1(a));
 		}
 
 		public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, Task<T3>> f2)
@@ -59,23 +59,25 @@ namespace shared
 
 		public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, object> getEntryKey = null)
 		{
-			return x => cache.GetOrCreate(
-				getEntryKey == null ? x : getEntryKey(x), 
-				z =>
-				{
-					z.SetOptions(memoryCacheEntryOptions);
-					return new Lazy<T2>(() => f(x), LazyThreadSafetyMode.ExecutionAndPublication);
-				}).Value;
+			return a => cache
+			    .GetOrCreate(
+				    getEntryKey == null ? a : getEntryKey(a), 
+				    b =>
+				    {
+					    b.SetOptions(memoryCacheEntryOptions);
+					    return new Lazy<T2>(() => f(a), LazyThreadSafetyMode.ExecutionAndPublication);
+				    })
+			    .Value;
 		}
 
 	    public static Func<Tuple<T1, T2>, T3> Tuplify<T1, T2, T3>(this Func<T1, T2, T3> f)
 	    {
-	        return x => f(x.Item1, x.Item2);
+	        return a => f(a.Item1, a.Item2);
 	    }
 
 	    public static Func<T1, T2, T3> Detuplify<T1, T2, T3>(this Func<Tuple<T1, T2>, T3> f)
 	    {
-	        return (x, y) => f(new Tuple<T1, T2>(x, y));
+	        return (a, b) => f(new Tuple<T1, T2>(a, b));
 	    }
 
         //public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, object> getEntryKey = null)
@@ -100,37 +102,47 @@ namespace shared
 
         public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, Task<T2>> f)
 		{
-			return async x => await f(await x);
+			return async a => await f(await a);
 		}
 
 		public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, T2> f)
 		{
-			return async x => f(await x);
+			return async a => f(await a);
 		}
 
-        public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, T2> f, TimeSpan time, CancellationToken cancellationToken)
-		{
-			return x =>
-				Task.Delay(time, cancellationToken)
-					.ContinueWith(t => f(x), TaskContinuationOptions.NotOnCanceled);
-		}
+        public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, T2> f, TimeSpan timeout, CancellationToken ct)
+        {
+            return a =>
+                Task.Delay(timeout, ct)
+                    .ContinueWith(t => f(a), TaskContinuationOptions.NotOnCanceled);
+        }
 
-		public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, Task<T2>> f, TimeSpan delay, CancellationToken cancellationToken)
+		public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, Task<T2>> f, TimeSpan timeout, CancellationToken ct)
 		{
-			return x =>
-				Task.Delay(delay, cancellationToken)
-					.ContinueWith(t => f(x), TaskContinuationOptions.NotOnCanceled)
-					.Unwrap();
+		    return a =>
+		        Task.Delay(timeout, ct)
+		            .ContinueWith(t => f(a), TaskContinuationOptions.NotOnCanceled)
+		                .Unwrap();
 		}
 
 	    public static Func<T1, Func<T2, T3>> Curry<T1, T2, T3>(this Func<T1, T2, T3> f)
 	    {
-            return x => y => f(x, y);
+            return a => b => f(a, b);
 	    }
 
-	    public static Func<T1, T2, T3> Uncurry<T1, T2, T3>(this Func<T1, Func<T2, T3>> f)
+	    public static Func<T1, Func<T2, Func<T3, T4>>> Curry<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f)
 	    {
-	        return (x, y) => f(x)(y);
+	        return a => b => c => f(a, b, c);
 	    }
-	}
+
+        public static Func<T1, T2, T3> Uncurry<T1, T2, T3>(this Func<T1, Func<T2, T3>> f)
+	    {
+	        return (a, b) => f(a)(b);
+	    }
+
+	    public static Func<T1, T2, T3, T4> Uncurry<T1, T2, T3, T4>(this Func<T1, Func<T2, Func<T3, T4>>> f)
+	    {
+	        return (a, b, c) => f(a)(b)(c);
+	    }
+    }
 }
