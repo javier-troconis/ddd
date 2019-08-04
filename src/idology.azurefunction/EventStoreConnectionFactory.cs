@@ -7,27 +7,28 @@ using EventStore.ClientAPI;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.TestHost;
 using shared;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
 {
-    public interface IEventStoreConnectionProvider
+    public interface IEventStoreConnectionFactory
     {
-        Task<IEventStoreConnection> ProvideEventStoreConnection(Microsoft.Extensions.Logging.ILogger logger);
+        Task<IEventStoreConnection> CreateEventStoreConnection(ILogger logger);
     }
 
-    public class EventStoreConnectionProvider : IEventStoreConnectionProvider
+    public class EventStoreConnectionFactory : IEventStoreConnectionFactory
     {
         private readonly Singleton<Task<IEventStoreConnection>> _instanceProvider = new Singleton<Task<IEventStoreConnection>>();
         private readonly Uri _eventStoreConnectionUri;
         private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
 
-        public EventStoreConnectionProvider(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        public EventStoreConnectionFactory(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
         {
             _eventStoreConnectionUri = eventStoreConnectionUri;
             _configureConnection = configureConnection;
         }
 
-        public Task<IEventStoreConnection> ProvideEventStoreConnection(Microsoft.Extensions.Logging.ILogger logger)
+        public Task<IEventStoreConnection> CreateEventStoreConnection(ILogger logger)
         {
             return _instanceProvider.GetInstance(async () =>
             {

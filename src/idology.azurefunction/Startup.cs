@@ -22,9 +22,9 @@ namespace idology.azurefunction
         public void Configure(IWebJobsBuilder builder)
         {
             builder.AddDependencyInjection();
-            builder.Services.AddSingleton<IEventStoreConnectionProvider>(new EventStoreConnectionProvider(
+            builder.Services.AddSingleton<IEventStoreConnectionFactory>(new EventStoreConnectionFactory(
                 new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x));
-            builder.Services.AddSingleton<IEventReceiverFactory>(new EventReceiverFactory(
+            builder.Services.AddSingleton<IEventSourceBlockFactory>(new EventSourceBlockFactory(
                 new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x, "et-verifyidentitysucceeded", "$et-verifyidentitysucceeded"));
         }
     }

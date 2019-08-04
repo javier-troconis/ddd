@@ -33,16 +33,16 @@ namespace idology.azurefunction
 	        // this binding doesn't work
 	        string callbackuri,
             ExecutionContext ctx,
-            [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
-            [Dependency(typeof(IEventReceiverFactory))] IEventReceiverFactory eventReceiverFactory, 
+            [Dependency(typeof(IEventStoreConnectionFactory))] IEventStoreConnectionFactory eventStoreConnectionFactory,
+            [Dependency(typeof(IEventSourceBlockFactory))] IEventSourceBlockFactory eventSourceBlockFactory, 
 	        ILogger logger)
 	    {
             var correlationId = ctx.InvocationId.ToString();
            
-            var receiveEvent = await eventReceiverFactory.CreateEventReceiver(logger,
+            var eventSourceBlock = await eventSourceBlockFactory.CreateEventSourceBlock(logger,
                 x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
 
-            var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
+            var eventStoreConnection = await eventStoreConnectionFactory.CreateEventStoreConnection(logger);
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
                 new[]
                 {
@@ -58,7 +58,7 @@ namespace idology.azurefunction
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
             );
 
-            var result = await receiveEvent(ct);
+            var result = await eventSourceBlock.ReceiveAsync(ct);
             return new HttpResponseMessage(HttpStatusCode.OK)
             {
                 Content =
