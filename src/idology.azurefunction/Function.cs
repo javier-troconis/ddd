@@ -33,13 +33,13 @@ namespace idology.azurefunction
 	        // this binding doesn't work
 	        string callbackuri,
             ExecutionContext ctx,
-            [Dependency(typeof(Func<ILogger, Task<IEventStoreConnection>>))] Func<ILogger, Task<IEventStoreConnection>> getEventStoreConnection,
-            [Dependency(typeof(Func<EventStoreObjectName, ILogger, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>))] Func<EventStoreObjectName, ILogger, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>> getEventSourceBlock, 
+            [Dependency(typeof(GetEventStoreConnection))] GetEventStoreConnection getEventStoreConnection,
+            [Dependency(typeof(GetEventSourceBlock))] GetEventSourceBlock getEventSourceBlock, 
 	        ILogger logger)
 	    {
             var correlationId = ctx.InvocationId.ToString();
            
-            var eventSourceBlock = await getEventSourceBlock("$et-verifyidentitysucceeded", logger, x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
+            var eventSourceBlock = await getEventSourceBlock(logger, "$et-verifyidentitysucceeded", x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
 
             var eventStoreConnection = await getEventStoreConnection(logger);
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,

@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using eventstore;
 using EventStore.ClientAPI;
-using shared;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
@@ -22,7 +20,7 @@ namespace idology.azurefunction
             _configureConnection = configureConnection;
         }
 
-        public async Task<ISourceBlock<ResolvedEvent>> GetEventsSourceBlock(EventStoreObjectName sourceStreamName, ILogger logger)
+        public async Task<ISourceBlock<ResolvedEvent>> GetEventsSourceBlock(ILogger logger, EventStoreObjectName sourceStreamName)
         {
             var bb = new BroadcastBlock<ResolvedEvent>(x => x);
             var eventBus = EventBus.CreateEventBus
@@ -38,24 +36,6 @@ namespace idology.azurefunction
             );
             await eventBus.StartAllSubscribers();
             return bb;
-        }
-    }
-
-    public class GetEventSourceBlockService
-    {
-        private readonly Func<EventStoreObjectName, ILogger, Task<ISourceBlock<ResolvedEvent>>> _getEventsSourceBlock;
-
-        public GetEventSourceBlockService(Func<EventStoreObjectName, ILogger, Task<ISourceBlock<ResolvedEvent>>> getEventsSourceBlock)
-        {
-            _getEventsSourceBlock = getEventsSourceBlock;
-        }
-
-        public async Task<ISourceBlock<ResolvedEvent>> GetEventSourceBlock(EventStoreObjectName sourceStreamName, ILogger logger, Predicate<ResolvedEvent> eventFilter)
-        {
-            var eventSourceBlock = await _getEventsSourceBlock(sourceStreamName, logger);
-            var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
-            eventSourceBlock.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
-            return wob;
         }
     }
 }
