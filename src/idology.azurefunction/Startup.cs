@@ -25,30 +25,45 @@ namespace idology.azurefunction
         {
             builder.AddDependencyInjection();
 
-            var eventStoreUri =
+            var eventStoreConnectionUri =
                 new Uri(
                     $"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112");
+
             var memoryCache = new MemoryCache(new MemoryCacheOptions());
 
-            var getEventStoreConnection = new Func<ILogger, Task<IEventStoreConnection>>(
-                    new GetEventStoreConnectionService(eventStoreUri, x => x).GetEventStoreConnection)
+            var getEventStoreConnectionService = new GetEventStoreConnectionService(eventStoreConnectionUri, x => x);
+            var getEventStoreConnection = new Func<ILogger, Task<IEventStoreConnection>>(getEventStoreConnectionService.GetEventStoreConnection)
                 .Memoize(memoryCache, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove });
             builder.Services.AddSingleton(getEventStoreConnection);
 
+            var getEventsSourceBlockService = new GetEventsSourceBlockService(eventStoreConnectionUri, x => x);
+            var getEventsSourceBlock = new Func<EventStoreObjectName, ILogger, Task<ISourceBlock<ResolvedEvent>>>(getEventsSourceBlockService.GetEventsSourceBlock)
+                .Memoize(memoryCache, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove });
+            var getEventSourceBlockService = new GetEventSourceBlockService(getEventsSourceBlock);
+            var getEventSourceBlock =
+                new Func<EventStoreObjectName, ILogger, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>(
+                    getEventSourceBlockService.GetEventSourceBlock);
+            builder.Services.AddSingleton(getEventSourceBlock);
+
+
+
+          
             /*
             var getEventReceiverFactory =
                 new Func<ILogger, EventStoreObjectName,
-                        Func<Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>>(
+                        Task<ISourceBlock<ResolvedEvent>>>(
                         new GetEventReceiverFactoryService(eventStoreUri, x => x).GetEventReceiverFactory)
                     .Tuplify()
-                    .Memoize(memoryCache, new MemoryCacheEntryOptions {Priority = CacheItemPriority.NeverRemove})
-                    .Detuplify();
+                    .Memoize(memoryCache, new MemoryCacheEntryOptions {Priority = CacheItemPriority.NeverRemove});
+            var f = new Func<ISourceBlock<ResolvedEvent>, Predicate<ResolvedEvent>, ISourceBlock<ResolvedEvent>>(
+                GetEventReceiverFactoryService.GetEventSourceBlock).Curry();
+            getEventReceiverFactory.ComposeForward(f)
 
             builder.Services.AddSingleton<Func<ILogger, EventStoreObjectName, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>>
                 (
                     (logger, sourceStreamName, eventFilter) => getEventReceiverFactory(logger, sourceStreamName)(eventFilter)
                 );
-            */
+            
 
 
 
@@ -56,7 +71,7 @@ namespace idology.azurefunction
                     new GetEventReceiverFactoryService(eventStoreUri, x => x).GetStreamSourceBlock)
                 .Tuplify()
                 .Memoize(memoryCache, new MemoryCacheEntryOptions {Priority = CacheItemPriority.NeverRemove});
-
+*/
 
 
 
