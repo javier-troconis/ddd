@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -20,7 +21,7 @@ namespace idology.api.tests
         [Fact]
         public async Task Test1()
         {
-            var b = new ConcurrentBag<Res>();
+            var b = new ConcurrentBag<Dictionary<string, string>>();
            
             var n = Enumerable.Range(0, 5)
                 .Select(x => new Func<Task>(async () =>
@@ -28,7 +29,7 @@ namespace idology.api.tests
                         var client = new HttpClient();
                         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/x"));
                         var content = await response.Content.ReadAsStringAsync();
-                        var bn = content.ParseJson<Res>();
+                        var bn = content.ParseJson<Dictionary<string, string>>();
                         b.Add(bn);
                     }));
 
@@ -39,7 +40,7 @@ namespace idology.api.tests
 
             foreach (var s in b)
             {
-                Assert.Equal(s.CommandCorrelationId, s.EventCorrelationId);
+                Assert.Equal(s["commandCorrelationId"], s["eventCorrelationId"]);
             }
         }
     }

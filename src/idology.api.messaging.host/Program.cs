@@ -29,7 +29,7 @@ namespace idology.api.messaging.host
                     registry => 
                         registry.RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity", 
                         x => 
-                            connection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
+                            connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                                 new[]
                                 {
                                     new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, new byte[0],
