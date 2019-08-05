@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using eventstore;
 using EventStore.ClientAPI;
+using Microsoft.Extensions.Logging;
 using shared;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
@@ -56,7 +57,5 @@ namespace idology.azurefunction
             bb.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
             return wob;
         }
-
-    
     }
 }

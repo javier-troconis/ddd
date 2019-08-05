@@ -33,16 +33,18 @@ namespace idology.azurefunction
 	        // this binding doesn't work
 	        string callbackuri,
             ExecutionContext ctx,
-            [Dependency(typeof(IEventStoreConnectionFactory))] IEventStoreConnectionFactory eventStoreConnectionFactory,
+            [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
             [Dependency(typeof(IEventSourceBlockFactory))] IEventSourceBlockFactory eventSourceBlockFactory, 
 	        ILogger logger)
 	    {
+            var ct1 = new CancellationTokenSource(500);
             var correlationId = ctx.InvocationId.ToString();
            
             var eventSourceBlock = await eventSourceBlockFactory.CreateEventSourceBlock(logger,
-                x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
+                x => Equals(x.Event.EventType, "verifyidentitysucceeded") && 
+                        Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
 
-            var eventStoreConnection = await eventStoreConnectionFactory.CreateEventStoreConnection(logger);
+            var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid():N}", ExpectedVersion.NoStream,
                 new[]
                 {
@@ -58,18 +60,49 @@ namespace idology.azurefunction
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
             );
 
-            var result = await eventSourceBlock.ReceiveAsync(ct);
-            return new HttpResponseMessage(HttpStatusCode.OK)
-            {
-                Content =
-                    new StringContent(new
-                    {
-                        commandCorrelationId = correlationId,
-                        eventCorrelationId = result.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId]
-                    }.ToJson(),
-                        Encoding.UTF8, "application/json"
-                    )
-            };
+	        try
+	        {
+	            var @event = await eventSourceBlock.ReceiveAsync(ct1.Token);
+	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
+                response1.Headers.Location = new Uri($"http://localhost:7071/x/{correlationId}");
+	            response1.Content = new StringContent(new
+	                {
+	                    commandCorrelationId = correlationId,
+	                    eventCorrelationId =
+	                        @event.Event.Metadata.ParseJson<IDictionary<string, string>>()[
+	                            EventHeaderKey.CorrelationId]
+	                }.ToJson(),
+	                Encoding.UTF8, "application/json"
+	            );
+                return response1;
+            }
+	        catch (TaskCanceledException)
+	        {
+               
+	            var response2 = new HttpResponseMessage(HttpStatusCode.Accepted);
+                response2.Headers.Location = new Uri($"http://localhost:7071/taskqueue/{correlationId}");
+	            return response2;
+	        }
 	    }
+
+
+        [FunctionName(nameof(GetTaskQueue))]
+        public static async Task<HttpResponseMessage> GetTaskQueue(
+           CancellationToken ct,
+           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "taskqueue/{taskqueueid}")] HttpRequestMessage request,
+           string taskqueueid,
+           ExecutionContext ctx,
+           [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
+           ILogger logger)
+        {
+            var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
+            var events = eventStoreConnection.ReadStreamEventsForwardAsync($"$bc-{taskqueueid}", 0, int.MaxValue, true,
+                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            return null;
+        }
     }
+
 }
+
+
+

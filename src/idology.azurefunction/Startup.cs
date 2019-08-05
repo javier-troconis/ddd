@@ -22,10 +22,12 @@ namespace idology.azurefunction
         public void Configure(IWebJobsBuilder builder)
         {
             builder.AddDependencyInjection();
-            builder.Services.AddSingleton<IEventStoreConnectionFactory>(new EventStoreConnectionFactory(
-                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x));
-            builder.Services.AddSingleton<IEventSourceBlockFactory>(new EventSourceBlockFactory(
-                new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112"), x => x, "et-verifyidentitysucceeded", "$et-verifyidentitysucceeded"));
+
+            var eventStoreConnectionUri =
+                new Uri(
+                    $"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112");
+            builder.Services.AddSingleton<IEventStoreConnectionProvider>(new EventStoreConnectionProvider(eventStoreConnectionUri, x => x));
+            builder.Services.AddSingleton<IEventSourceBlockFactory>(new EventSourceBlockFactory(eventStoreConnectionUri, x => x, "ce-message", "$ce-message"));
         }
     }
 }
