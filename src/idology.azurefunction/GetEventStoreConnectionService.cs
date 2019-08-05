@@ -28,6 +28,7 @@ namespace idology.azurefunction
             var connectionSettings = connectionSettingsBuilder.Build();
             var connection = EventStoreConnection.Create(connectionSettings, _eventStoreConnectionUri);
             await connection.ConnectAsync();
+            logger.LogInformation("******** ran GetEventStoreConnection ********");
             return connection;
         }
     }

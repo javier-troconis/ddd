@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using eventstore;
 using EventStore.ClientAPI;
+using Microsoft.Extensions.Logging;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
@@ -35,6 +36,7 @@ namespace idology.azurefunction
                 registry => registry.RegisterVolatileSubscriber(sourceStreamName, sourceStreamName, bb.SendAsync)
             );
             await eventBus.StartAllSubscribers();
+            logger.LogInformation("******** ran GetEventsSourceBlock ********");
             return bb;
         }
     }

@@ -20,9 +20,9 @@ namespace idology.azurefunction
 
         public async Task<ISourceBlock<ResolvedEvent>> GetEventSourceBlock(ILogger logger, EventStoreObjectName sourceStreamName, Predicate<ResolvedEvent> eventFilter)
         {
-            var eventSourceBlock = await _getEventsSourceBlock(logger, sourceStreamName);
+            var eventsSourceBlock = await _getEventsSourceBlock(logger, sourceStreamName);
             var wob = new WriteOnceBlock<ResolvedEvent>(x => x);
-            eventSourceBlock.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
+            eventsSourceBlock.LinkTo(wob, new DataflowLinkOptions { MaxMessages = 1 }, eventFilter);
             return wob;
         }
     }

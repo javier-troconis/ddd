@@ -70,7 +70,7 @@ namespace shared
 			    .Value;
 		}
 
-	    public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<Tuple<T1, T2>, object> getEntryKey = null)
+        public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<Tuple<T1, T2>, object> getEntryKey = null)
 	    {
             return f
                 .Tuplify()

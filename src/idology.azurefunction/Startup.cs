@@ -39,12 +39,9 @@ namespace idology.azurefunction
 
             var getEventsSourceBlockService = new GetEventsSourceBlockService(eventStoreConnectionUri, x => x);
             var getEventsSourceBlock = new Func<ILogger, EventStoreObjectName, Task<ISourceBlock<ResolvedEvent>>>(getEventsSourceBlockService.GetEventsSourceBlock)
-                .Memoize(memoryCache, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove });
+                .Memoize(memoryCache, new MemoryCacheEntryOptions { Priority = CacheItemPriority.NeverRemove }, x => x.Item2.Value);
             var getEventSourceBlockService = new GetEventSourceBlockService(getEventsSourceBlock);
-            GetEventSourceBlock getEventSourceBlock =
-                new Func<ILogger, EventStoreObjectName, Predicate<ResolvedEvent>, Task<ISourceBlock<ResolvedEvent>>>(
-                    getEventSourceBlockService.GetEventSourceBlock)
-                    .Invoke;
+            GetEventSourceBlock getEventSourceBlock = getEventSourceBlockService.GetEventSourceBlock;
             builder.Services.AddSingleton(getEventSourceBlock);
         }
     }
