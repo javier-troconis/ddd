@@ -19,6 +19,7 @@ using Microsoft.AspNetCore.Mvc.Formatters;
 using Microsoft.AspNetCore.TestHost;
 using Microsoft.Azure.WebJobs;
 using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json.Linq;
 using ExecutionContext = Microsoft.Azure.WebJobs.ExecutionContext;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
@@ -99,8 +100,8 @@ namespace idology.azurefunction
 	                                "taskCompletionMessageTypes", new []{ "verifyidentitysucceeded" }
 	                            },
 	                            {
-	                                "callbackUri", string.Empty
-	                            },
+	                                "callbackUri", "http://localhost:7071/callback"
+                                },
 	                            {
 	                                "resultUri", "http://localhost:7071/x"
 	                            }
@@ -194,6 +195,18 @@ namespace idology.azurefunction
             var response2 = new HttpResponseMessage(HttpStatusCode.OK);
             response2.Headers.Location = new Uri((string)data["resultUri"] + "/" + messageByMessageType[completionMessageType].EventId);
             return response2;
+        }
+
+        [FunctionName(nameof(Callback))]
+        public static async Task<HttpResponseMessage> Callback(
+           CancellationToken ct,
+           [HttpTrigger(AuthorizationLevel.Function, "post", Route = "callback")] HttpRequestMessage request,
+           ExecutionContext ctx,
+           ILogger logger)
+        {
+            var content = await request.Content.ReadAsStringAsync();
+            logger.LogInformation($"***** {nameof(Callback)}: {content} *****" );
+            return new HttpResponseMessage(HttpStatusCode.OK);
         }
     }
 
