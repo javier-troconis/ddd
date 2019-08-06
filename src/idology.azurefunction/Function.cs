@@ -42,15 +42,16 @@ namespace idology.azurefunction
            
             var eventSourceBlock = await eventSourceBlockFactory.CreateEventSourceBlock(logger,
                 x => Equals(x.Event.EventType, "verifyidentitysucceeded") && 
-                        Equals(x.Event.Metadata.ParseJson<IDictionary<string, string>>()[EventHeaderKey.CorrelationId], correlationId));
+                        Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId));
 
 	        var body = await request.Content.ReadAsStringAsync();
             var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
-            await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+	        var eventId = Guid.NewGuid();
+            await eventStoreConnection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                 new[]
                 {
-                    new EventData(Guid.NewGuid(), "verifyidentity", false, body.ToJsonBytes(),
-                        new Dictionary<string, string>
+                    new EventData(eventId, "verifyidentity", false, body.ToJsonBytes(),
+                        new Dictionary<string, object>
                         {
                             {
                                 EventHeaderKey.CorrelationId, correlationId
@@ -65,16 +66,16 @@ namespace idology.azurefunction
 	        {
 	            var @event = await eventSourceBlock.ReceiveAsync(ct1.Token);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-                response1.Headers.Location = new Uri($"http://localhost:7071/x/{correlationId}");
+                response1.Headers.Location = new Uri($"http://localhost:7071/x/{@event.Event.EventId}");
 	            response1.Content = new StringContent(
-	                new Dictionary<string, string>
+	                new Dictionary<string, object>
 	                {
 	                    {
                             "commandCorrelationId", correlationId
                         },
 	                    {
                             "eventCorrelationId",
-                                    @event.Event.Metadata.ParseJson<IDictionary<string, string>>()[
+                                    @event.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                                         EventHeaderKey.CorrelationId]
                         }
 	                }.ToJson(),
@@ -84,26 +85,27 @@ namespace idology.azurefunction
             }
 	        catch (TaskCanceledException)
 	        {
-	            await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+	            var eventId1 = Guid.NewGuid();
+	            await eventStoreConnection.AppendToStreamAsync($"message-{eventId1}", ExpectedVersion.NoStream,
 	                new[]
 	                {
-	                    new EventData(Guid.NewGuid(), "tasktimedout", false,
+	                    new EventData(eventId1, "tasktimedout", false,
 	                        new Dictionary<string, object>
 	                        {
 	                            {
                                     "taskName", "verifyidentity"
 	                            },
                                 {
-	                                "completionEventTypes", new []{ "verifyidentitysucceeded" }
+	                                "taskCompletionMessageTypes", new []{ "verifyidentitysucceeded" }
 	                            },
 	                            {
 	                                "callbackUri", string.Empty
 	                            },
 	                            {
-	                                "resultUri", $"http://localhost:7071/x/{correlationId}"
+	                                "resultUri", "http://localhost:7071/x"
 	                            }
                             }.ToJsonBytes(),
-	                        new Dictionary<string, string>
+	                        new Dictionary<string, object>
 	                        {
 	                            {
 	                                EventHeaderKey.CorrelationId, correlationId
@@ -114,37 +116,84 @@ namespace idology.azurefunction
 	                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
 	            );
                 var response2 = new HttpResponseMessage(HttpStatusCode.Accepted);
-                response2.Headers.Location = new Uri($"http://localhost:7071/queue/{correlationId}");
+                response2.Headers.Location = new Uri($"http://localhost:7071/queue/{eventId1}");
 	            return response2;
 	        }
 	    }
 
-        
-
-        [FunctionName(nameof(GetQueue))]
-        public static async Task<HttpResponseMessage> GetQueue(
+        [FunctionName(nameof(GetOfacCompliance))]
+        public static async Task<HttpResponseMessage> GetOfacCompliance(
            CancellationToken ct,
-           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "queue/{correlationId}")] HttpRequestMessage request,
-           string correlationId,
+           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "x/{xId}")] HttpRequestMessage request,
+           string xId,
            ExecutionContext ctx,
            [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
            ILogger logger)
         {
             var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
-            var events = await eventStoreConnection.ReadStreamEventsForwardAsync($"$bc-{correlationId}", 0, 4096, true,
+            var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{xId}", 0, true,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            var eventByEventType = events.Events.ToDictionary(x => x.Event.EventType, x => x.Event);
-
-            if (!eventByEventType.TryGetValue("tasktimedout", out var recordedEvent))
+            if (!eventReadResult.Event.HasValue)
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
-            var data = recordedEvent.Data.ParseJson<IDictionary<string, object>>();
-            var completionEventTypes = ((JArray) data["completionEventTypes"]).ToObject<string[]>();
-            var isCompleted = eventByEventType.Select(x => x.Key).Any(completionEventTypes.Contains);
-            var response = new HttpResponseMessage(HttpStatusCode.OK);
-            response.Headers.Location = isCompleted ? new Uri((string)data["resultUri"]) : null;
+            var events = await eventStoreConnection.ReadStreamEventsForwardAsync($"$bc-{eventReadResult.Event.Value.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}", 0, 4096, true,
+                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            var messageByMessageType = events.Events.ToDictionary(x => x.Event.EventType, x => x.Event);
+
+            var response = new HttpResponseMessage(HttpStatusCode.OK)
+            {
+                Content = new StringContent(
+                    new Dictionary<string, object>
+                    {
+                        {
+                            "commandCorrelationId",
+                            messageByMessageType["verifyidentity"].Metadata.ParseJson<IDictionary<string, object>>()[
+                                EventHeaderKey.CorrelationId]
+                        },
+                        {
+                            "eventCorrelationId",
+                            messageByMessageType["verifyidentitysucceeded"].Metadata
+                                .ParseJson<IDictionary<string, object>>()[
+                                    EventHeaderKey.CorrelationId]
+                        }
+                    }.ToJson(),
+                    Encoding.UTF8, "application/json"
+                )
+            };
             return response;
+        }
+
+        [FunctionName(nameof(GetQueue))]
+        public static async Task<HttpResponseMessage> GetQueue(
+           CancellationToken ct,
+           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "queue/{queueId}")] HttpRequestMessage request,
+           string queueId,
+           ExecutionContext ctx,
+           [Dependency(typeof(IEventStoreConnectionProvider))] IEventStoreConnectionProvider eventStoreConnectionProvider,
+           ILogger logger)
+        {
+            var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
+            var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{queueId}", 0, true,
+                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            if (!eventReadResult.Event.HasValue)
+            {
+                return new HttpResponseMessage(HttpStatusCode.NotFound);
+            }
+            var events = await eventStoreConnection.ReadStreamEventsForwardAsync($"$bc-{eventReadResult.Event.Value.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}", 0, 4096, true,
+                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            var messageByMessageType = events.Events.ToDictionary(x => x.Event.EventType, x => x.Event);         
+            var data = eventReadResult.Event.Value.Event.Data.ParseJson<IDictionary<string, object>>();
+            var taskCompletionMessageTypes = ((JArray) data["taskCompletionMessageTypes"]).ToObject<string[]>();
+            var completionMessageType = messageByMessageType.Select(x => x.Key).FirstOrDefault(taskCompletionMessageTypes.Contains);
+            if (Equals(completionMessageType, default(string)))
+            {
+                var response1 = new HttpResponseMessage(HttpStatusCode.OK);
+                return response1;
+            }
+            var response2 = new HttpResponseMessage(HttpStatusCode.OK);
+            response2.Headers.Location = new Uri((string)data["resultUri"] + "/" + messageByMessageType[completionMessageType].EventId);
+            return response2;
         }
     }
 
