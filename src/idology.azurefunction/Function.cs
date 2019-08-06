@@ -176,7 +176,7 @@ namespace idology.azurefunction
             var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
             var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{queueId}", 0, true,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            if (!eventReadResult.Event.HasValue)
+            if (!eventReadResult.Event.HasValue || !Equals(eventReadResult.Event.Value.Event.EventType, "tasktimedout"))
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
