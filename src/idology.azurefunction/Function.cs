@@ -122,8 +122,13 @@ namespace idology.azurefunction
 	                                {
                                         "clientUri", resultCallbackUri
                                     },
-	                                
-	                            }.ToJsonBytes(),
+	                                {
+	                                    "scriptId", Guid.NewGuid()
+	                                },
+	                                {
+                                        "expectedVersion", ExpectedVersion.NoStream
+	                                }
+                                }.ToJsonBytes(),
 	                            new Dictionary<string, object>
 	                            {
 	                                {

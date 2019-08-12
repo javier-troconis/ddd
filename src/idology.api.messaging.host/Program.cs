@@ -75,14 +75,16 @@ namespace idology.api.messaging.host
                                     {
                                         return;
                                     }
-                                    var callbackClientMessage = messageByMessageType["callbackclient"].Last();
-                                    var callbackClientData = callbackClientMessage.Event.Data.ParseJson<IDictionary<string, object>>();
-                                    var operationCompletionMessageTypes = ((JArray)callbackClientData["operationCompletionMessageTypes"]).ToObject<string[]>();
+                                    var operationTimedoutMessage = messageByMessageType["operationtimedout"].Last();
+                                    var operationTimedoutData = operationTimedoutMessage.Event.Data.ParseJson<IDictionary<string, object>>();
+                                    var operationCompletionMessageTypes = ((JArray)operationTimedoutData["operationCompletionMessageTypes"]).ToObject<string[]>();
                                     var completionMessageType = messageByMessageType.Select(x1 => x1.Key).FirstOrDefault(operationCompletionMessageTypes.Contains);
                                     if (Equals(completionMessageType, default(string)))
                                     {
                                         return;
                                     }
+                                    var callbackClientMessage = messageByMessageType["callbackclient"].Last();
+                                    var callbackClientData = callbackClientMessage.Event.Data.ParseJson<IDictionary<string, object>>();
                                     var scriptId = callbackClientData["scriptId"];
                                     var expectedVersion = long.Parse((string)callbackClientData["expectedVersion"]);
                                     var streamName = $"message-{scriptId}";
@@ -98,7 +100,7 @@ namespace idology.api.messaging.host
                                                     new Dictionary<string, object>
                                                     {
                                                         { "clientUri", callbackClientData["clientUri"] },
-                                                        { "resultUri", $"{(string)callbackClientData["baseResultUri"]}/{completionMessage.Event.EventId}" }
+                                                        { "resultUri", $"{(string)operationTimedoutData["baseResultUri"]}/{completionMessage.Event.EventId}" }
                                                     }.ToJsonBytes(), 
                                                     x.Event.Metadata)
                                             },
