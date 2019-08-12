@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using eventstore;
+using EventStore.ClientAPI.Exceptions;
 using Newtonsoft.Json.Linq;
 
 namespace idology.api.messaging.host
@@ -38,75 +39,77 @@ namespace idology.api.messaging.host
                                     return connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                                         new[]
                                         {
-                                            new EventData(eventId, "verifyidentitysucceeded", false, new byte[0],
-                                                new Dictionary<string, object>
-                                                {
-                                                    {
-                                                        EventHeaderKey.CorrelationId,
-                                                        x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
-                                                            EventHeaderKey.CorrelationId]
-                                                    },
-                                                    {
-                                                        EventHeaderKey.CausationId, x.Event.EventId
-                                                    }
-                                                }.ToJsonBytes()
-                                            )
+                                            new EventData(eventId, "verifyidentitysucceeded", false, new byte[0],x.Event.Metadata)
                                         },
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                     );
                                 })
-                            .RegisterPersistentSubscriber("callback", "$ce-message", "callback",
+                            .RegisterPersistentSubscriber("pushresulttoclient", "$et-pushresulttoclient", "pushresulttoclient",
                                 async x =>
                                 {
-                                    var events = await connection.ReadStreamEventsForwardAsync($"$bc-{x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}", 0, 4096, true,
-                                        new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-                                    var messageByMessageType = events.Events.ToDictionary(y => y.Event.EventType, y => y.Event);
-                                    if (messageByMessageType.ContainsKey("callbacksucceeded") || !messageByMessageType.TryGetValue("tasktimedout", out var taskTimedOut))
+                                    var data = x.Event.Data.ParseJson<IDictionary<string, object>>();
+                                    var client = new HttpClient();
+                                        var request = new HttpRequestMessage(HttpMethod.Post, (string)data["clientUri"])
+                                        {
+                                            Content = new StringContent((string)data["resultUri"])
+                                        };
+                                    await client.SendAsync(request);
+                                    var eventId = Guid.NewGuid();
+                                    await connection.AppendToStreamAsync($"message-{eventId}",
+                                            ExpectedVersion.NoStream,
+                                            new[]
+                                            {
+                                                new EventData(eventId, "pushresulttoclientsucceeded", false, new byte[0], x.Event.Metadata)
+                                            },
+                                            new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
+                                        );
+                                })
+                            .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
+                                async x =>
+                                {
+                                    var events = await connection
+                                        .ReadStreamEventsForwardAsync($"$bc-{x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}", 0, 4096, true,
+                                            new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+                                    var messageByMessageType = events.Events.ToLookup(x1 => x1.Event.EventType);
+                                    if (!messageByMessageType.Contains("callbackclient"))
                                     {
                                         return;
                                     }
-                                    var data = taskTimedOut.Data.ParseJson<IDictionary<string, object>>();
-                                    if (!data.TryGetValue("callbackUri", out var callbackUri))
-                                    {
-                                        return;
-                                    }
-                                    var taskCompletionMessageTypes = ((JArray)data["taskCompletionMessageTypes"]).ToObject<string[]>();
+                                    var callbackClientMessage = messageByMessageType["callbackclient"].Last();
+                                    var callbackClientData = callbackClientMessage.Event.Data.ParseJson<IDictionary<string, object>>();
+                                    var taskCompletionMessageTypes = ((JArray)callbackClientData["taskCompletionMessageTypes"]).ToObject<string[]>();
                                     var completionMessageType = messageByMessageType.Select(x1 => x1.Key).FirstOrDefault(taskCompletionMessageTypes.Contains);
                                     if (Equals(completionMessageType, default(string)))
                                     {
                                         return;
                                     }
-
-                                    var client = new HttpClient();
-                                    var request = new HttpRequestMessage(HttpMethod.Post, (string) callbackUri)
+                                    var scriptId = callbackClientData["scriptId"];
+                                    var expectedVersion = long.Parse((string)callbackClientData["expectedVersion"]);
+                                    var streamName = $"message-{scriptId}";
+                                    var completionMessage = messageByMessageType[completionMessageType].Last();
+                                    try
                                     {
-                                        Content = new StringContent(
-                                            (string) data["resultUri"] + "/" +
-                                            messageByMessageType[completionMessageType].EventId)
-                                    };
-                                    await client.SendAsync(request);
-                                    var eventId = Guid.NewGuid();
-                                    await connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
-                                        new[]
-                                        {
-                                            new EventData(eventId, "callbacksucceeded", false, new byte[0],
-                                                new Dictionary<string, object>
-                                                {
+                                        await connection.AppendToStreamAsync(
+                                            streamName, 
+                                            expectedVersion,
+                                            new[]
+                                            {
+                                                new EventData(Guid.NewGuid(), "pushresulttoclient", false, 
+                                                    new Dictionary<string, object>
                                                     {
-                                                        EventHeaderKey.CorrelationId,
-                                                        x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
-                                                            EventHeaderKey.CorrelationId]
-                                                    },
-                                                    {
-                                                        EventHeaderKey.CausationId, x.Event.EventId
-                                                    }
-                                                }.ToJsonBytes()
-                                            )
-                                        },
-                                        new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
-                                    );
-                                })
+                                                        { "clientUri", callbackClientData["clientUri"] },
+                                                        { "resultUri", $"{(string)callbackClientData["resultBaseUri"]}/{completionMessage.Event.EventId}" }
+                                                    }.ToJsonBytes(), 
+                                                    x.Event.Metadata)
+                                            },
+                                            new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
+                                        );
+                                    }
+                                    catch (WrongExpectedVersionException)
+                                    {
 
+                                    }
+                                })
                 );
 
                 await connection.ConnectAsync();

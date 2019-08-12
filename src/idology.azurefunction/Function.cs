@@ -38,20 +38,27 @@ namespace idology.azurefunction
             [Dependency(typeof(IEventSourceBlockFactory))] IEventSourceBlockFactory eventSourceBlockFactory, 
 	        ILogger logger)
 	    {
-            var ct1 = new CancellationTokenSource(500);
+
+	        var body = await request.Content.ReadAsStringAsync();
+	        var data = body.ParseJson<Dictionary<string, string>>();
+	        var timeout = int.Parse(data["timeout"]);
+	        var callbackUri = data["callbackUri"];
+
+
+
+            var ct1 = new CancellationTokenSource(timeout);
             var correlationId = ctx.InvocationId.ToString();
-           
             var eventSourceBlock = await eventSourceBlockFactory.CreateEventSourceBlock(logger,
                 x => Equals(x.Event.EventType, "verifyidentitysucceeded") && 
                         Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId));
 
-	        var body = await request.Content.ReadAsStringAsync();
+	        
             var eventStoreConnection = await eventStoreConnectionProvider.ProvideEventStoreConnection(logger);
 	        var eventId = Guid.NewGuid();
             await eventStoreConnection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                 new[]
                 {
-                    new EventData(eventId, "verifyidentity", false, body.ToJsonBytes(),
+                    new EventData(eventId, "verifyidentity", false, new byte[0],
                         new Dictionary<string, object>
                         {
                             {
@@ -65,7 +72,7 @@ namespace idology.azurefunction
 
 	        try
 	        {
-	            var @event = await eventSourceBlock.ReceiveAsync(ct1.Token);
+                var @event = await eventSourceBlock.ReceiveAsync(ct1.Token);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
                 response1.Headers.Location = new Uri($"http://localhost:7071/x/{@event.Event.EventId}");
 	            response1.Content = new StringContent(
@@ -100,7 +107,8 @@ namespace idology.azurefunction
 	                                "taskCompletionMessageTypes", new []{ "verifyidentitysucceeded" }
 	                            },
 	                            {
-	                                "callbackUri", "http://localhost:7071/callback"
+	                                /*"callbackUri", "http://localhost:7071/callback"*/
+                                    "callbackUri", callbackUri
                                 },
 	                            {
 	                                "resultUri", "http://localhost:7071/x"
@@ -198,14 +206,14 @@ namespace idology.azurefunction
         }
 
         [FunctionName(nameof(Callback))]
-        public static async Task<HttpResponseMessage> Callback(
+        public static  HttpResponseMessage Callback(
            CancellationToken ct,
            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "callback")] HttpRequestMessage request,
            ExecutionContext ctx,
            ILogger logger)
         {
-            var content = await request.Content.ReadAsStringAsync();
-            logger.LogInformation($"***** {nameof(Callback)}: {content} *****" );
+            //var content = await request.Content.ReadAsStringAsync();
+            //logger.LogTrace($"***** {nameof(Callback)}: {content} *****" );
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
     }
