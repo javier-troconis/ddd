@@ -69,7 +69,7 @@ namespace idology.azurefunction
 	        {
                 var identityVerificationResult = await eventSourceBlock.ReceiveAsync(ct1.Token);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-                response1.Headers.Location = new Uri($"http://localhost:7071/x/{identityVerificationResult.Event.EventId}");
+                response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{identityVerificationResult.Event.EventId}");
 	            response1.Content = new StringContent(
 	                new Dictionary<string, object>
 	                {

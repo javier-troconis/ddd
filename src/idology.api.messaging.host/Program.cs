@@ -86,7 +86,7 @@ namespace idology.api.messaging.host
                                     var callbackClientMessage = messageByMessageType["callbackclient"].Last();
                                     var callbackClientData = callbackClientMessage.Event.Data.ParseJson<IDictionary<string, object>>();
                                     var scriptId = callbackClientData["scriptId"];
-                                    var expectedVersion = long.Parse((string)callbackClientData["expectedVersion"]);
+                                    var expectedVersion = (long)callbackClientData["expectedVersion"];
                                     var streamName = $"message-{scriptId}";
                                     var completionMessage = messageByMessageType[completionMessageType].Last();
                                     try
