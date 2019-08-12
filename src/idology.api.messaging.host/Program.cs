@@ -77,8 +77,8 @@ namespace idology.api.messaging.host
                                     }
                                     var callbackClientMessage = messageByMessageType["callbackclient"].Last();
                                     var callbackClientData = callbackClientMessage.Event.Data.ParseJson<IDictionary<string, object>>();
-                                    var taskCompletionMessageTypes = ((JArray)callbackClientData["taskCompletionMessageTypes"]).ToObject<string[]>();
-                                    var completionMessageType = messageByMessageType.Select(x1 => x1.Key).FirstOrDefault(taskCompletionMessageTypes.Contains);
+                                    var operationCompletionMessageTypes = ((JArray)callbackClientData["operationCompletionMessageTypes"]).ToObject<string[]>();
+                                    var completionMessageType = messageByMessageType.Select(x1 => x1.Key).FirstOrDefault(operationCompletionMessageTypes.Contains);
                                     if (Equals(completionMessageType, default(string)))
                                     {
                                         return;
@@ -98,7 +98,7 @@ namespace idology.api.messaging.host
                                                     new Dictionary<string, object>
                                                     {
                                                         { "clientUri", callbackClientData["clientUri"] },
-                                                        { "resultUri", $"{(string)callbackClientData["resultBaseUri"]}/{completionMessage.Event.EventId}" }
+                                                        { "resultUri", $"{(string)callbackClientData["baseResultUri"]}/{completionMessage.Event.EventId}" }
                                                     }.ToJsonBytes(), 
                                                     x.Event.Metadata)
                                             },

@@ -40,7 +40,7 @@ namespace idology.api.tests
 
             foreach (var s in b)
             {
-                Assert.Equal(s["commandCorrelationId"], s["eventCorrelationId"]);
+                Assert.Equal(s["cmdCorrelationId"], s["evtCorrelationId"]);
             }
         }
     }

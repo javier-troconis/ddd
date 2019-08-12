@@ -26,8 +26,8 @@ namespace idology.azurefunction
             var eventStoreConnectionUri =
                 new Uri(
                     $"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112");
-            builder.Services.AddSingleton<IEventStoreConnectionProvider>(new EventStoreConnectionProvider(eventStoreConnectionUri, x => x));
-            builder.Services.AddSingleton<IEventSourceBlockFactory>(new EventSourceBlockFactory(eventStoreConnectionUri, x => x, "ce-message", "$ce-message"));
+            builder.Services.AddSingleton<IGetEventStoreConnectionService>(new GetEventStoreConnectionService(eventStoreConnectionUri, x => x));
+            builder.Services.AddSingleton<ICreateEventSourceBlockService>(new CreateCreateEventSourceBlockService(eventStoreConnectionUri, x => x, "ce-message", "$ce-message"));
         }
     }
 }

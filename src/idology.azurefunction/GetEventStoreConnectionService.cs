@@ -11,24 +11,24 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
 {
-    public interface IEventStoreConnectionProvider
+    public interface IGetEventStoreConnectionService
     {
-        Task<IEventStoreConnection> ProvideEventStoreConnection(ILogger logger);
+        Task<IEventStoreConnection> GetEventStoreConnection(ILogger logger);
     }
 
-    public class EventStoreConnectionProvider : IEventStoreConnectionProvider
+    public class GetEventStoreConnectionService : IGetEventStoreConnectionService
     {
         private readonly Singleton<Task<IEventStoreConnection>> _instanceProvider = new Singleton<Task<IEventStoreConnection>>();
         private readonly Uri _eventStoreConnectionUri;
         private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
 
-        public EventStoreConnectionProvider(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        public GetEventStoreConnectionService(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
         {
             _eventStoreConnectionUri = eventStoreConnectionUri;
             _configureConnection = configureConnection;
         }
 
-        public Task<IEventStoreConnection> ProvideEventStoreConnection(ILogger logger)
+        public Task<IEventStoreConnection> GetEventStoreConnection(ILogger logger)
         {
             return _instanceProvider.GetInstance(async () =>
             {

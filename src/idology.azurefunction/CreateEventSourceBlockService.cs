@@ -12,12 +12,12 @@ using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
 {
-    public interface IEventSourceBlockFactory
+    public interface ICreateEventSourceBlockService
     {
         Task<ISourceBlock<ResolvedEvent>> CreateEventSourceBlock(ILogger logger, Predicate<ResolvedEvent> eventFilter);
     }
 
-    public class EventSourceBlockFactory : IEventSourceBlockFactory
+    public class CreateCreateEventSourceBlockService : ICreateEventSourceBlockService
     {
         private readonly Singleton<Task<BroadcastBlock<ResolvedEvent>>> _instanceProvider = new Singleton<Task<BroadcastBlock<ResolvedEvent>>>();
         private readonly Uri _eventStoreConnectionUri;
@@ -25,7 +25,7 @@ namespace idology.azurefunction
         private readonly string _receiverName;
         private readonly string _sourceStreamName;
 
-        public EventSourceBlockFactory(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection, string receiverName, EventStoreObjectName sourceStreamName)
+        public CreateCreateEventSourceBlockService(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection, string receiverName, EventStoreObjectName sourceStreamName)
         {
             _eventStoreConnectionUri = eventStoreConnectionUri;
             _configureConnection = configureConnection;
