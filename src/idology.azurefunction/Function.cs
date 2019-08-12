@@ -42,7 +42,7 @@ namespace idology.azurefunction
 	        var body = await request.Content.ReadAsStringAsync();
 	        var data = body.ParseJson<Dictionary<string, string>>();
 	        var requestTimeout = int.Parse(data["requestTimeout"]);
-	        var resultCallbackUri = data["resultCallbackUri"];
+	        var callbackUri = data["callbackUri"];
             var ct1 = new CancellationTokenSource(requestTimeout);
             var correlationId = ctx.InvocationId.ToString();
             var eventSourceBlock = await createEventSourceBlockService.CreateEventSourceBlock(logger,
@@ -67,9 +67,9 @@ namespace idology.azurefunction
 
 	        try
 	        {
-                var evaluateOfacComplianceResult = await eventSourceBlock.ReceiveAsync(ct1.Token);
+                var identityVerificationResult = await eventSourceBlock.ReceiveAsync(ct1.Token);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-                response1.Headers.Location = new Uri($"http://localhost:7071/x/{evaluateOfacComplianceResult.Event.EventId}");
+                response1.Headers.Location = new Uri($"http://localhost:7071/x/{identityVerificationResult.Event.EventId}");
 	            response1.Content = new StringContent(
 	                new Dictionary<string, object>
 	                {
@@ -77,7 +77,7 @@ namespace idology.azurefunction
                             "cmdCorrelationId", correlationId
                         },
 	                    {
-                            "evtCorrelationId", evaluateOfacComplianceResult.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]
+                            "evtCorrelationId", identityVerificationResult.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]
                         }
 	                }.ToJson(),
                     Encoding.UTF8, "application/json"
@@ -101,8 +101,8 @@ namespace idology.azurefunction
 	                                "operationCompletionMessageTypes", new[] {"verifyidentitysucceeded"}
 	                            },
                                 {
-                                    "baseResultUri", "http://localhost:7071/x"
-	                            }
+                                    "baseResultUri", "http://localhost:7071/identityverification"
+                                }
 	                        }.ToJsonBytes(),
 	                        new Dictionary<string, object>
 	                        {
@@ -112,7 +112,7 @@ namespace idology.azurefunction
 	                        }.ToJsonBytes()
 	                    )
 	                );
-	                if (!string.IsNullOrEmpty(resultCallbackUri))
+	                if (!string.IsNullOrEmpty(callbackUri))
 	                {
 	                    await tx.WriteAsync
 	                    (
@@ -120,7 +120,7 @@ namespace idology.azurefunction
 	                            new Dictionary<string, object>
 	                            {
 	                                {
-                                        "clientUri", resultCallbackUri
+                                        "clientUri", callbackUri
                                     },
 	                                {
 	                                    "scriptId", Guid.NewGuid()

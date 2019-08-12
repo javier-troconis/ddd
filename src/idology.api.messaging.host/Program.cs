@@ -39,7 +39,7 @@ namespace idology.api.messaging.host
                                     return connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                                         new[]
                                         {
-                                            new EventData(eventId, "verifyidentitysucceeded", false, new byte[0],x.Event.Metadata)
+                                            new EventData(eventId, "verifyidentitysucceeded", false, new byte[0], x.Event.Metadata)
                                         },
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                     );
