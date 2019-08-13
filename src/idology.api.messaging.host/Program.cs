@@ -67,9 +67,21 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>
                                 {
-                                    var events = await connection
-                                        .ReadStreamEventsForwardAsync($"$bc-{x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}", 0, 4096, true,
-                                            new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+                                    StreamEventsSlice events;
+                                    while (true)
+                                    {
+                                        events = await connection
+                                            .ReadStreamEventsForwardAsync(
+                                                $"$bc-{x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}",
+                                                0, 4096, true,
+                                                new UserCredentials(EventStoreSettings.Username,
+                                                    EventStoreSettings.Password));
+                                        var eventIds = events.Events.Select(x1 => x1.Event.EventId);
+                                        if (eventIds.Contains(x.Event.EventId))
+                                        {
+                                            break;
+                                        }
+                                    }
                                     var messageByMessageType = events.Events.ToLookup(x1 => x1.Event.EventType);
                                     if (!messageByMessageType.Contains("callbackclient"))
                                     {
@@ -109,7 +121,7 @@ namespace idology.api.messaging.host
                                     }
                                     catch (WrongExpectedVersionException)
                                     {
-
+                                        
                                     }
                                 })
                 );
