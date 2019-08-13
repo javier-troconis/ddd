@@ -69,22 +69,22 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>
                                 {
-                                    StreamEventsSlice events;
-                                    while (true)
+                                    ResolvedEvent[] messages = null;
+                                    while (Equals(messages, null))
                                     {
-                                        events = await connection
+                                        var streamEventsSlice = await connection
                                             .ReadStreamEventsForwardAsync(
                                                 $"$bc-{x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}",
                                                 0, 4096, true,
                                                 new UserCredentials(EventStoreSettings.Username,
                                                     EventStoreSettings.Password));
-                                        var eventIds = events.Events.Select(x1 => x1.Event.EventId);
+                                        var eventIds = streamEventsSlice.Events.Select(x1 => x1.Event.EventId);
                                         if (eventIds.Contains(x.Event.EventId))
                                         {
-                                            break;
+                                            messages = streamEventsSlice.Events;
                                         }
                                     }
-                                    var messageByMessageType = events.Events.ToLookup(x1 => x1.Event.EventType);
+                                    var messageByMessageType = messages.ToLookup(x1 => x1.Event.EventType);
                                     if (!messageByMessageType.Contains("callbackclient"))
                                     {
                                         return;
