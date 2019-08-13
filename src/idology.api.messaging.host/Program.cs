@@ -33,16 +33,17 @@ namespace idology.api.messaging.host
                     registry => 
                         registry
                             .RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity",
-                                x =>
+                                async x =>
                                 {
                                     var eventId = Guid.NewGuid();
-                                    return connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
+                                    await connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                                         new[]
                                         {
                                             new EventData(eventId, "verifyidentitysucceeded", false, new byte[0], x.Event.Metadata)
                                         },
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                     );
+                                    Console.WriteLine("verifyidentity completed: " + (string)x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
                                 })
                             .RegisterPersistentSubscriber("pushresulttoclient", "$et-pushresulttoclient", "pushresulttoclient",
                                 async x =>
@@ -63,6 +64,7 @@ namespace idology.api.messaging.host
                                             },
                                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                         );
+                                    Console.WriteLine("pushresulttoclient completed: " + (string)x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
                                 })
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>

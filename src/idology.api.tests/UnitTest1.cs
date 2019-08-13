@@ -29,8 +29,8 @@ namespace idology.api.tests
                         var client = new HttpClient();
                         var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/x"));
                         var content = await response.Content.ReadAsStringAsync();
-                        var bn = content.ParseJson<Dictionary<string, string>>();
-                        b.Add(bn);
+                        var data = content.ParseJson<Dictionary<string, string>>();
+                        b.Add(data);
                     }));
 
             var processor = new ActionBlock<Func<Task>>(x => x(), new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount });

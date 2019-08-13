@@ -217,12 +217,14 @@ namespace idology.azurefunction
         }
 
         [FunctionName(nameof(Webhook))]
-        public static  HttpResponseMessage Webhook(
+        public static  async Task<HttpResponseMessage> Webhook(
            CancellationToken ct,
            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "webhook")] HttpRequestMessage request,
            ExecutionContext ctx,
            ILogger logger)
         {
+            var content = await request.Content.ReadAsStringAsync();
+            logger.LogInformation("Received: {Content}", content);
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
     }
