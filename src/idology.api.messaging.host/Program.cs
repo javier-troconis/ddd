@@ -43,7 +43,6 @@ namespace idology.api.messaging.host
                                         },
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                     );
-                                    Console.WriteLine("verifyidentity completed: " + (string)x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
                                 })
                             .RegisterPersistentSubscriber("pushresulttoclient", "$et-pushresulttoclient", "pushresulttoclient",
                                 async x =>
@@ -64,7 +63,6 @@ namespace idology.api.messaging.host
                                             },
                                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                         );
-                                    Console.WriteLine("pushresulttoclient completed: " + (string)x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
                                 })
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>
