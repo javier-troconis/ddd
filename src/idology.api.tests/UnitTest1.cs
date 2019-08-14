@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
@@ -21,34 +23,52 @@ namespace idology.api.tests
         [Fact]
         public async Task Test1()
         {
-            var responseData = new ConcurrentBag<IDictionary<string, string>>();
-           
-            var n = Enumerable.Range(0, 10)
-                .Select(x => new Func<Task>(async () =>
+            var result = new ConcurrentBag<IDictionary<string, object>>();
+            var processor = new ActionBlock<int>(async x =>
+            {
+                var callbackUri = $"http://localhost:999{x}/webhook/";
+                var client = new HttpClient();
+                var response = await client.SendAsync(
+                    new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/identityverification")
                     {
-                        var client = new HttpClient();
-                        var request = new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/identityverification")
+                        Content = new StringContent(new
                         {
-                            Content = new StringContent(new
-                            {
-                                requestTimeout = 15,
-                                callbackUri = "http://localhost:7071/webhook"
-                            }.ToJson())
-                        };
-                        var response = await client.SendAsync(request);
-                        var content = await response.Content.ReadAsStringAsync();
-                        var data = content.ParseJson<IDictionary<string, string>>();
-                        responseData.Add(data);
-                    }));
+                            requestTimeout = 1,
+                            callbackUri = callbackUri
+                        }.ToJson())
+                    });
+                if (Equals(response.StatusCode, HttpStatusCode.OK))
+                {
+                    var content = await response.Content.ReadAsStringAsync();
+                    result.Add(content.ParseJson<IDictionary<string, object>>());
+                }
 
-            var processor = new ActionBlock<Func<Task>>(x => x(), new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount });
-            await Task.WhenAll(n.Select(processor.SendAsync));
+                var server = new HttpListener();
+                server.Prefixes.Add(callbackUri);
+                server.Start();
+                var context = server.GetContext();
+                var callbackRequest = context.Request;
+                string resultUri;
+                using (var stream = callbackRequest.InputStream)
+                {
+                    var reader = new StreamReader(stream);
+                    resultUri = reader.ReadToEnd();
+                }
+                server.Stop();
+                var response1 = await client.GetAsync(resultUri);
+                var content1 = await response1.Content.ReadAsStringAsync();
+                result.Add(content1.ParseJson<IDictionary<string, object>>());
+
+            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount });
+
+            var seq = Enumerable.Range(0, 1);
+            await Task.WhenAll(seq.Select(processor.SendAsync));
             processor.Complete();
             await processor.Completion;
 
-            foreach (var s in responseData)
+            foreach (var item in result)
             {
-                Assert.Equal(s["cmdCorrelationId"], s["evtCorrelationId"]);
+                Assert.Equal(item["cmdCorrelationId"], item["evtCorrelationId"]);
             }
         }
     }
