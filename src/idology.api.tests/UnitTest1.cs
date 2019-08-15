@@ -42,22 +42,27 @@ namespace idology.api.tests
                     var content = await response.Content.ReadAsStringAsync();
                     result.Add(content.ParseJson<IDictionary<string, object>>());
                 }
-
-                var server = new HttpListener();
-                server.Prefixes.Add(callbackUri);
-                server.Start();
-                var context = server.GetContext();
-                var callbackRequest = context.Request;
-                string resultUri;
-                using (var stream = callbackRequest.InputStream)
+                else
                 {
-                    var reader = new StreamReader(stream);
-                    resultUri = reader.ReadToEnd();
+                    var server = new HttpListener();
+                    server.Prefixes.Add(callbackUri);
+                    server.Start();
+                    var context = server.GetContext();
+                    var callbackRequest = context.Request;
+                    string resultUri;
+                    using (var stream = callbackRequest.InputStream)
+                    {
+                        var reader = new StreamReader(stream);
+                        resultUri = reader.ReadToEnd();
+                    }
+                    var response1 = context.Response;
+                    response1.StatusCode = 200;
+                    response1.Close();
+                    server.Stop();
+                    var response2 = await client.GetAsync(resultUri);
+                    var content1 = await response2.Content.ReadAsStringAsync();
+                    result.Add(content1.ParseJson<IDictionary<string, object>>());
                 }
-                server.Stop();
-                var response1 = await client.GetAsync(resultUri);
-                var content1 = await response1.Content.ReadAsStringAsync();
-                result.Add(content1.ParseJson<IDictionary<string, object>>());
 
             }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount });
 
