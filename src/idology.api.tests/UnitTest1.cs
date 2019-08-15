@@ -14,12 +14,6 @@ namespace idology.api.tests
 {
     public class UnitTest1
     {
-        class Res
-        {
-            public string CommandCorrelationId { get; set; }
-            public string EventCorrelationId { get; set; }
-        }
-
         [Fact]
         public async Task Test1()
         {
@@ -66,7 +60,7 @@ namespace idology.api.tests
 
             }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount });
 
-            var seq = Enumerable.Range(0, 1);
+            var seq = Enumerable.Range(0, 10);
             await Task.WhenAll(seq.Select(processor.SendAsync));
             processor.Complete();
             await processor.Completion;

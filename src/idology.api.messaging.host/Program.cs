@@ -25,7 +25,7 @@ namespace idology.api.messaging.host
                     var connectionSettings = connectionSettingsBuilder.Build();
                     return EventStoreConnection.Create(connectionSettings, eventStoreConnectionUri);
                 }
-
+                var rnd = new Random();
                 var connection = CreateConnection();   
                 var eventBus = EventBus.CreateEventBus
                 (
@@ -35,6 +35,7 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity",
                                 async x =>
                                 {
+                                    await Task.Delay(rnd.Next(0, 1500));
                                     var eventId = Guid.NewGuid();
                                     await connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                                         new[]
