@@ -35,7 +35,7 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity",
                                 async x =>
                                 {
-                                    //await Task.Delay(rnd.Next(500, 2000));
+                                    await Task.Delay(rnd.Next(500, 1000));
                                     var eventId = Guid.NewGuid();
                                     await connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                                         new[]
@@ -49,7 +49,7 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("pushresulttoclient", "$et-pushresulttoclient", "pushresulttoclient",
                                 async x =>
                                 {
-                                    //await Task.Delay(rnd.Next(500, 2000));
+                                    await Task.Delay(rnd.Next(500, 1000));
                                     var data = x.Event.Data.ParseJson<IDictionary<string, object>>();
                                     var client = new HttpClient();
                                         var request = new HttpRequestMessage(HttpMethod.Post, (string)data["clientUri"])

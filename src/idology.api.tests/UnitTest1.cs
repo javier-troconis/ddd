@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -10,29 +11,37 @@ using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using eventstore;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace idology.api.tests
 {
     public class UnitTest1
     {
+        private readonly ITestOutputHelper _output;
+
+        public UnitTest1(ITestOutputHelper output)
+        {
+            _output = output;
+        }
+
         [Fact]
         public async Task Test1()
         {
-            var syncReqs = Enumerable.Range(0, 10)
+            var syncReqs = Enumerable.Range(0, 5)
                 .Select(x =>
                     new
                     {
-                        requestTimeout = 100,
+                        requestTimeout = 10000,
                         callbackUri = string.Empty
                     });
-            var asyncWithoutCallbackReqs = Enumerable.Range(0, 10)
+            var asyncWithPollingReqs = Enumerable.Range(0, 5)
                 .Select(x =>
                     new
                     {
                         requestTimeout = 1,
                         callbackUri = string.Empty
                     });
-            var asyncWithCallbackReqs = Enumerable.Range(0, 10)
+            var asyncWithCallbackReqs = Enumerable.Range(0, 5)
                 .Select(x => 
                     new
                     {
@@ -44,12 +53,14 @@ namespace idology.api.tests
                     new[]
                     {
                         syncReqs,
-                        asyncWithoutCallbackReqs,
+                        asyncWithPollingReqs,
                         asyncWithCallbackReqs
                     }
                     .SelectMany(x => x)
-                    .Select(x => new Func<Task<IDictionary<string, object>>>(async () =>
+                    .Select((x, i) => new Func<Task<IDictionary<string, object>>>(async () =>
                     {
+                        var watch = Stopwatch.StartNew();
+                        _output.WriteLine("starting req: " + i);
                         var client = new HttpClient();
                         var response = await client.SendAsync(
                             new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/identityverification")
@@ -77,6 +88,8 @@ namespace idology.api.tests
                                 server.Stop();
                                 var response2 = await client.GetAsync(request1);
                                 var content1 = await response2.Content.ReadAsStringAsync();
+                                watch.Stop();
+                                _output.WriteLine($"finished req (async w/ callback): {i}. {watch.ElapsedMilliseconds} ms.");
                                 return content1.ParseJson<IDictionary<string, object>>();
                             }
                             case HttpStatusCode.Accepted when string.IsNullOrEmpty(x.callbackUri):
@@ -90,11 +103,15 @@ namespace idology.api.tests
                                 } while (Equals(resultUri, default(Uri)));
                                 var response3 = await client.GetAsync(resultUri);
                                 var content1 = await response3.Content.ReadAsStringAsync();
+                                watch.Stop();
+                                _output.WriteLine($"finished req (async w/ polling): {i}. {watch.ElapsedMilliseconds} ms.");
                                 return content1.ParseJson<IDictionary<string, object>>();
                             }
                             case HttpStatusCode.OK:
                             {
                                 var content = await response.Content.ReadAsStringAsync();
+                                watch.Stop();
+                                _output.WriteLine($"finished req (sync): {i}. {watch.ElapsedMilliseconds} ms.");
                                 return content.ParseJson<IDictionary<string, object>>();
                             }
                             default:
