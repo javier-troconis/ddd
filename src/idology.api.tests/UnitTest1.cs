@@ -57,10 +57,8 @@ namespace idology.api.tests
                         asyncWithCallbackReqs
                     }
                     .SelectMany(x => x)
-                    .Select((x, i) => new Func<Task<IDictionary<string, object>>>(async () =>
+                    .Select((x, i) => new Func<Task<Tuple<string, IDictionary<string, object>>>>(async () =>
                     {
-                        var watch = Stopwatch.StartNew();
-                        _output.WriteLine("starting req: " + i);
                         var client = new HttpClient();
                         var response = await client.SendAsync(
                             new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/identityverification")
@@ -88,9 +86,7 @@ namespace idology.api.tests
                                 server.Stop();
                                 var response2 = await client.GetAsync(request1);
                                 var content1 = await response2.Content.ReadAsStringAsync();
-                                watch.Stop();
-                                _output.WriteLine($"finished req (async w/ callback): {i}. {watch.ElapsedMilliseconds} ms.");
-                                return content1.ParseJson<IDictionary<string, object>>();
+                                return new Tuple<string, IDictionary<string, object>>("async w/ callback", content1.ParseJson<IDictionary<string, object>>());
                             }
                             case HttpStatusCode.Accepted when string.IsNullOrEmpty(x.callbackUri):
                             {
@@ -103,23 +99,27 @@ namespace idology.api.tests
                                 } while (Equals(resultUri, default(Uri)));
                                 var response3 = await client.GetAsync(resultUri);
                                 var content1 = await response3.Content.ReadAsStringAsync();
-                                watch.Stop();
-                                _output.WriteLine($"finished req (async w/ polling): {i}. {watch.ElapsedMilliseconds} ms.");
-                                return content1.ParseJson<IDictionary<string, object>>();
-                            }
+                                return new Tuple<string, IDictionary<string, object>>("async w/ polling", content1.ParseJson<IDictionary<string, object>>());
+                                }
                             case HttpStatusCode.OK:
                             {
                                 var content = await response.Content.ReadAsStringAsync();
-                                watch.Stop();
-                                _output.WriteLine($"finished req (sync): {i}. {watch.ElapsedMilliseconds} ms.");
-                                return content.ParseJson<IDictionary<string, object>>();
-                            }
+                                return new Tuple<string, IDictionary<string, object>>("sync", content.ParseJson<IDictionary<string, object>>());
+                                }
                             default:
                                 throw new NotSupportedException();
                         }
                     }));
 
-            var result = await Task.WhenAll(reqs.AsParallel().Select(x => x()));
+            var result = await Task.WhenAll(reqs.AsParallel().Select(async (x, i) =>
+            {
+                _output.WriteLine("starting req: " + i);
+                var watch = Stopwatch.StartNew();
+                var y = await x();
+                watch.Stop();
+                _output.WriteLine($"finished req ({y.Item1}): {i}. {watch.ElapsedMilliseconds} ms.");
+                return y.Item2;
+            }));
             foreach (var i in result)
             {
                 Assert.Equal(i["cmdCorrelationId"], i["evtCorrelationId"]);
