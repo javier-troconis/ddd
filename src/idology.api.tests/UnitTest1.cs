@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
 using eventstore;
@@ -17,57 +18,94 @@ namespace idology.api.tests
         [Fact]
         public async Task Test1()
         {
-            var result = new ConcurrentBag<IDictionary<string, object>>();
-            var processor = new ActionBlock<int>(async x =>
-            {
-                var callbackUri = $"http://localhost:999{x}/webhook/";
-                var client = new HttpClient();
-                var response = await client.SendAsync(
-                    new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/identityverification")
+            var syncReqs = Enumerable.Range(0, 10)
+                .Select(x =>
+                    new
                     {
-                        Content = new StringContent(new
-                        {
-                            requestTimeout = 1,
-                            callbackUri = callbackUri
-                        }.ToJson())
+                        requestTimeout = 100,
+                        callbackUri = string.Empty
                     });
-                if (Equals(response.StatusCode, HttpStatusCode.OK))
-                {
-                    var content = await response.Content.ReadAsStringAsync();
-                    result.Add(content.ParseJson<IDictionary<string, object>>());
-                }
-                else
-                {
-                    var server = new HttpListener();
-                    server.Prefixes.Add(callbackUri);
-                    server.Start();
-                    var context = server.GetContext();
-                    var callbackRequest = context.Request;
-                    string resultUri;
-                    using (var stream = callbackRequest.InputStream)
+            var asyncWithoutCallbackReqs = Enumerable.Range(0, 10)
+                .Select(x =>
+                    new
                     {
-                        var reader = new StreamReader(stream);
-                        resultUri = reader.ReadToEnd();
+                        requestTimeout = 1,
+                        callbackUri = string.Empty
+                    });
+            var asyncWithCallbackReqs = Enumerable.Range(0, 10)
+                .Select(x => 
+                    new
+                    {
+                        requestTimeout = 1,
+                        callbackUri = $"http://localhost:999{x}/webhook/"
+                    });
+
+            var reqs =
+                    new[]
+                    {
+                        syncReqs,
+                        asyncWithoutCallbackReqs,
+                        asyncWithCallbackReqs
                     }
-                    var response1 = context.Response;
-                    response1.StatusCode = 200;
-                    response1.Close();
-                    server.Stop();
-                    var response2 = await client.GetAsync(resultUri);
-                    var content1 = await response2.Content.ReadAsStringAsync();
-                    result.Add(content1.ParseJson<IDictionary<string, object>>());
-                }
+                    .SelectMany(x => x)
+                    .Select(x => new Func<Task<IDictionary<string, object>>>(async () =>
+                    {
+                        var client = new HttpClient();
+                        var response = await client.SendAsync(
+                            new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/identityverification")
+                            {
+                                Content = new StringContent(x.ToJson())
+                            });
+                        switch (response.StatusCode)
+                        {
+                            case HttpStatusCode.Accepted when !string.IsNullOrEmpty(x.callbackUri):
+                            {
+                                var server = new HttpListener();
+                                server.Prefixes.Add(x.callbackUri);
+                                server.Start();
+                                var context = server.GetContext();
+                                var callbackRequest = context.Request;
+                                string request1;
+                                using (var stream = callbackRequest.InputStream)
+                                {
+                                    var reader = new StreamReader(stream);
+                                    request1 = reader.ReadToEnd();
+                                }
+                                var response1 = context.Response;
+                                response1.StatusCode = 200;
+                                response1.Close();
+                                server.Stop();
+                                var response2 = await client.GetAsync(request1);
+                                var content1 = await response2.Content.ReadAsStringAsync();
+                                return content1.ParseJson<IDictionary<string, object>>();
+                            }
+                            case HttpStatusCode.Accepted when string.IsNullOrEmpty(x.callbackUri):
+                            {
+                                var queueUri = response.Headers.Location;
+                                Uri resultUri;
+                                do
+                                {
+                                    var response2 = await client.GetAsync(queueUri);
+                                    resultUri = response2.Headers.Location;
+                                } while (Equals(resultUri, default(Uri)));
+                                var response3 = await client.GetAsync(resultUri);
+                                var content1 = await response3.Content.ReadAsStringAsync();
+                                return content1.ParseJson<IDictionary<string, object>>();
+                            }
+                            case HttpStatusCode.OK:
+                            {
+                                var content = await response.Content.ReadAsStringAsync();
+                                return content.ParseJson<IDictionary<string, object>>();
+                            }
+                            default:
+                                throw new NotSupportedException();
+                        }
+                    }));
 
-            }, new ExecutionDataflowBlockOptions { MaxDegreeOfParallelism = Environment.ProcessorCount });
-
-            var seq = Enumerable.Range(0, 10);
-            await Task.WhenAll(seq.Select(processor.SendAsync));
-            processor.Complete();
-            await processor.Completion;
-
-            foreach (var item in result)
+            var result = await Task.WhenAll(reqs.AsParallel().Select(x => x()));
+            foreach (var i in result)
             {
-                Assert.Equal(item["cmdCorrelationId"], item["evtCorrelationId"]);
+                Assert.Equal(i["cmdCorrelationId"], i["evtCorrelationId"]);
             }
         }
     }
