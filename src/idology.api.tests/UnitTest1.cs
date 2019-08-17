@@ -1,15 +1,13 @@
+using eventstore;
 using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
-using System.Text;
 using System.Threading.Tasks;
-using System.Threading.Tasks.Dataflow;
-using eventstore;
+using shared;
 using Xunit;
 using Xunit.Abstractions;
 
@@ -27,103 +25,112 @@ namespace idology.api.tests
         [Fact]
         public async Task Test1()
         {
-            var syncReqs = Enumerable.Range(0, 5)
+            var callbackUri = "http://localhost:9999/webhook/";
+            var syncReqs = Enumerable.Range(0, 100)
                 .Select(x =>
-                    new
+                    new Dictionary<string, object>
                     {
-                        requestTimeout = 10000,
-                        callbackUri = string.Empty
+                        ["requestTimeout"] = 10000,
+                        ["callbackUri"] = string.Empty
                     });
-            var asyncWithPollingReqs = Enumerable.Range(0, 5)
+            var asyncWithPollingReqs = Enumerable.Range(0, 100)
                 .Select(x =>
-                    new
+                    new Dictionary<string, object>
                     {
-                        requestTimeout = 1,
-                        callbackUri = string.Empty
+                        ["requestTimeout"] = 1,
+                        ["callbackUri"] = string.Empty
                     });
-            var asyncWithCallbackReqs = Enumerable.Range(0, 5)
-                .Select(x => 
-                    new
+            var asyncWithCallbackReqs = Enumerable.Range(0, 100)
+                .Select(x =>
+                    new Dictionary<string, object>
                     {
-                        requestTimeout = 1,
-                        callbackUri = $"http://localhost:999{x}/webhook/"
+                        ["requestTimeout"] = 1,
+                        ["callbackUri"] = callbackUri
                     });
+            var client = new HttpClient();
+            var server = new HttpListener();
+            server.Prefixes.Add(callbackUri);
+            server.Start();
 
-            var reqs =
-                    new[]
+            var result = await Task.WhenAll(
+                new[]
+                {
+                    syncReqs,
+                    asyncWithPollingReqs,
+                    asyncWithCallbackReqs
+                }
+                .SelectMany(x => x)
+                .AsParallel()
+                .Select(
+                    async (req, x) =>
                     {
-                        syncReqs,
-                        asyncWithPollingReqs,
-                        asyncWithCallbackReqs
-                    }
-                    .SelectMany(x => x)
-                    .Select((x, i) => new Func<Task<Tuple<string, IDictionary<string, object>>>>(async () =>
-                    {
-                        var client = new HttpClient();
-                        var response = await client.SendAsync(
-                            new HttpRequestMessage(HttpMethod.Post, "http://localhost:7071/identityverification")
-                            {
-                                Content = new StringContent(x.ToJson())
-                            });
-                        switch (response.StatusCode)
-                        {
-                            case HttpStatusCode.Accepted when !string.IsNullOrEmpty(x.callbackUri):
-                            {
-                                var server = new HttpListener();
-                                server.Prefixes.Add(x.callbackUri);
-                                server.Start();
-                                var context = server.GetContext();
-                                var callbackRequest = context.Request;
-                                string request1;
-                                using (var stream = callbackRequest.InputStream)
-                                {
-                                    var reader = new StreamReader(stream);
-                                    request1 = reader.ReadToEnd();
-                                }
-                                var response1 = context.Response;
-                                response1.StatusCode = 200;
-                                response1.Close();
-                                server.Stop();
-                                var response2 = await client.GetAsync(request1);
-                                var content1 = await response2.Content.ReadAsStringAsync();
-                                return new Tuple<string, IDictionary<string, object>>("async w/ callback", content1.ParseJson<IDictionary<string, object>>());
-                            }
-                            case HttpStatusCode.Accepted when string.IsNullOrEmpty(x.callbackUri):
-                            {
-                                var queueUri = response.Headers.Location;
-                                Uri resultUri;
-                                do
-                                {
-                                    var response2 = await client.GetAsync(queueUri);
-                                    resultUri = response2.Headers.Location;
-                                } while (Equals(resultUri, default(Uri)));
-                                var response3 = await client.GetAsync(resultUri);
-                                var content1 = await response3.Content.ReadAsStringAsync();
-                                return new Tuple<string, IDictionary<string, object>>("async w/ polling", content1.ParseJson<IDictionary<string, object>>());
-                                }
-                            case HttpStatusCode.OK:
-                            {
-                                var content = await response.Content.ReadAsStringAsync();
-                                return new Tuple<string, IDictionary<string, object>>("sync", content.ParseJson<IDictionary<string, object>>());
-                                }
-                            default:
-                                throw new NotSupportedException();
-                        }
+                        var watch = Stopwatch.StartNew();
+                        _output.WriteLine("starting req #: " + x);
+                        var y = await ProcessRequest(server, client, req);
+                        watch.Stop();
+                        _output.WriteLine($"finished req ({y.Item1}) #: {x}. took: {watch.ElapsedMilliseconds} (ms).");
+                        return y.Item2;
                     }));
+            server.Stop();
 
-            var result = await Task.WhenAll(reqs.AsParallel().Select(async (x, i) =>
-            {
-                _output.WriteLine("starting req: " + i);
-                var watch = Stopwatch.StartNew();
-                var y = await x();
-                watch.Stop();
-                _output.WriteLine($"finished req ({y.Item1}): {i}. {watch.ElapsedMilliseconds} ms.");
-                return y.Item2;
-            }));
             foreach (var i in result)
             {
                 Assert.Equal(i["cmdCorrelationId"], i["evtCorrelationId"]);
             }
         }
+
+        static async Task<Tuple<string, IDictionary<string, object>>> ProcessRequest(HttpListener server, HttpClient client, IDictionary<string, object> req)
+        {
+            var response = await client.PostAsync("http://localhost:7071/identityverification", new StringContent(req.ToJson()));
+
+            if (response.StatusCode == HttpStatusCode.Accepted && req["callbackUri"] != null)
+            {
+                var serverContext = await server.GetContextAsync();
+                var callbackRequest = serverContext.Request;
+                string request1;
+                using (var stream = callbackRequest.InputStream)
+                {
+                    var reader = new StreamReader(stream);
+                    request1 = reader.ReadToEnd();
+                }
+                var response1 = serverContext.Response;
+                response1.StatusCode = (int)HttpStatusCode.OK;
+                response1.Close();
+                var response2 = await client.GetAsync(request1);
+                var content1 = await response2.Content.ReadAsStringAsync();
+                return new Tuple<string, IDictionary<string, object>>("async w/ callback",
+                    content1.ParseJson<IDictionary<string, object>>());
+            }
+
+            if (response.StatusCode == HttpStatusCode.Accepted && req["callbackUri"] == null)
+            {
+                var queueUri = response.Headers.Location;
+                Uri resultUri;
+                while (true)
+                {
+                    var response2 = await client.GetAsync(queueUri);
+                    if (!Equals(resultUri = response2.Headers.Location, null))
+                    {
+                        break;
+                    }
+                    await Task.Delay(50);
+                }
+                var response3 = await client.GetAsync(resultUri);
+                var content1 = await response3.Content.ReadAsStringAsync();
+                return new Tuple<string, IDictionary<string, object>>("async w/ polling",
+                    content1.ParseJson<IDictionary<string, object>>());
+            }
+
+            if (response.StatusCode == HttpStatusCode.OK)
+            {
+                var content = await response.Content.ReadAsStringAsync();
+                return new Tuple<string, IDictionary<string, object>>("sync",
+                    content.ParseJson<IDictionary<string, object>>());
+            }
+
+            throw new NotSupportedException();
+        }
+
+
     }
 }
