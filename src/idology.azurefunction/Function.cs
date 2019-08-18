@@ -40,9 +40,8 @@ namespace idology.azurefunction
 	    {
 
 	        var body = await request.Content.ReadAsStringAsync();
-	        var data = body.ParseJson<Dictionary<string, string>>();
+	        var data = body.ParseJson<IDictionary<string, string>>();
 	        var requestTimeout = int.Parse(data["requestTimeout"]);
-	        var callbackUri = data["callbackUri"];
             var ct1 = new CancellationTokenSource(requestTimeout);
             var correlationId = ctx.InvocationId.ToString();
             var eventSourceBlock = await createEventSourceBlockService.CreateEventSourceBlock(logger,
@@ -112,7 +111,7 @@ namespace idology.azurefunction
 	                        }.ToJsonBytes()
 	                    )
 	                );
-	                if (!string.IsNullOrEmpty(callbackUri))
+	                if (data.ContainsKey("callbackUri"))
 	                {
 	                    await tx.WriteAsync
 	                    (
@@ -120,7 +119,7 @@ namespace idology.azurefunction
 	                            new Dictionary<string, object>
 	                            {
 	                                {
-                                        "clientUri", callbackUri
+                                        "clientUri", data["callbackUri"]
                                     },
 	                                {
 	                                    "scriptId", Guid.NewGuid()
