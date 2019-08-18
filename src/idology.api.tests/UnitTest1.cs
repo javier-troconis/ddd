@@ -67,26 +67,12 @@ namespace idology.api.tests
                         var y = await ProcessRequest(server, client, req);
                         watch.Stop();
                         _output.WriteLine($"finished op #: {x} ({y.Item1}). took: {watch.ElapsedMilliseconds} (ms)");
-                        return new {response = y.Item2, responseTime = watch.ElapsedMilliseconds, processingType = y.Item1};
+                        return y.Item2;
                     }));
 
             server.Stop();
 
-            //var averageResponseTimeByProcessingType = result
-            //    .GroupBy(x => x.processingType)
-            //    .Select(x => 
-            //        new
-            //        {
-            //            x.Key,
-            //            Average = x.Select(y => y.responseTime).Average()
-            //        })
-            //    .OrderBy(x => x.Key);
-            //foreach (var i in averageResponseTimeByProcessingType)
-            //{
-            //    _output.WriteLine($"{i.Key} {i.Average}");
-            //}
-
-            foreach (var i in result.Select(x => x.response))
+            foreach (var i in result)
             {
                 Assert.Equal(i["cmdCorrelationId"], i["evtCorrelationId"]);
             }
