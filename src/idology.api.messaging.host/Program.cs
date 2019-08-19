@@ -8,6 +8,7 @@ using System.Net.Http;
 using eventstore;
 using EventStore.ClientAPI.Exceptions;
 using Newtonsoft.Json.Linq;
+using shared;
 
 namespace idology.api.messaging.host
 {
@@ -71,21 +72,20 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>
                                 {
-                                    ResolvedEvent[] messages = null;
-                                    while (Equals(messages, null))
+                                    var correlationId =
+                                        x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
+                                            EventHeaderKey.CorrelationId];
+                                    var messages = new List<ResolvedEvent>();
+                                    do
                                     {
                                         var streamEventsSlice = await connection
                                             .ReadStreamEventsForwardAsync(
-                                                $"$bc-{x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}",
-                                                0, 4096, true,
+                                                $"$bc-{correlationId}",
+                                                messages.Count, 4096, true,
                                                 new UserCredentials(EventStoreSettings.Username,
                                                     EventStoreSettings.Password));
-                                        var eventIds = streamEventsSlice.Events.Select(x1 => x1.Event.EventId);
-                                        if (eventIds.Contains(x.Event.EventId))
-                                        {
-                                            messages = streamEventsSlice.Events;
-                                        }
-                                    }
+                                        messages.AddRange(streamEventsSlice.Events);
+                                    } while (!messages.Select(x1 => x1.Event.EventId).Contains(x.Event.EventId));
                                     var messageByMessageType = messages.ToLookup(x1 => x1.Event.EventType);
                                     if (!messageByMessageType.Contains("callbackclient"))
                                     {
