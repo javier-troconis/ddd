@@ -70,7 +70,7 @@ namespace idology.azurefunction
                 response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{identityVerificationResult.Event.EventId}");
                 response1.Headers.Add("command-correlation-id", correlationId);
 	            response1.Headers.Add("event-correlation-id", (string)identityVerificationResult.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
-                response1.Content = new StringContent(identityVerificationResult.Event.Data.ToJson(),Encoding.UTF8, "application/json");
+	            response1.Content = new StringContent(Encoding.UTF8.GetString(identityVerificationResult.Event.Data), Encoding.UTF8, "application/json");
                 return response1;
             }
 	        catch (TaskCanceledException)

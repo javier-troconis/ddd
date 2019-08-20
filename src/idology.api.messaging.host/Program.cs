@@ -43,7 +43,7 @@ namespace idology.api.messaging.host
                                     await connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                                         new[]
                                         {
-                                            new EventData(eventId, "verifyidentitysucceeded", false, new byte[0], x.Event.Metadata)
+                                            new EventData(eventId, "verifyidentitysucceeded", false, x.Event.Data, x.Event.Metadata)
                                         },
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                     );
@@ -94,6 +94,7 @@ namespace idology.api.messaging.host
                                             },
                                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                         );
+                                        Console.WriteLine("clientcallbackstarted: " + correlationId);
 
                                         var client = new HttpClient();
                                         await client.PostAsync(
@@ -107,6 +108,7 @@ namespace idology.api.messaging.host
                                             },
                                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                         );
+                                        Console.WriteLine("clientcallbacksucceeded: " + correlationId);
                                     }
                                     catch (WrongExpectedVersionException)
                                     {
