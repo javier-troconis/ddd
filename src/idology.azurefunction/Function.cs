@@ -75,12 +75,12 @@ namespace idology.azurefunction
             }
 	        catch (TaskCanceledException)
 	        {
-	            var operationTimeoutEventId = Guid.NewGuid();
-	            using (var tx = await eventStoreConnection.StartTransactionAsync($"message-{operationTimeoutEventId}", ExpectedVersion.NoStream, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)))
+	            var clientRequestTimeoutEventId = Guid.NewGuid();
+	            using (var tx = await eventStoreConnection.StartTransactionAsync($"message-{clientRequestTimeoutEventId}", ExpectedVersion.NoStream, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)))
 	            {
 	                await tx.WriteAsync
 	                (
-	                    new EventData(operationTimeoutEventId, "operationtimedout", false,
+	                    new EventData(clientRequestTimeoutEventId, "clientrequesttimedout", false,
 	                        new Dictionary<string, object>
 	                        {
 	                            {
@@ -105,7 +105,7 @@ namespace idology.azurefunction
 	                {
 	                    await tx.WriteAsync
 	                    (
-	                        new EventData(Guid.NewGuid(), "callbackclient", false,
+	                        new EventData(Guid.NewGuid(), "callbackclientrequested", false,
 	                            new Dictionary<string, object>
 	                            {
 	                                {
@@ -113,10 +113,7 @@ namespace idology.azurefunction
                                     },
 	                                {
 	                                    "scriptId", Guid.NewGuid()
-	                                },
-	                                {
-                                        "expectedVersion", ExpectedVersion.NoStream
-	                                }
+                                    }
                                 }.ToJsonBytes(),
 	                            new Dictionary<string, object>
 	                            {
@@ -130,7 +127,7 @@ namespace idology.azurefunction
 	                await tx.CommitAsync();
 	            }
                 var response2 = new HttpResponseMessage(HttpStatusCode.Accepted);
-                response2.Headers.Location = new Uri($"http://localhost:7071/queue/{operationTimeoutEventId}");
+                response2.Headers.Location = new Uri($"http://localhost:7071/queue/{clientRequestTimeoutEventId}");
 	            return response2;
 	        }
 	    }
@@ -174,7 +171,7 @@ namespace idology.azurefunction
             var eventStoreConnection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
             var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{queueId}", 0, true,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            if (!eventReadResult.Event.HasValue || !Equals(eventReadResult.Event.Value.Event.EventType, "operationtimedout"))
+            if (!eventReadResult.Event.HasValue || !Equals(eventReadResult.Event.Value.Event.EventType, "clientrequesttimedout"))
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
