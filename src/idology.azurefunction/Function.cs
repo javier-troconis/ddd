@@ -156,7 +156,7 @@ namespace idology.azurefunction
             response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{resultId}");
             response1.Headers.Add("command-correlation-id", (string)messageByMessageType["verifyidentity"].Last().Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
             response1.Headers.Add("event-correlation-id", (string)eventReadResult.Event.Value.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
-            response1.Content = new StringContent(eventReadResult.Event.Value.Event.Data.ToJson(), Encoding.UTF8, "application/json");
+            response1.Content = new StringContent(Encoding.UTF8.GetString(eventReadResult.Event.Value.Event.Data), Encoding.UTF8, "application/json");
             return response1;
         }
 
@@ -194,14 +194,12 @@ namespace idology.azurefunction
         }
 
         [FunctionName(nameof(Webhook))]
-        public static  async Task<HttpResponseMessage> Webhook(
+        public static HttpResponseMessage Webhook(
            CancellationToken ct,
            [HttpTrigger(AuthorizationLevel.Function, "post", Route = "webhook")] HttpRequestMessage request,
            ExecutionContext ctx,
            ILogger logger)
         {
-            var content = await request.Content.ReadAsStringAsync();
-            logger.LogInformation("Received: {Content}", content);
             return new HttpResponseMessage(HttpStatusCode.OK);
         }
     }
