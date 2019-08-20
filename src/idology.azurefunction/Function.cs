@@ -76,56 +76,57 @@ namespace idology.azurefunction
 	        catch (TaskCanceledException)
 	        {
 	            var clientRequestTimeoutEventId = Guid.NewGuid();
-	            using (var tx = await eventStoreConnection.StartTransactionAsync($"message-{clientRequestTimeoutEventId}", ExpectedVersion.NoStream, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)))
-	            {
-	                await tx.WriteAsync
-	                (
-	                    new EventData(clientRequestTimeoutEventId, "clientrequesttimedout", false,
-	                        new Dictionary<string, object>
-	                        {
-	                            {
-	                                "operationName", "verifyidentity"
-	                            },
-	                            {
-	                                "operationCompletionMessageTypes", new[] {"verifyidentitysucceeded"}
-	                            },
+                using (var tx = await eventStoreConnection.StartTransactionAsync($"message-{clientRequestTimeoutEventId}", ExpectedVersion.NoStream, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)))
+                {
+                    await tx.WriteAsync
+                    (
+                        new EventData(clientRequestTimeoutEventId, "clientrequesttimedout", false,
+                            new Dictionary<string, object>
+                            {
+                                {
+                                    "operationName", "verifyidentity"
+                                },
+                                {
+                                    "operationCompletionMessageTypes", new[] {"verifyidentitysucceeded"}
+                                },
                                 {
                                     "baseResultUri", "http://localhost:7071/identityverification"
                                 }
-	                        }.ToJsonBytes(),
-	                        new Dictionary<string, object>
-	                        {
-	                            {
-	                                EventHeaderKey.CorrelationId, correlationId
-	                            }
-	                        }.ToJsonBytes()
-	                    )
-	                );
-	                if (callbackUri != null)
-	                {
-	                    await tx.WriteAsync
-	                    (
-	                        new EventData(Guid.NewGuid(), "callbackclientrequested", false,
-	                            new Dictionary<string, object>
-	                            {
-	                                {
+                            }.ToJsonBytes(),
+                            new Dictionary<string, object>
+                            {
+                                {
+                                    EventHeaderKey.CorrelationId, correlationId
+                                }
+                            }.ToJsonBytes()
+                        )
+                    );
+                    if (callbackUri != null)
+                    {
+                        await tx.WriteAsync
+                        (
+                            new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
+                                new Dictionary<string, object>
+                                {
+                                    {
                                         "clientUri", callbackUri
                                     },
-	                                {
-	                                    "scriptId", Guid.NewGuid()
+                                    {
+                                        "scriptId", Guid.NewGuid()
                                     }
                                 }.ToJsonBytes(),
-	                            new Dictionary<string, object>
-	                            {
-	                                {
-	                                    EventHeaderKey.CorrelationId, correlationId
-	                                }
-	                            }.ToJsonBytes()
-	                        )
-	                    );
+                                new Dictionary<string, object>
+                                {
+                                    {
+                                        EventHeaderKey.CorrelationId, correlationId
+                                    }
+                                }.ToJsonBytes()
+                            )
+                        );
                     }
-	                await tx.CommitAsync();
-	            }
+                    await tx.CommitAsync();
+                }
+
                 var response2 = new HttpResponseMessage(HttpStatusCode.Accepted);
                 response2.Headers.Location = new Uri($"http://localhost:7071/queue/{clientRequestTimeoutEventId}");
 	            return response2;

@@ -26,7 +26,7 @@ namespace idology.api.messaging.host
                     var connectionSettings = connectionSettingsBuilder.Build();
                     return EventStoreConnection.Create(connectionSettings, eventStoreConnectionUri);
                 }
-                var rnd = new Random();
+
                 var connection = CreateConnection();   
                 var eventBus = EventBus.CreateEventBus
                 (
@@ -36,7 +36,9 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity",
                                 async x =>
                                 {
-                                    //await Task.Delay(rnd.Next(500, 1000));
+                                    var correlationId =
+                                        (string) x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
+                                            EventHeaderKey.CorrelationId];
                                     var eventId = Guid.NewGuid();
                                     await connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
                                         new[]
@@ -45,29 +47,7 @@ namespace idology.api.messaging.host
                                         },
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                     );
-                                    Console.WriteLine("verifyidentity completed: " + (string)x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
-                                })
-                            .RegisterPersistentSubscriber("pushresulttoclient", "$et-pushresulttoclient", "pushresulttoclient",
-                                async x =>
-                                {
-                                    //await Task.Delay(rnd.Next(500, 1000));
-                                    var data = x.Event.Data.ParseJson<IDictionary<string, object>>();
-                                    var client = new HttpClient();
-                                        var request = new HttpRequestMessage(HttpMethod.Post, (string)data["clientUri"])
-                                        {
-                                            Content = new StringContent((string)data["resultUri"])
-                                        };
-                                    await client.SendAsync(request);
-                                    var eventId = Guid.NewGuid();
-                                    await connection.AppendToStreamAsync($"message-{eventId}",
-                                            ExpectedVersion.NoStream,
-                                            new[]
-                                            {
-                                                new EventData(eventId, "pushresulttoclientsucceeded", false, new byte[0], x.Event.Metadata)
-                                            },
-                                            new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
-                                        );
-                                    Console.WriteLine("pushresulttoclient completed: " + (string)x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
+                                    Console.WriteLine("verifyidentitysucceeded: " + correlationId);
                                 })
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>
@@ -87,7 +67,7 @@ namespace idology.api.messaging.host
                                         messages.AddRange(streamEventsSlice.Events);
                                     } while (!messages.Select(x1 => x1.Event.EventId).Contains(x.Event.EventId));
                                     var messageByMessageType = messages.ToLookup(x1 => x1.Event.EventType);
-                                    if (!messageByMessageType.Contains("callbackclientrequested") || messageByMessageType.Contains("callbackclientstarted"))
+                                    if (!messageByMessageType.Contains("clientcallbackrequested") || messageByMessageType.Contains("clientcallbackstarted"))
                                     {
                                         return;
                                     }
@@ -99,58 +79,35 @@ namespace idology.api.messaging.host
                                     {
                                         return;
                                     }
-                                    var callbackClientRequestedMessage = messageByMessageType["callbackclientrequested"].Last();
+                                    var callbackClientRequestedMessage = messageByMessageType["clientcallbackrequested"].Last();
                                     var callbackClientRequestedData = callbackClientRequestedMessage.Event.Data.ParseJson<IDictionary<string, object>>();
                                     var scriptId = callbackClientRequestedData["scriptId"];
                                     var scriptStreamName = $"message-{scriptId}";
                                     var completionMessage = messageByMessageType[completionMessageType].Last();
                                     try
                                     {
-                                        using (var tx = await connection.StartTransactionAsync(
-                                            scriptStreamName, ExpectedVersion.NoStream,
-                                            new UserCredentials(EventStoreSettings.Username,
-                                                EventStoreSettings.Password)))
-                                        {
-                                            await tx.WriteAsync
-                                            (
-                                                new EventData(Guid.NewGuid(), "callbackclientstarted",
-                                                    false,
-                                                    new byte[0],
-                                                    x.Event.Metadata
-                                                )
-                                            );
 
-                                            var client = new HttpClient();
-                                            await client.PostAsync((string)callbackClientRequestedData["clientUri"], new StringContent($"{(string)clientRequestTimedoutData["baseResultUri"]}/{completionMessage.Event.EventId}"));
-
-                                            await tx.WriteAsync
-                                            (
-                                                new EventData(Guid.NewGuid(), "callbackclientsucceeded",
-                                                    false,
-                                                    new byte[0],
-                                                    x.Event.Metadata
-                                                )
-                                            );
-                                        }
-
-                                        /*
-                                        await connection.AppendToStreamAsync(
-                                            scriptStreamName, 
-                                            scriptExpectedVersion,
+                                        await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.NoStream,
                                             new[]
                                             {
-                                                new EventData(Guid.NewGuid(), "pushresulttoclient", false, 
-                                                    new Dictionary<string, object>
-                                                    {
-                                                        { "clientUri", callbackClientRequestedData["clientUri"] },
-                                                        { "resultUri", $"{(string)clientRequestTimedoutData["baseResultUri"]}/{completionMessage.Event.EventId}" }
-                                                    }.ToJsonBytes(), 
-                                                    x.Event.Metadata)
+                                                new EventData(Guid.NewGuid(), "clientcallbackstarted", false, new byte[0], x.Event.Metadata)
                                             },
                                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                         );
-                                        */
-                                        }
+
+                                        var client = new HttpClient();
+                                        await client.PostAsync(
+                                            (string)callbackClientRequestedData["clientUri"],
+                                            new StringContent($"{(string)clientRequestTimedoutData["baseResultUri"]}/{completionMessage.Event.EventId}"));
+
+                                        await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.StreamExists,
+                                            new[]
+                                            {
+                                                new EventData(Guid.NewGuid(), "clientcallbacksucceeded", false, new byte[0], x.Event.Metadata)
+                                            },
+                                            new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
+                                        );
+                                    }
                                     catch (WrongExpectedVersionException)
                                     {
                                         
