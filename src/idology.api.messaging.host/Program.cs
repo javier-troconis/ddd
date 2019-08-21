@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
+using System.Text;
 using eventstore;
 using EventStore.ClientAPI.Exceptions;
 using Newtonsoft.Json.Linq;
@@ -39,11 +40,23 @@ namespace idology.api.messaging.host
                                     var correlationId =
                                         (string) x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                                             EventHeaderKey.CorrelationId];
-                                    var eventId = Guid.NewGuid();
-                                    await connection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
+
+                                    // 
+                                    //var client = new HttpClient();
+                                    //var response = await client.PostAsync("http://localhost:7072/api/v1/identityverification",
+                                    //    new StringContent(Encoding.UTF8.GetString(x.Event.Data), Encoding.UTF8, "application/json"));
+                                    //var responseContent = await response.Content.ReadAsByteArrayAsync();
+                                    //
+
+                                    await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                                         new[]
                                         {
-                                            new EventData(eventId, "verifyidentitysucceeded", false, x.Event.Data, x.Event.Metadata)
+                                            new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, x.Event.Data, 
+                                                x.Event.Metadata.ParseJson<IDictionary<string, object>>()
+                                                    .Merge(new Dictionary<string, object>
+                                                    {
+                                                        [EventHeaderKey.CausationId] = x.Event.EventId
+                                                    }).ToJsonBytes())
                                         },
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                     );
@@ -86,7 +99,6 @@ namespace idology.api.messaging.host
                                     var completionMessage = messageByMessageType[completionMessageType].Last();
                                     try
                                     {
-
                                         await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.NoStream,
                                             new[]
                                             {
@@ -99,7 +111,7 @@ namespace idology.api.messaging.host
                                         var client = new HttpClient();
                                         await client.PostAsync(
                                             (string)callbackClientRequestedData["clientUri"],
-                                            new StringContent($"{(string)clientRequestTimedoutData["baseResultUri"]}/{completionMessage.Event.EventId}"));
+                                            new StringContent((string)clientRequestTimedoutData["baseResultUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId));
 
                                         await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.StreamExists,
                                             new[]

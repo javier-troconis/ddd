@@ -46,12 +46,10 @@ namespace idology.azurefunction
                 x => Equals(x.Event.EventType, "verifyidentitysucceeded") && 
                      Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId));
             var eventStoreConnection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
-	        var eventId = Guid.NewGuid();
 	        var content = await request.Content.ReadAsByteArrayAsync();
-            await eventStoreConnection.AppendToStreamAsync($"message-{eventId}", ExpectedVersion.NoStream,
-                new[]
-                {
-                    new EventData(eventId, "verifyidentity", false, content,
+            await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
+                    new EventData(Guid.NewGuid(), "verifyidentity", false, content,
                         new Dictionary<string, object>
                         {
                             {
@@ -59,76 +57,69 @@ namespace idology.azurefunction
                             }
                         }.ToJsonBytes()
                     )
-                },
-                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
             );
 
 	        try
 	        {
-                var identityVerificationResult = await eventSourceBlock.ReceiveAsync(ct1.Token);
+                var verifyIdentityResolvedEvent = await eventSourceBlock.ReceiveAsync(ct1.Token);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-                response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{identityVerificationResult.Event.EventId}");
+                response1.Headers.Location = new Uri("http://localhost:7071/identityverification/" + (StreamId)verifyIdentityResolvedEvent.Event.EventStreamId);
                 response1.Headers.Add("command-correlation-id", correlationId);
-	            response1.Headers.Add("event-correlation-id", (string)identityVerificationResult.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
-	            response1.Content = new StringContent(Encoding.UTF8.GetString(identityVerificationResult.Event.Data), Encoding.UTF8, "application/json");
+	            response1.Headers.Add("event-correlation-id", (string)verifyIdentityResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
+	            response1.Content = new StringContent(Encoding.UTF8.GetString(verifyIdentityResolvedEvent.Event.Data), Encoding.UTF8, "application/json");
                 return response1;
             }
 	        catch (TaskCanceledException)
 	        {
-	            var clientRequestTimeoutEventId = Guid.NewGuid();
-                using (var tx = await eventStoreConnection.StartTransactionAsync($"message-{clientRequestTimeoutEventId}", ExpectedVersion.NoStream, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)))
-                {
-                    await tx.WriteAsync
-                    (
-                        new EventData(clientRequestTimeoutEventId, "clientrequesttimedout", false,
-                            new Dictionary<string, object>
-                            {
-                                {
-                                    "operationName", "verifyidentity"
-                                },
-                                {
-                                    "operationCompletionMessageTypes", new[] {"verifyidentitysucceeded"}
-                                },
-                                {
-                                    "baseResultUri", "http://localhost:7071/identityverification"
-                                }
-                            }.ToJsonBytes(),
-                            new Dictionary<string, object>
-                            {
-                                {
-                                    EventHeaderKey.CorrelationId, correlationId
-                                }
-                            }.ToJsonBytes()
-                        )
+	            var queueId = Guid.NewGuid();
+	            await eventStoreConnection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
+	                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
+	                    new EventData(Guid.NewGuid(), "clientrequesttimedout", false,
+	                        new Dictionary<string, object>
+	                        {
+	                            {
+	                                "operationName", "verifyidentity"
+	                            },
+	                            {
+	                                "operationCompletionMessageTypes", new[] {"verifyidentitysucceeded"}
+	                            },
+	                            {
+	                                "baseResultUri", "http://localhost:7071/identityverification"
+	                            }
+	                        }.ToJsonBytes(),
+	                        new Dictionary<string, object>
+	                        {
+	                            {
+	                                EventHeaderKey.CorrelationId, correlationId
+	                            }
+	                        }.ToJsonBytes()
+	                    )
+	            );
+	            if (callbackUri != null)
+	            {
+	                await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+	                    new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
+	                    new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
+	                        new Dictionary<string, object>
+	                        {
+	                            {
+	                                "clientUri", callbackUri
+	                            },
+	                            {
+	                                "scriptId", Guid.NewGuid()
+	                            }
+	                        }.ToJsonBytes(),
+	                        new Dictionary<string, object>
+	                        {
+	                            {
+	                                EventHeaderKey.CorrelationId, correlationId
+	                            }
+	                        }.ToJsonBytes()
+	                    )
                     );
-                    if (callbackUri != null)
-                    {
-                        await tx.WriteAsync
-                        (
-                            new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
-                                new Dictionary<string, object>
-                                {
-                                    {
-                                        "clientUri", callbackUri
-                                    },
-                                    {
-                                        "scriptId", Guid.NewGuid()
-                                    }
-                                }.ToJsonBytes(),
-                                new Dictionary<string, object>
-                                {
-                                    {
-                                        EventHeaderKey.CorrelationId, correlationId
-                                    }
-                                }.ToJsonBytes()
-                            )
-                        );
-                    }
-                    await tx.CommitAsync();
-                }
-
+	            }
                 var response2 = new HttpResponseMessage(HttpStatusCode.Accepted);
-                response2.Headers.Location = new Uri($"http://localhost:7071/queue/{clientRequestTimeoutEventId}");
+                response2.Headers.Location = new Uri($"http://localhost:7071/queue/{queueId}");
 	            return response2;
 	        }
 	    }
@@ -136,26 +127,31 @@ namespace idology.azurefunction
         [FunctionName(nameof(GetVerifyIdentityResult))]
         public static async Task<HttpResponseMessage> GetVerifyIdentityResult(
            CancellationToken ct,
-           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "identityverification/{resultId}")] HttpRequestMessage request,
-           string resultId,
+           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "identityverification/{transactionId}")] HttpRequestMessage request,
+           string transactionId,
            ExecutionContext ctx,
            [Dependency(typeof(IGetEventStoreConnectionService))] IGetEventStoreConnectionService getEventStoreConnectionService,
            ILogger logger)
         {
             var eventStoreConnection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
-            var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{resultId}", 0, true, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            if (!eventReadResult.Event.HasValue)
+            var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{transactionId}", 0, true, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            if (eventReadResult.Event == null)
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
+            var @event = (ResolvedEvent)eventReadResult.Event;
+            var correlationId = 
+                @event.Event.Metadata.ParseJson<IDictionary<string, object>>()[
+                    EventHeaderKey.CorrelationId];
             var events = await eventStoreConnection
-                .ReadStreamEventsForwardAsync($"$bc-{eventReadResult.Event.Value.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}", 0, 4096, true,
+                .ReadStreamEventsForwardAsync($"$bc-{correlationId}", 0, 4096, true,
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
             var messageByMessageType = events.Events.ToLookup(x => x.Event.EventType);
             var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-            response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{resultId}");
+            response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{transactionId}");
+            // use causationid to get command
             response1.Headers.Add("command-correlation-id", (string)messageByMessageType["verifyidentity"].Last().Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
-            response1.Headers.Add("event-correlation-id", (string)eventReadResult.Event.Value.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
+            response1.Headers.Add("event-correlation-id", (string)correlationId);
             response1.Content = new StringContent(Encoding.UTF8.GetString(eventReadResult.Event.Value.Event.Data), Encoding.UTF8, "application/json");
             return response1;
         }
@@ -172,25 +168,28 @@ namespace idology.azurefunction
             var eventStoreConnection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
             var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{queueId}", 0, true,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            if (!eventReadResult.Event.HasValue || !Equals(eventReadResult.Event.Value.Event.EventType, "clientrequesttimedout"))
+            if (eventReadResult.Event == null || !Equals(eventReadResult.Event.Value.Event.EventType, "clientrequesttimedout"))
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
-            var events = await eventStoreConnection.ReadStreamEventsForwardAsync($"$bc-{eventReadResult.Event.Value.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]}", 0, 4096, true,
+            var clientRequestTimedOutMessage = (ResolvedEvent)eventReadResult.Event;
+            var correlationId =
+                clientRequestTimedOutMessage.Event.Metadata.ParseJson<IDictionary<string, object>>()[
+                    EventHeaderKey.CorrelationId];
+            var events = await eventStoreConnection.ReadStreamEventsForwardAsync($"$bc-{correlationId}", 0, 4096, true,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
             var messageByMessageType = events.Events.ToLookup(x => x.Event.EventType);         
-            var operationTimeoutData = eventReadResult.Event.Value.Event.Data.ParseJson<IDictionary<string, object>>();
-            var operationCompletionMessageTypes = ((JArray) operationTimeoutData["operationCompletionMessageTypes"]).ToObject<string[]>();
+            var clientRequestTimedOutData = eventReadResult.Event.Value.Event.Data.ParseJson<IDictionary<string, object>>();
+            var operationCompletionMessageTypes = ((JArray) clientRequestTimedOutData["operationCompletionMessageTypes"]).ToObject<string[]>();
             var completionMessageType = messageByMessageType.Select(x => x.Key).FirstOrDefault(operationCompletionMessageTypes.Contains);
             if (Equals(completionMessageType, default(string)))
             {
-                var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-                return response1;
+                return new HttpResponseMessage(HttpStatusCode.OK);
             }
-            var response2 = new HttpResponseMessage(HttpStatusCode.OK);
+            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
             var completionMessage = messageByMessageType[completionMessageType].Last();
-            response2.Headers.Location = new Uri((string)operationTimeoutData["baseResultUri"] + "/" + completionMessage.Event.EventId);
-            return response2;
+            response1.Headers.Location = new Uri((string)clientRequestTimedOutData["baseResultUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId);
+            return response1;
         }
 
         [FunctionName(nameof(Webhook))]
