@@ -133,8 +133,8 @@ namespace idology.azurefunction
            [Dependency(typeof(IGetEventStoreConnectionService))] IGetEventStoreConnectionService getEventStoreConnectionService,
            ILogger logger)
         {
-            var eventStoreConnection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
-            var eventReadResult = await eventStoreConnection.ReadEventAsync($"message-{transactionId}", 0, true, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
+            var eventReadResult = await connection.ReadEventAsync($"message-{transactionId}", 0, true, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
             if (eventReadResult.Event == null)
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
@@ -143,14 +143,14 @@ namespace idology.azurefunction
             var correlationId = 
                 @event.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                     EventHeaderKey.CorrelationId];
-            var events = await eventStoreConnection
+            var eventsSlice = await connection
                 .ReadStreamEventsForwardAsync($"$bc-{correlationId}", 0, 4096, true,
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            var messageByMessageType = events.Events.ToLookup(x => x.Event.EventType);
+            var correlationCausedByResolvedEvent = eventsSlice.Events.First();
             var response1 = new HttpResponseMessage(HttpStatusCode.OK);
             response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{transactionId}");
             // use causationid to get command
-            response1.Headers.Add("command-correlation-id", (string)messageByMessageType["verifyidentity"].Last().Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
+            response1.Headers.Add("command-correlation-id", (string)correlationCausedByResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
             response1.Headers.Add("event-correlation-id", (string)correlationId);
             response1.Content = new StringContent(Encoding.UTF8.GetString(eventReadResult.Event.Value.Event.Data), Encoding.UTF8, "application/json");
             return response1;

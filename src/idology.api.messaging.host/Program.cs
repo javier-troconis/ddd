@@ -71,13 +71,13 @@ namespace idology.api.messaging.host
                                     var messages = new List<ResolvedEvent>();
                                     do
                                     {
-                                        var streamEventsSlice = await connection
+                                        var eventsSlice = await connection
                                             .ReadStreamEventsForwardAsync(
                                                 $"$bc-{correlationId}",
                                                 messages.Count, 4096, true,
                                                 new UserCredentials(EventStoreSettings.Username,
                                                     EventStoreSettings.Password));
-                                        messages.AddRange(streamEventsSlice.Events);
+                                        messages.AddRange(eventsSlice.Events);
                                     } while (!messages.Select(x1 => x1.Event.EventId).Contains(x.Event.EventId));
                                     var messageByMessageType = messages.ToLookup(x1 => x1.Event.EventType);
                                     if (!messageByMessageType.Contains("clientcallbackrequested") || messageByMessageType.Contains("clientcallbackstarted"))
