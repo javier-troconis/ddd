@@ -146,11 +146,13 @@ namespace idology.azurefunction
             var eventsSlice = await connection
                 .ReadStreamEventsForwardAsync($"$bc-{correlationId}", 0, 4096, true,
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            var correlationCausedByResolvedEvent = eventsSlice.Events.First();
+            var correlationOriginationResolvedEvent = eventsSlice.Events.First();
+            var correlationOriginationId =
+                (string) correlationOriginationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
+                    EventHeaderKey.CorrelationId];
             var response1 = new HttpResponseMessage(HttpStatusCode.OK);
             response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{transactionId}");
-            // use causationid to get command
-            response1.Headers.Add("command-correlation-id", (string)correlationCausedByResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
+            response1.Headers.Add("command-correlation-id", correlationOriginationId);
             response1.Headers.Add("event-correlation-id", (string)correlationId);
             response1.Content = new StringContent(Encoding.UTF8.GetString(eventReadResult.Event.Value.Event.Data), Encoding.UTF8, "application/json");
             return response1;
