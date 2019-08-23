@@ -145,9 +145,9 @@ namespace idology.azurefunction
            [Dependency(typeof(IGetEventStoreConnectionService))] IGetEventStoreConnectionService getEventStoreConnectionService,
            ILogger logger)
         {
-            var getResultByResultType = new Dictionary<string, Func<ResolvedEvent[], object>>
+            var getResultByResultType = new Dictionary<string, Func<ResolvedEvent[], byte[]>>
             {
-                ["identityverification"] = x => x[x.Length - 1].Event.Data.ParseJson<object>()
+                ["identityverification"] = x => x[x.Length - 1].Event.Data
             };
 
             var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
@@ -170,7 +170,7 @@ namespace idology.azurefunction
             response1.Headers.Add("command-correlation-id", (string)causationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                 EventHeaderKey.CorrelationId]);
             response1.Headers.Add("event-correlation-id", (string)correlationId);
-            response1.Content = new StringContent(responseContent.ToJson(), Encoding.UTF8, "application/json");
+            response1.Content = new StringContent(Encoding.UTF8.GetString(responseContent), Encoding.UTF8, "application/json");
             return response1;
         }
 
