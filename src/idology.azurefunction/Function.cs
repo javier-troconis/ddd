@@ -46,32 +46,32 @@ namespace idology.azurefunction
 	        var commandId = Guid.NewGuid();
 	        var commandName = "verifyidentity";
 	        var commandCompletionMessageTypes = new[] { "verifyidentitysucceeded" };
+	        var resultBaseUri = "http://localhost:7071/result/identityverification";
+	        var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
+	        var content = await request.Content.ReadAsByteArrayAsync();
             var eventReceiver = await createEventSourceBlockService.CreateEventSourceBlock(logger,
                 x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId) &&
                      commandCompletionMessageTypes.Contains(x.Event.EventType));
 
-	        var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
-	        var content = await request.Content.ReadAsByteArrayAsync();
-            await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
-                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
-                    new EventData(commandId, commandName, false, content,
-                        new Dictionary<string, object>
-                        {
-                            {
-                                EventHeaderKey.CorrelationId, correlationId
-                            }
-                        }.ToJsonBytes()
-                    )
-            );
-
 	        try
 	        {
-                var verifyIdentityResolvedEvent = await eventReceiver.ReceiveAsync(requestCts.Token);
+	            await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+                    new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
+                        new EventData(commandId, commandName, false, content,
+                            new Dictionary<string, object>
+                            {
+                                {
+                                    EventHeaderKey.CorrelationId, correlationId
+                                }
+                            }.ToJsonBytes()
+                        )
+                    );
+                var resolvedEvent = await eventReceiver.ReceiveAsync(requestCts.Token);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-                response1.Headers.Location = new Uri("http://localhost:7071/identityverification/" + (StreamId)verifyIdentityResolvedEvent.Event.EventStreamId);
+                response1.Headers.Location = new Uri(resultBaseUri + "/" +(StreamId)resolvedEvent.Event.EventStreamId);
                 response1.Headers.Add("command-correlation-id", correlationId);
-	            response1.Headers.Add("event-correlation-id", (string)verifyIdentityResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
-	            response1.Content = new StringContent(Encoding.UTF8.GetString(verifyIdentityResolvedEvent.Event.Data), Encoding.UTF8, "application/json");
+	            response1.Headers.Add("event-correlation-id", (string)resolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
+	            response1.Content = new StringContent(Encoding.UTF8.GetString(resolvedEvent.Event.Data), Encoding.UTF8, "application/json");
                 return response1;
             }
 	        catch (TaskCanceledException)
@@ -89,8 +89,8 @@ namespace idology.azurefunction
 	                                "operationCompletionMessageTypes", commandCompletionMessageTypes
                                 },
 	                            {
-	                                "baseResultUri", "http://localhost:7071/identityverification"
-	                            }
+                                    "resultBaseUri", resultBaseUri
+                                }
 	                        }.ToJsonBytes(),
 	                        new Dictionary<string, object>
 	                        {
@@ -127,17 +127,18 @@ namespace idology.azurefunction
 	        }
 	    }
 
-        [FunctionName(nameof(GetVerifyIdentityResult))]
-        public static async Task<HttpResponseMessage> GetVerifyIdentityResult(
+        [FunctionName(nameof(GetResult))]
+        public static async Task<HttpResponseMessage> GetResult(
            CancellationToken ct,
-           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "identityverification/{transactionId}")] HttpRequestMessage request,
-           string transactionId,
+           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "result/{resultType}/{resultId}")] HttpRequestMessage request,
+           string resultType,
+           string resultId,
            ExecutionContext ctx,
            [Dependency(typeof(IGetEventStoreConnectionService))] IGetEventStoreConnectionService getEventStoreConnectionService,
            ILogger logger)
         {
             var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
-            var eventReadResult = await connection.ReadEventAsync($"message-{transactionId}", 0, true, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
+            var eventReadResult = await connection.ReadEventAsync($"message-{resultId}", 0, true, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
             if (eventReadResult.Event == null)
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
@@ -151,7 +152,7 @@ namespace idology.azurefunction
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
             var causationResolvedEvent = eventsSlice.Events[0];
             var response1 = new HttpResponseMessage(HttpStatusCode.OK);
-            response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{transactionId}");
+            response1.Headers.Location = request.RequestUri;
             response1.Headers.Add("command-correlation-id", (string)causationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                 EventHeaderKey.CorrelationId]);
             response1.Headers.Add("event-correlation-id", (string)correlationId);
@@ -191,7 +192,7 @@ namespace idology.azurefunction
             }
             var response1 = new HttpResponseMessage(HttpStatusCode.OK);
             var completionMessage = messageByMessageType[completionMessageType].Last();
-            response1.Headers.Location = new Uri((string)clientRequestTimedOutData["baseResultUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId);
+            response1.Headers.Location = new Uri((string)clientRequestTimedOutData["resultBaseUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId);
             return response1;
         }
 

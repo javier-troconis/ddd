@@ -115,7 +115,7 @@ namespace idology.api.messaging.host
                                         var client = new HttpClient();
                                         await client.PostAsync(
                                             (string)callbackClientRequestedData["clientUri"],
-                                            new StringContent((string)clientRequestTimedoutData["baseResultUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId));
+                                            new StringContent((string)clientRequestTimedoutData["resultBaseUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId));
 
                                         await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.StreamExists,
                                             new[]
