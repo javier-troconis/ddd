@@ -77,7 +77,7 @@ namespace idology.azurefunction
 	        catch (TaskCanceledException)
 	        {
 	            var queueId = Guid.NewGuid();
-	            await connection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
+	            var clientRequestTimedoutTask = connection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
 	                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
 	                    new EventData(Guid.NewGuid(), "clientrequesttimedout", false,
 	                        new Dictionary<string, object>
@@ -99,28 +99,36 @@ namespace idology.azurefunction
                             }.ToJsonBytes()
 	                    )
 	            );
-	            if (callbackUri != null)
-	            {
-	                await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+	            var clientCallbackRequestedTask = callbackUri == null ? Task.CompletedTask : 
+	                connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
 	                    new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
 	                    new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
 	                        new Dictionary<string, object>
 	                        {
 	                            {
+	                                "operationName", commandName
+	                            },
+	                            {
+	                                "operationCompletionMessageTypes", commandCompletionMessageTypes
+	                            },
+	                            {
+	                                "resultBaseUri", resultBaseUri
+	                            },
+	                            {
 	                                "clientUri", callbackUri
 	                            },
 	                            {
-                                    "scriptId", Guid.NewGuid()
+	                                "scriptId", Guid.NewGuid()
 	                            }
 	                        }.ToJsonBytes(),
 	                        new Dictionary<string, object>
 	                        {
 	                            [EventHeaderKey.CorrelationId] = correlationId,
 	                            [EventHeaderKey.CausationId] = commandId
-                            }.ToJsonBytes()
+	                        }.ToJsonBytes()
 	                    )
-                    );
-	            }
+	                );
+	            await Task.WhenAll(clientRequestTimedoutTask, clientCallbackRequestedTask);
                 var response2 = new HttpResponseMessage(HttpStatusCode.Accepted);
                 response2.Headers.Location = new Uri($"http://localhost:7071/queue/{queueId}");
 	            return response2;
@@ -137,6 +145,11 @@ namespace idology.azurefunction
            [Dependency(typeof(IGetEventStoreConnectionService))] IGetEventStoreConnectionService getEventStoreConnectionService,
            ILogger logger)
         {
+            var getResultByResultType = new Dictionary<string, Func<ResolvedEvent[], object>>
+            {
+                ["identityverification"] = x => x[x.Length - 1].Event.Data.ParseJson<object>()
+            };
+
             var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
             var eventReadResult = await connection.ReadEventAsync($"message-{resultId}", 0, true, new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
             if (eventReadResult.Event == null)
@@ -152,11 +165,12 @@ namespace idology.azurefunction
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
             var causationResolvedEvent = eventsSlice.Events[0];
             var response1 = new HttpResponseMessage(HttpStatusCode.OK);
+            var responseContent = getResultByResultType[resultType](eventsSlice.Events);
             response1.Headers.Location = request.RequestUri;
             response1.Headers.Add("command-correlation-id", (string)causationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                 EventHeaderKey.CorrelationId]);
             response1.Headers.Add("event-correlation-id", (string)correlationId);
-            response1.Content = new StringContent(Encoding.UTF8.GetString(eventReadResult.Event.Value.Event.Data), Encoding.UTF8, "application/json");
+            response1.Content = new StringContent(responseContent.ToJson(), Encoding.UTF8, "application/json");
             return response1;
         }
 

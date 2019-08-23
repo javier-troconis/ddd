@@ -41,12 +41,12 @@ namespace idology.api.messaging.host
                                         (string) x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                                             EventHeaderKey.CorrelationId];
 
-                                    // 
-                                    //var client = new HttpClient();
-                                    //var response = await client.PostAsync("http://localhost:7072/api/v1/identityverification",
-                                    //    new StringContent(Encoding.UTF8.GetString(x.Event.Data), Encoding.UTF8, "application/json"));
-                                    //var responseContent = await response.Content.ReadAsByteArrayAsync();
-                                    //
+                                    /*
+                                    var client = new HttpClient();
+                                    var response = await client.PostAsync("http://localhost:7072/api/v1/identityverification",
+                                        new StringContent(Encoding.UTF8.GetString(x.Event.Data), Encoding.UTF8, "application/json"));
+                                    var responseContent = await response.Content.ReadAsByteArrayAsync();
+                                    */
 
                                     await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                                         new[]
@@ -84,16 +84,16 @@ namespace idology.api.messaging.host
                                     {
                                         return;
                                     }
-                                    var clientRequestTimedoutMessage = messageByMessageType["clientrequesttimedout"].Last();
-                                    var clientRequestTimedoutData = clientRequestTimedoutMessage.Event.Data.ParseJson<IDictionary<string, object>>();
-                                    var operationCompletionMessageTypes = ((JArray)clientRequestTimedoutData["operationCompletionMessageTypes"]).ToObject<string[]>();
+
+                                    var callbackClientRequestedMessage = messageByMessageType["clientcallbackrequested"].Last();
+                                    var callbackClientRequestedData = callbackClientRequestedMessage.Event.Data.ParseJson<IDictionary<string, object>>();
+                                    var operationCompletionMessageTypes = ((JArray)callbackClientRequestedData["operationCompletionMessageTypes"]).ToObject<string[]>();
                                     var completionMessageType = messageByMessageType.Select(x1 => x1.Key).FirstOrDefault(operationCompletionMessageTypes.Contains);
                                     if (Equals(completionMessageType, default(string)))
                                     {
                                         return;
                                     }
-                                    var callbackClientRequestedMessage = messageByMessageType["clientcallbackrequested"].Last();
-                                    var callbackClientRequestedData = callbackClientRequestedMessage.Event.Data.ParseJson<IDictionary<string, object>>();
+                                    
                                     var scriptStreamName = $"message-{callbackClientRequestedData["scriptId"]}";
                                     var completionMessage = messageByMessageType[completionMessageType].Last();
                                     try
@@ -115,7 +115,7 @@ namespace idology.api.messaging.host
                                         var client = new HttpClient();
                                         await client.PostAsync(
                                             (string)callbackClientRequestedData["clientUri"],
-                                            new StringContent((string)clientRequestTimedoutData["resultBaseUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId));
+                                            new StringContent((string)callbackClientRequestedData["resultBaseUri"] + "/" + (StreamId)completionMessage.Event.EventStreamId));
 
                                         await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.StreamExists,
                                             new[]
