@@ -46,7 +46,7 @@ namespace idology.azurefunction
 	        var commandId = Guid.NewGuid();
 	        var commandName = "verifyidentity";
 	        var commandCompletionMessageTypes = new[] { "verifyidentitysucceeded" };
-	        var resultBaseUri = "http://localhost:7071/result/identityverification";
+	        var resultBaseUri = "http://localhost:7071/identityverification";
 	        var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
 	        var content = await request.Content.ReadAsByteArrayAsync();
             var eventReceiver = await createEventSourceBlockService.CreateEventSourceBlock(logger,
@@ -138,7 +138,7 @@ namespace idology.azurefunction
         [FunctionName(nameof(GetResult))]
         public static async Task<HttpResponseMessage> GetResult(
            CancellationToken ct,
-           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "result/{resultType}/{resultId}")] HttpRequestMessage request,
+           [HttpTrigger(AuthorizationLevel.Function, "get", Route = "{resultType}/{resultId}")] HttpRequestMessage request,
            string resultType,
            string resultId,
            ExecutionContext ctx,
