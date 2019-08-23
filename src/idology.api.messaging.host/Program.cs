@@ -94,15 +94,19 @@ namespace idology.api.messaging.host
                                     }
                                     var callbackClientRequestedMessage = messageByMessageType["clientcallbackrequested"].Last();
                                     var callbackClientRequestedData = callbackClientRequestedMessage.Event.Data.ParseJson<IDictionary<string, object>>();
-                                    var scriptId = callbackClientRequestedData["scriptId"];
-                                    var scriptStreamName = $"message-{scriptId}";
+                                    var scriptStreamName = $"message-{callbackClientRequestedData["scriptId"]}";
                                     var completionMessage = messageByMessageType[completionMessageType].Last();
                                     try
                                     {
                                         await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.NoStream,
                                             new[]
                                             {
-                                                new EventData(Guid.NewGuid(), "clientcallbackstarted", false, new byte[0], x.Event.Metadata)
+                                                new EventData(Guid.NewGuid(), "clientcallbackstarted", false, new byte[0], 
+                                                    x.Event.Metadata.ParseJson<IDictionary<string, object>>()
+                                                        .Merge(new Dictionary<string, object>
+                                                        {
+                                                            [EventHeaderKey.CausationId] = x.Event.EventId
+                                                        }).ToJsonBytes())
                                             },
                                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                         );
@@ -116,7 +120,12 @@ namespace idology.api.messaging.host
                                         await connection.AppendToStreamAsync(scriptStreamName, ExpectedVersion.StreamExists,
                                             new[]
                                             {
-                                                new EventData(Guid.NewGuid(), "clientcallbacksucceeded", false, new byte[0], x.Event.Metadata)
+                                                new EventData(Guid.NewGuid(), "clientcallbacksucceeded", false, new byte[0], 
+                                                    x.Event.Metadata.ParseJson<IDictionary<string, object>>()
+                                                        .Merge(new Dictionary<string, object>
+                                                        {
+                                                            [EventHeaderKey.CausationId] = x.Event.EventId
+                                                        }).ToJsonBytes())
                                             },
                                             new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
                                         );

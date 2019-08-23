@@ -40,16 +40,21 @@ namespace idology.azurefunction
 	    {
 	        var requestTimeout = int.Parse(request.Headers.FirstOrDefault(x => x.Key == "request-timeout").Value.First());
 	        var callbackUri = request.Headers.FirstOrDefault(x => x.Key == "callback-uri").Value?.First();
-            var ct1 = new CancellationTokenSource(requestTimeout);
-            var correlationId = ctx.InvocationId.ToString();
-            var eventSourceBlock = await createEventSourceBlockService.CreateEventSourceBlock(logger,
-                x => Equals(x.Event.EventType, "verifyidentitysucceeded") && 
-                     Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId));
-            var eventStoreConnection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
+
+	        var correlationId = ctx.InvocationId.ToString();
+            var requestCts = new CancellationTokenSource(requestTimeout);
+	        var commandId = Guid.NewGuid();
+	        var commandName = "verifyidentity";
+	        var commandCompletionMessageTypes = new[] { "verifyidentitysucceeded" };
+            var eventReceiver = await createEventSourceBlockService.CreateEventSourceBlock(logger,
+                x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId) &&
+                     commandCompletionMessageTypes.Contains(x.Event.EventType));
+
+	        var connection = await getEventStoreConnectionService.GetEventStoreConnection(logger);
 	        var content = await request.Content.ReadAsByteArrayAsync();
-            await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+            await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
-                    new EventData(Guid.NewGuid(), "verifyidentity", false, content,
+                    new EventData(commandId, commandName, false, content,
                         new Dictionary<string, object>
                         {
                             {
@@ -61,7 +66,7 @@ namespace idology.azurefunction
 
 	        try
 	        {
-                var verifyIdentityResolvedEvent = await eventSourceBlock.ReceiveAsync(ct1.Token);
+                var verifyIdentityResolvedEvent = await eventReceiver.ReceiveAsync(requestCts.Token);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
                 response1.Headers.Location = new Uri("http://localhost:7071/identityverification/" + (StreamId)verifyIdentityResolvedEvent.Event.EventStreamId);
                 response1.Headers.Add("command-correlation-id", correlationId);
@@ -72,32 +77,31 @@ namespace idology.azurefunction
 	        catch (TaskCanceledException)
 	        {
 	            var queueId = Guid.NewGuid();
-	            await eventStoreConnection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
+	            await connection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
 	                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
 	                    new EventData(Guid.NewGuid(), "clientrequesttimedout", false,
 	                        new Dictionary<string, object>
 	                        {
 	                            {
-	                                "operationName", "verifyidentity"
-	                            },
+	                                "operationName", commandName
+                                },
 	                            {
-	                                "operationCompletionMessageTypes", new[] {"verifyidentitysucceeded"}
-	                            },
+	                                "operationCompletionMessageTypes", commandCompletionMessageTypes
+                                },
 	                            {
 	                                "baseResultUri", "http://localhost:7071/identityverification"
 	                            }
 	                        }.ToJsonBytes(),
 	                        new Dictionary<string, object>
 	                        {
-	                            {
-	                                EventHeaderKey.CorrelationId, correlationId
-	                            }
-	                        }.ToJsonBytes()
+	                            [EventHeaderKey.CorrelationId] = correlationId,
+                                [EventHeaderKey.CausationId] = commandId
+                            }.ToJsonBytes()
 	                    )
 	            );
 	            if (callbackUri != null)
 	            {
-	                await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+	                await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
 	                    new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
 	                    new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
 	                        new Dictionary<string, object>
@@ -106,15 +110,14 @@ namespace idology.azurefunction
 	                                "clientUri", callbackUri
 	                            },
 	                            {
-	                                "scriptId", Guid.NewGuid()
+                                    "scriptId", Guid.NewGuid()
 	                            }
 	                        }.ToJsonBytes(),
 	                        new Dictionary<string, object>
 	                        {
-	                            {
-	                                EventHeaderKey.CorrelationId, correlationId
-	                            }
-	                        }.ToJsonBytes()
+	                            [EventHeaderKey.CorrelationId] = correlationId,
+	                            [EventHeaderKey.CausationId] = commandId
+                            }.ToJsonBytes()
 	                    )
                     );
 	            }
@@ -146,13 +149,11 @@ namespace idology.azurefunction
             var eventsSlice = await connection
                 .ReadStreamEventsForwardAsync($"$bc-{correlationId}", 0, 4096, true,
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            var originationResolvedEvent = eventsSlice.Events.First();
-            var originationCorrelationId =
-                (string) originationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
-                    EventHeaderKey.CorrelationId];
+            var correlationCausationResolvedEvent = eventsSlice.Events.First();
             var response1 = new HttpResponseMessage(HttpStatusCode.OK);
             response1.Headers.Location = new Uri($"http://localhost:7071/identityverification/{transactionId}");
-            response1.Headers.Add("command-correlation-id", originationCorrelationId);
+            response1.Headers.Add("command-correlation-id", (string)correlationCausationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
+                EventHeaderKey.CorrelationId]);
             response1.Headers.Add("event-correlation-id", (string)correlationId);
             response1.Content = new StringContent(Encoding.UTF8.GetString(eventReadResult.Event.Value.Event.Data), Encoding.UTF8, "application/json");
             return response1;
