@@ -47,9 +47,13 @@ namespace shared
             return a =>
             {
                 var key = getEntryKey == null ? a : getEntryKey(a);
+                if (cache.TryGetValue(key, out T2 value))
+                {
+                    return value;
+                }
                 lock (f)
                 {
-                    return cache.TryGetValue(key, out T2 value) ? value : cache.Set(key, f(a), memoryCacheEntryOptions);
+                    return cache.TryGetValue(key, out value) ? value : cache.Set(key, f(a), memoryCacheEntryOptions);
                 }
             };
         }
