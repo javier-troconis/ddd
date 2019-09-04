@@ -1,12 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
-using System.Runtime.InteropServices.ComTypes;
+﻿using Microsoft.Extensions.Caching.Memory;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
-
-using Microsoft.Extensions.Caching.Memory;
 
 namespace shared
 {
@@ -47,27 +42,24 @@ namespace shared
             return f1.ComposeForward(f2.ToAsync());
         }
 
-        public static Func<T1, T3> ComposeBackward<T1, T2, T3>(this Func<T2, T3> f1, Func<T1, T2> f2)
-        {
-            return f2.ComposeForward(f1);
-        }
-
-        public static Func<T1, Task<T3>> ComposeBackward<T1, T2, T3>(this Func<T2, Task<T3>> f1, Func<T1, Task<T2>> f2)
-        {
-            return f2.ComposeForward(f1);
-        }
-
         public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, object> getEntryKey = null)
         {
-            return a => cache
-                .GetOrCreate(
-                    getEntryKey == null ? a : getEntryKey(a),
-                    b =>
-                    {
-                        b.SetOptions(memoryCacheEntryOptions);
-                        return new Lazy<T2>(() => f(a), LazyThreadSafetyMode.ExecutionAndPublication);
-                    })
-                .Value;
+            return a =>
+            {
+                var key = getEntryKey == null ? a : getEntryKey(a);
+                lock (f)
+                {
+                    return cache.TryGetValue(key, out T2 value) ? value : cache.Set(key, f(a), memoryCacheEntryOptions);
+                }
+            };
+        }
+
+        public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<Tuple<T1, T2>, object> getEntryKey = null)
+        {
+            return f
+                .Tuplify()
+                .Memoize(cache, memoryCacheEntryOptions)
+                .Detuplify();
         }
 
         public static Func<Tuple<T1, T2>, T3> Tuplify<T1, T2, T3>(this Func<T1, T2, T3> f)
@@ -79,26 +71,6 @@ namespace shared
         {
             return (a, b) => f(new Tuple<T1, T2>(a, b));
         }
-
-        //public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, object> getEntryKey = null)
-        //{
-        //	var f1 = new Func<Tuple<T1, T2>, T3>(x => f(x.Item1, x.Item2))
-        //		.Memoize(
-        //			cache, 
-        //			memoryCacheEntryOptions, 
-        //			getEntryKey == null ? null : new Func<Tuple<T1, T2>, object>(entry => getEntryKey(entry.Item1, entry.Item2)));
-        //	return (x, y) => f1(new Tuple<T1, T2>(x, y));
-        //}
-
-        //public static Func<T1, T2, T3, T4> Memoize<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, T2, T3, object> getEntryKey = null)
-        //{
-        //	var f1 = new Func<Tuple<T1, T2, T3>, T4>(x => f(x.Item1, x.Item2, x.Item3))
-        //		.Memoize(
-        //			cache, 
-        //			memoryCacheEntryOptions,
-        //			getEntryKey == null ? null : new Func<Tuple<T1, T2, T3>, object>(entry => getEntryKey(entry.Item1, entry.Item2, entry.Item3)));
-        //	return (x, y, z) => f1(new Tuple<T1, T2, T3>(x, y, z));
-        //}
 
         public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, Task<T2>> f)
         {
