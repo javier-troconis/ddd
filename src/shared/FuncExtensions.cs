@@ -42,8 +42,9 @@ namespace shared
             return f1.ComposeForward(f2.ToAsync());
         }
 
-        public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<T1, object> getEntryKey = null)
+        public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, Func<T1, object> getEntryKey = null)
         {
+            var l = new object();
             return a =>
             {
                 var key = getEntryKey == null ? a : getEntryKey(a);
@@ -51,18 +52,18 @@ namespace shared
                 {
                     return value;
                 }
-                lock (f)
+                lock (l)
                 {
-                    return cache.TryGetValue(key, out value) ? value : cache.Set(key, f(a), memoryCacheEntryOptions);
+                    return cache.TryGetValue(key, out value) ? value : cache.Set(key, f(a), cacheEntryOptions);
                 }
             };
         }
 
-        public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions memoryCacheEntryOptions, Func<Tuple<T1, T2>, object> getEntryKey = null)
+        public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, Func<Tuple<T1, T2>, object> getEntryKey = null)
         {
             return f
                 .Tuplify()
-                .Memoize(cache, memoryCacheEntryOptions)
+                .Memoize(cache, cacheEntryOptions)
                 .Detuplify();
         }
 
