@@ -42,12 +42,12 @@ namespace shared
             return f1.ComposeForward(f2.ToAsync());
         }
 
-        public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, Func<T1, object> getEntryKey = null)
+        public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, Func<T1, object> getCacheEntryKey = null)
         {
             var l = new object();
             return a =>
             {
-                var key = getEntryKey == null ? a : getEntryKey(a);
+                var key = getCacheEntryKey == null ? a : getCacheEntryKey(a);
                 if (cache.TryGetValue(key, out T2 value))
                 {
                     return value;
@@ -59,7 +59,7 @@ namespace shared
             };
         }
 
-        public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, Func<Tuple<T1, T2>, object> getEntryKey = null)
+        public static Func<T1, T2, T3> Memoize<T1, T2, T3>(this Func<T1, T2, T3> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, Func<Tuple<T1, T2>, object> getCacheEntryKey = null)
         {
             return f
                 .Tuplify()
