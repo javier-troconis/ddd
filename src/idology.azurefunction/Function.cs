@@ -45,15 +45,30 @@ namespace idology.azurefunction
 	        var content = await request.Content.ReadAsByteArrayAsync();
 
             
+            
 	        var createEventReceiver = createEventReceiverFactory("$ce-message", logger);
 	        var eventReceiver = await createEventReceiver(
 	            x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId) &&
 	                 commandCompletionMessageTypes.Contains(x.Event.EventType));
+	        Func<CancellationTokenSource, Task<ResolvedEvent>> receiveEvent = cts1 => eventReceiver.ReceiveAsync(cts1.Token);
             
-
+            
             /*
-	        var eventReceivers = commandCompletionMessageTypes.Select(x => 
-	            createEventReceiverFactory($"$et-{x}", logger)(y => Equals(y.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId)));
+	        var eventReceivers = await Task.WhenAll(commandCompletionMessageTypes.Select(x =>
+	            {
+	                var createEventReceiver = createEventReceiverFactory($"$et-{x}", logger);
+	                var eventReceiver = createEventReceiver(y =>
+	                    Equals(y.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId],
+	                        correlationId));
+                    return eventReceiver;
+	            }
+	        ));
+	        Func<CancellationTokenSource, Task<ResolvedEvent>> receiveEvent = async cts1 =>
+	        {
+	            var receivedEventTask = await Task.WhenAny(eventReceivers.Select(x1 => x1.ReceiveAsync(cts1.Token)));
+                cts1.Cancel();
+	            return  await receivedEventTask;
+	        };
             */
 
             try
@@ -68,7 +83,7 @@ namespace idology.azurefunction
                             }.ToJsonBytes()
                         )
                     );
-                var resolvedEvent = await eventReceiver.ReceiveAsync(cts.Token);
+                var resolvedEvent = await receiveEvent(cts);
 	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
                 response1.Headers.Location = new Uri(resultBaseUri + "/" +(StreamId)resolvedEvent.Event.EventStreamId);
                 response1.Headers.Add("command-correlation-id", correlationId);

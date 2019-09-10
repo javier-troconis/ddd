@@ -9,6 +9,7 @@ using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Threading.Tasks;
+using Dynamitey.DynamicObjects;
 using shared;
 using Xunit;
 using Xunit.Abstractions;
@@ -24,23 +25,65 @@ namespace idology.api.tests
             _output = output;
         }
 
+        private static IEnumerable<Dictionary<string, object>> SyncRequests
+        {
+            get
+            {
+                
+                    yield return new Dictionary<string, object>
+                    {
+                        ["request-timeout"] = 10000
+                    };
+                
+            }
+        }
+
+        [Fact]
+        public async Task Test4()
+        {
+            IEnumerable<Dictionary<string, object>> GetRequests()
+            {
+                while (true)
+                {
+                    yield return new Dictionary<string, object>
+                    {
+                        ["request-timeout"] = 10000
+                    };
+                }
+            }
+
+            var callbackUri = "http://localhost:9998/webhook/";
+            var client = new HttpClient();
+            var server = new HttpListener();
+            server.Prefixes.Add(callbackUri);
+            server.Start();
+
+            while (true)
+            {
+                var requests = GetRequests().Take(100);
+                await Task.WhenAll(requests.AsParallel().Select(req => ProcessRequest(server, client, req)));
+                await Task.Delay(10);
+            }
+        }
+
+
         [Fact]
         public async Task Test1()
         {
             var callbackUri = "http://localhost:9999/webhook/";
-            var syncReqs = Enumerable.Range(0, 5)
+            var syncReqs = Enumerable.Range(0, 10)
                 .Select(x =>
                     new Dictionary<string, object>
                     {
                         ["request-timeout"] = 10000
                     });
-            var asyncWithPollingReqs = Enumerable.Range(0, 5)
+            var asyncWithPollingReqs = Enumerable.Range(0, 10)
                 .Select(x =>
                     new Dictionary<string, object>
                     {
                         ["request-timeout"] = 1
                     });
-            var asyncWithCallbackReqs = Enumerable.Range(0, 5)
+            var asyncWithCallbackReqs = Enumerable.Range(0, 10)
                 .Select(x =>
                     new Dictionary<string, object>
                     {
