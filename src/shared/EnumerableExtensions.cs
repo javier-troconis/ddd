@@ -17,15 +17,15 @@ namespace shared
         {
             return seq.Aggregate(Task.FromResult(new { Passed = false, Iteration = 0 }), 
                 async (x, y) => 
-            {
-                var result = await x;
-                return result.Passed ? result : new { Passed = await predicate(y, result.Iteration), Iteration = result.Iteration + 1 };
-            }, 
+                {
+                    var result = await x;
+                    return result.Passed ? result : new { Passed = await predicate(y, result.Iteration), Iteration = result.Iteration + 1 };
+                }, 
                 async x => 
-            {
-                var result = await x;
-                return result.Passed;
-            });
+                {
+                    var result = await x;
+                    return result.Passed;
+                });
         }
 
         public static IReadOnlyDictionary<TKey, TValue> ToReadOnlyDictionary<T, TKey, TValue>(this IEnumerable<T> seq, Func<T, TKey> selectKey, Func<T, TValue> selectValue)

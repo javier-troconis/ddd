@@ -56,7 +56,7 @@ namespace idology.api.tests
             var mc = new MemoryCache(new MemoryCacheOptions());
             var mceo = new MemoryCacheEntryOptions();
             var fm = f.Memoize(mc, mceo);
-            var r = Enumerable.Repeat(0, 10).AsParallel().Select(fm);
+            var r = Enumerable.Repeat(0, 50).AsParallel().Select(fm);
             _output.WriteLine(string.Join(",", r.Select(x => x.GetHashCode())));
         }
     }

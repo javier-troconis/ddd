@@ -1,0 +1,29 @@
+﻿using EventStore.ClientAPI;
+using System;
+using System.Threading.Tasks;
+using ILogger = Microsoft.Extensions.Logging.ILogger;
+
+namespace idology.azurefunction
+{
+
+    public class CreateEventStoreConnectionService
+    {
+        private readonly Uri _eventStoreConnectionUri;
+        private readonly Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> _configureConnection;
+
+        public CreateEventStoreConnectionService(Uri eventStoreConnectionUri, Func<ConnectionSettingsBuilder, ConnectionSettingsBuilder> configureConnection)
+        {
+            _eventStoreConnectionUri = eventStoreConnectionUri;
+            _configureConnection = configureConnection;
+        }
+
+        public async Task<IEventStoreConnection> CreateEventStoreConnection(ILogger logger)
+        {
+            var connectionSettingsBuilder = _configureConnection(ConnectionSettings.Create());
+            var connectionSettings = connectionSettingsBuilder.Build();
+            var connection = EventStoreConnection.Create(connectionSettings, _eventStoreConnectionUri);
+            await connection.ConnectAsync();
+            return connection;
+        }
+    }
+}

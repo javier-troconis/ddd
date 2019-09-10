@@ -107,19 +107,9 @@ namespace shared
             return a => b => f(a, b);
         }
 
-        public static Func<T1, Func<T2, Func<T3, T4>>> Curry<T1, T2, T3, T4>(this Func<T1, T2, T3, T4> f)
-        {
-            return a => b => c => f(a, b, c);
-        }
-
         public static Func<T1, T2, T3> Uncurry<T1, T2, T3>(this Func<T1, Func<T2, T3>> f)
         {
             return (a, b) => f(a)(b);
-        }
-
-        public static Func<T1, T2, T3, T4> Uncurry<T1, T2, T3, T4>(this Func<T1, Func<T2, Func<T3, T4>>> f)
-        {
-            return (a, b, c) => f(a)(b)(c);
         }
     }
 }

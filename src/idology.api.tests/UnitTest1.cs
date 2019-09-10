@@ -28,19 +28,19 @@ namespace idology.api.tests
         public async Task Test1()
         {
             var callbackUri = "http://localhost:9999/webhook/";
-            var syncReqs = Enumerable.Range(0, 10)
+            var syncReqs = Enumerable.Range(0, 5)
                 .Select(x =>
                     new Dictionary<string, object>
                     {
                         ["request-timeout"] = 10000
                     });
-            var asyncWithPollingReqs = Enumerable.Range(0, 10)
+            var asyncWithPollingReqs = Enumerable.Range(0, 5)
                 .Select(x =>
                     new Dictionary<string, object>
                     {
                         ["request-timeout"] = 1
                     });
-            var asyncWithCallbackReqs = Enumerable.Range(0, 10)
+            var asyncWithCallbackReqs = Enumerable.Range(0, 5)
                 .Select(x =>
                     new Dictionary<string, object>
                     {
