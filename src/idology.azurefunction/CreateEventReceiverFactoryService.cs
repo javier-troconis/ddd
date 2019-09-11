@@ -17,7 +17,7 @@ namespace idology.azurefunction
             _configureConnection = configureConnection;
         }
 
-        public CreateEventReceiver<ResolvedEvent> CreateEventReceiverFactory(string streamName, ILogger logger)
+        public CreateEventReceiver CreateEventReceiverFactory(string streamName, ILogger logger)
         {
             var bb = new BroadcastBlock<ResolvedEvent>(x => x);
             var eventBus = EventBus.CreateEventBus

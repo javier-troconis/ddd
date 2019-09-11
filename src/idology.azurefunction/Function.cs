@@ -28,49 +28,43 @@ namespace idology.azurefunction
 	        CancellationToken ct, 
 	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "identityverification")] HttpRequestMessage request, 
             ExecutionContext ctx,
-            [Dependency(typeof(CreateEventStoreConnection))] CreateEventStoreConnection createEventStoreConnection,
-            [Dependency(typeof(CreateEventReceiverFactory<ResolvedEvent>))] CreateEventReceiverFactory<ResolvedEvent> createEventReceiverFactory,
-	        ILogger logger)
+	        [Dependency(typeof(SendCommand))] SendCommand sendCommand,
+            ILogger logger)
 	    {
 	        var requestTimeout = int.Parse(request.Headers.FirstOrDefault(x => x.Key == "request-timeout").Value.First());
-	        var callbackUri = request.Headers.FirstOrDefault(x => x.Key == "callback-uri").Value?.First();
+	        var callbackUri = request.Headers.Contains("callback-uri") ? new Uri(request.Headers.First(x => x.Key == "callback-uri").Value.First()) : null;
+	        var requestContent = await request.Content.ReadAsByteArrayAsync();
+	        var correlationId = Guid.NewGuid();
+	        var command = new Command(Guid.NewGuid(), "verifyidentity", requestContent);
+	        var commandCompletionMessageTypes = new[] {"verifyidentitysucceeded", "verifyidentityfailed"};
+	        var eventReceiveCts = new CancellationTokenSource(requestTimeout);
+	        var resultBaseUri = new Uri("http://localhost:7071/identityverification");
+	        var queueBaseUri = new Uri("http://localhost:7071/queue");
+            return await sendCommand(correlationId, command, commandCompletionMessageTypes, logger, eventReceiveCts, resultBaseUri, queueBaseUri, callbackUri);
 
-	        var correlationId = ctx.InvocationId.ToString();
+	        /*
+             
+            
+            
+            var correlationId = ctx.InvocationId.ToString();
             var cts = new CancellationTokenSource(requestTimeout);
-	        var commandId = Guid.NewGuid();
-	        var commandName = "verifyidentity";
-	        var commandCompletionMessageTypes = new[] { "verifyidentitysucceeded" };
-	        var resultBaseUri = "http://localhost:7071/identityverification";
-	        var connection = await createEventStoreConnection(logger);
-	        var content = await request.Content.ReadAsByteArrayAsync();
+            var commandId = Guid.NewGuid();
+            var commandName = "verifyidentity";
+            var commandCompletionMessageTypes = new[] { "verifyidentitysucceeded" };
+            var resultBaseUri = "http://localhost:7071/identityverification";
+            var connection = await createEventStoreConnection(logger);
+            var content = await request.Content.ReadAsByteArrayAsync();
 
             
             
-	        var createEventReceiver = createEventReceiverFactory("$ce-message", logger);
-	        var eventReceiver = await createEventReceiver(
-	            x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId) &&
-	                 commandCompletionMessageTypes.Contains(x.Event.EventType));
-	        Func<CancellationTokenSource, Task<ResolvedEvent>> receiveEvent = cts1 => eventReceiver.ReceiveAsync(cts1.Token);
+            var createEventReceiver = createEventReceiverFactory("$ce-message", logger);
+            var eventReceiver = await createEventReceiver(
+                x => Equals(x.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId], correlationId) &&
+                     commandCompletionMessageTypes.Contains(x.Event.EventType));
+            Func<CancellationTokenSource, Task<ResolvedEvent>> receiveEvent = cts1 => eventReceiver.ReceiveAsync(cts1.Token);
             
             
-            /*
-	        var eventReceivers = await Task.WhenAll(commandCompletionMessageTypes.Select(x =>
-	            {
-	                var createEventReceiver = createEventReceiverFactory($"$et-{x}", logger);
-	                var eventReceiver = createEventReceiver(y =>
-	                    Equals(y.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId],
-	                        correlationId));
-                    return eventReceiver;
-	            }
-	        ));
-	        Func<CancellationTokenSource, Task<ResolvedEvent>> receiveEvent = async cts1 =>
-	        {
-	            var receivedEventTask = await Task.WhenAny(eventReceivers.Select(x1 => x1.ReceiveAsync(cts1.Token)));
-                cts1.Cancel();
-	            return  await receivedEventTask;
-	        };
-            */
-
+           
             try
             {
                 await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
@@ -84,56 +78,57 @@ namespace idology.azurefunction
                         )
                     );
                 var resolvedEvent = await receiveEvent(cts);
-	            var response1 = new HttpResponseMessage(HttpStatusCode.OK);
+                var response1 = new HttpResponseMessage(HttpStatusCode.OK);
                 response1.Headers.Location = new Uri(resultBaseUri + "/" +(StreamId)resolvedEvent.Event.EventStreamId);
                 response1.Headers.Add("command-correlation-id", correlationId);
-	            response1.Headers.Add("event-correlation-id", (string)resolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
-	            response1.Content = new StringContent(Encoding.UTF8.GetString(resolvedEvent.Event.Data), Encoding.UTF8, "application/json");
+                response1.Headers.Add("event-correlation-id", (string)resolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[EventHeaderKey.CorrelationId]);
+                response1.Content = new StringContent(Encoding.UTF8.GetString(resolvedEvent.Event.Data), Encoding.UTF8, "application/json");
                 return response1;
             }
-	        catch (TaskCanceledException)
-	        {
-	            var queueId = Guid.NewGuid();
-	            var clientRequestTimedoutTask = connection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
-	                new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
-	                    new EventData(Guid.NewGuid(), "clientrequesttimedout", false,
-	                        new Dictionary<string, object>
-	                        {
-	                            ["operationName"] = commandName,
-	                            ["operationCompletionMessageTypes"] = commandCompletionMessageTypes,
+            catch (TaskCanceledException)
+            {
+                var queueId = Guid.NewGuid();
+                var clientRequestTimedoutTask = connection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
+                    new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
+                        new EventData(Guid.NewGuid(), "clientrequesttimedout", false,
+                            new Dictionary<string, object>
+                            {
+                                ["operationName"] = commandName,
+                                ["operationCompletionMessageTypes"] = commandCompletionMessageTypes,
                                 ["resultBaseUri"] = resultBaseUri
-	                        }.ToJsonBytes(),
-	                        new Dictionary<string, object>
-	                        {
-	                            [EventHeaderKey.CorrelationId] = correlationId,
+                            }.ToJsonBytes(),
+                            new Dictionary<string, object>
+                            {
+                                [EventHeaderKey.CorrelationId] = correlationId,
                                 [EventHeaderKey.CausationId] = commandId
                             }.ToJsonBytes()
-	                    )
-	            );
-	            var clientCallbackRequestedTask = callbackUri == null ? Task.CompletedTask : 
-	                connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
-	                    new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
-	                    new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
-	                        new Dictionary<string, object>
-	                        {
-	                            ["operationName"] = commandName,
-	                            ["operationCompletionMessageTypes"] = commandCompletionMessageTypes,
-	                            ["resultBaseUri"] = resultBaseUri,
-	                            ["clientUri"] = callbackUri,
-	                            ["scriptId"] = Guid.NewGuid()
-	                        }.ToJsonBytes(),
-	                        new Dictionary<string, object>
-	                        {
-	                            [EventHeaderKey.CorrelationId] = correlationId,
-	                            [EventHeaderKey.CausationId] = commandId
-	                        }.ToJsonBytes()
-	                    )
-	                );
-	            await Task.WhenAll(clientRequestTimedoutTask, clientCallbackRequestedTask);
+                        )
+                );
+                var clientCallbackRequestedTask = callbackUri == null ? Task.CompletedTask : 
+                    connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
+                        new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
+                        new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
+                            new Dictionary<string, object>
+                            {
+                                ["operationName"] = commandName,
+                                ["operationCompletionMessageTypes"] = commandCompletionMessageTypes,
+                                ["resultBaseUri"] = resultBaseUri,
+                                ["clientUri"] = callbackUri,
+                                ["scriptId"] = Guid.NewGuid()
+                            }.ToJsonBytes(),
+                            new Dictionary<string, object>
+                            {
+                                [EventHeaderKey.CorrelationId] = correlationId,
+                                [EventHeaderKey.CausationId] = commandId
+                            }.ToJsonBytes()
+                        )
+                    );
+                await Task.WhenAll(clientRequestTimedoutTask, clientCallbackRequestedTask);
                 var response2 = new HttpResponseMessage(HttpStatusCode.Accepted);
                 response2.Headers.Location = new Uri($"http://localhost:7071/queue/{queueId}");
-	            return response2;
-	        }
+                return response2;
+            }
+            */
 	    }
 
         [FunctionName(nameof(GetResult))]
