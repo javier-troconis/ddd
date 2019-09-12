@@ -33,10 +33,10 @@ namespace idology.azurefunction
                 x => x.Event.TryGetCorrelationId(out var eventCorrelationId) 
                      && Equals(eventCorrelationId, correlationId.ToString()) 
                      && commandCompletionMessageTypes.Contains(x.Event.EventType));
-            var eventStoreConnectionTask = _createEventStoreConnection(logger);
-            await Task.WhenAll(createEventReceiverTask, eventStoreConnectionTask);
+            var createEventStoreConnectionTask = _createEventStoreConnection(logger);
+            await Task.WhenAll(createEventReceiverTask, createEventStoreConnectionTask);
             var eventReceiver = await createEventReceiverTask;
-            var eventStoreConnection = await eventStoreConnectionTask;
+            var eventStoreConnection = await createEventStoreConnectionTask;
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
                 new EventData(command.CommandId, command.CommandName, false, command.CommandData,
