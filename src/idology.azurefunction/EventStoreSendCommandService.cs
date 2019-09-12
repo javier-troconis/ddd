@@ -31,7 +31,7 @@ namespace idology.azurefunction
             var createEventReceiver = _createEventReceiverFactory("$ce-message", logger);
             var createEventReceiverTask = createEventReceiver(
                 x => x.Event.TryGetCorrelationId(out var eventCorrelationId) 
-                     && Equals(eventCorrelationId, correlationId) 
+                     && Equals(eventCorrelationId, correlationId.ToString()) 
                      && commandCompletionMessageTypes.Contains(x.Event.EventType));
             var eventStoreConnectionTask = _createEventStoreConnection(logger);
             await Task.WhenAll(createEventReceiverTask, eventStoreConnectionTask);

@@ -85,8 +85,8 @@ namespace idology.api.tests
             var result = await Task.WhenAll(
                 new[]
                 {
-                    syncReqs,
-                    //asyncWithPollingReqs,
+                    //syncReqs,
+                    asyncWithPollingReqs,
                     //asyncWithCallbackReqs
                 }
                 .SelectMany(x => x)

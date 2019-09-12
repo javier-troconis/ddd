@@ -34,12 +34,13 @@ namespace idology.azurefunction
 	        var requestTimeout = int.Parse(request.Headers.FirstOrDefault(x => x.Key == "request-timeout").Value.First());
 	        var callbackUri = request.Headers.Contains("callback-uri") ? new Uri(request.Headers.First(x => x.Key == "callback-uri").Value.First()) : null;
 	        var requestContent = await request.Content.ReadAsByteArrayAsync();
-	        var correlationId = Guid.NewGuid();
+	        var correlationId = ctx.InvocationId;
 	        var command = new Command(Guid.NewGuid(), "verifyidentity", requestContent);
 	        var commandCompletionMessageTypes = new[] {"verifyidentitysucceeded", "verifyidentityfailed"};
 	        var eventReceiveCts = new CancellationTokenSource(requestTimeout);
-	        var resultBaseUri = new Uri("http://localhost:7071/identityverification");
-	        var queueBaseUri = new Uri("http://localhost:7071/queue");
+	        var hostBaseUri = $"{request.RequestUri.Scheme}://{request.RequestUri.Authority}";
+            var resultBaseUri = new Uri($"{hostBaseUri}/identityverification");
+	        var queueBaseUri = new Uri($"{hostBaseUri}/queue");
             return await sendCommandService.SendCommand(correlationId, command, commandCompletionMessageTypes, logger, eventReceiveCts, resultBaseUri, queueBaseUri, callbackUri);
 	    }
 
@@ -73,7 +74,7 @@ namespace idology.azurefunction
             httpResponseMessage.Headers.Location = request.RequestUri;
             httpResponseMessage.Headers.Add("command-correlation-id", (string)causationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
                 EventHeaderKey.CorrelationId]);
-            httpResponseMessage.Headers.Add("event-correlation-id", (string)correlationId);
+            httpResponseMessage.Headers.Add("event-correlation-id", correlationId);
             httpResponseMessage.Content = new StringContent(Encoding.UTF8.GetString(responseContent), Encoding.UTF8, "application/json");
             return httpResponseMessage;
         }
