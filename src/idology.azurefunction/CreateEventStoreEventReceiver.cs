@@ -1,11 +1,16 @@
-﻿using eventstore;
-using EventStore.ClientAPI;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
+using System.Threading.Tasks;
 using System.Threading.Tasks.Dataflow;
+using eventstore;
+using EventStore.ClientAPI;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
 {
+    public delegate Task<ISourceBlock<ResolvedEvent>> CreateEventReceiver(Predicate<ResolvedEvent> eventFilter);
+
     public class CreateEventReceiverFactoryService
     {
         private readonly Uri _eventStoreConnectionUri;
@@ -17,7 +22,7 @@ namespace idology.azurefunction
             _configureConnection = configureConnection;
         }
 
-        public CreateEventReceiver CreateEventReceiverFactory(string streamName, ILogger logger)
+        public CreateEventReceiver CreateEventReceiverFactory(EventStoreObjectName streamName, ILogger logger)
         {
             var bb = new BroadcastBlock<ResolvedEvent>(x => x);
             var eventBus = EventBus.CreateEventBus

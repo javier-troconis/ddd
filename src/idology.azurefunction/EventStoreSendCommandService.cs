@@ -10,19 +10,20 @@ using System.Net;
 using System.Threading.Tasks.Dataflow;
 using EventStore.ClientAPI;
 using EventStore.ClientAPI.SystemData;
+using shared;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
 {
-    public class SendCommandService
+    public class EventStoreSendCommandService : ISendCommandService
     {
-        private readonly CreateEventStoreConnection _createEventStoreConnection;
-        private readonly CreateEventReceiverFactory _createEventReceiverFactory;
+        private readonly Func<EventStoreObjectName, ILogger, CreateEventReceiver> _createEventReceiverFactory;
+        private readonly Func<ILogger, Task<IEventStoreConnection>> _createEventStoreConnection;
 
-        public SendCommandService(CreateEventStoreConnection createEventStoreConnection, CreateEventReceiverFactory createEventReceiverFactory)
+        public EventStoreSendCommandService(Func<EventStoreObjectName, ILogger, CreateEventReceiver> createEventReceiverFactory, Func<ILogger, Task<IEventStoreConnection>> createEventStoreConnection)
         {
-            _createEventStoreConnection = createEventStoreConnection;
             _createEventReceiverFactory = createEventReceiverFactory;
+            _createEventStoreConnection = createEventStoreConnection;
         }
 
         public async Task<HttpResponseMessage> SendCommand(Guid correlationId, Command command, string[] commandCompletionMessageTypes, ILogger logger, CancellationTokenSource cts, Uri resultBaseUri, Uri queueBaseUri, Uri callbackUri = null)
@@ -100,6 +101,8 @@ namespace idology.azurefunction
                 return httpResponseMessage;
             }
         }
+
+     
     }
 }
 

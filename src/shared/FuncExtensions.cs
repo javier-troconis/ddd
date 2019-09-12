@@ -42,6 +42,12 @@ namespace shared
             return f1.ComposeForward(f2.ToAsync());
         }
 
+        public static Func<T1> Memoize<T1>(this Func<T1> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions)
+        {
+            var f1 = new Func<Unit, T1>(a => f()).Memoize(cache, cacheEntryOptions);
+            return () => f1(Unit.Value);
+        }
+
         public static Func<T1, T2> Memoize<T1, T2>(this Func<T1, T2> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions, Func<T1, object> getCacheEntryKey = null)
         {
             var l = new object();

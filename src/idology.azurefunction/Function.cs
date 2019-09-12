@@ -28,7 +28,7 @@ namespace idology.azurefunction
 	        CancellationToken ct, 
 	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "identityverification")] HttpRequestMessage request, 
             ExecutionContext ctx,
-	        [Dependency(typeof(SendCommand))] SendCommand sendCommand,
+	        [Dependency(typeof(ISendCommandService))] ISendCommandService sendCommandService,
             ILogger logger)
 	    {
 	        var requestTimeout = int.Parse(request.Headers.FirstOrDefault(x => x.Key == "request-timeout").Value.First());
@@ -40,7 +40,7 @@ namespace idology.azurefunction
 	        var eventReceiveCts = new CancellationTokenSource(requestTimeout);
 	        var resultBaseUri = new Uri("http://localhost:7071/identityverification");
 	        var queueBaseUri = new Uri("http://localhost:7071/queue");
-            return await sendCommand(correlationId, command, commandCompletionMessageTypes, logger, eventReceiveCts, resultBaseUri, queueBaseUri, callbackUri);
+            return await sendCommandService.SendCommand(correlationId, command, commandCompletionMessageTypes, logger, eventReceiveCts, resultBaseUri, queueBaseUri, callbackUri);
 
 	        /*
              
@@ -138,7 +138,7 @@ namespace idology.azurefunction
            string resultType,
            string resultId,
            ExecutionContext ctx,
-           [Dependency(typeof(CreateEventStoreConnection))] CreateEventStoreConnection createEventStoreConnection,
+           [Dependency(typeof(IReadMessagesService<ResolvedEvent>))] IReadMessagesService<ResolvedEvent> createEventStoreConnection,
            ILogger logger)
         {
             var getResultByResultType = new Dictionary<string, Func<ResolvedEvent[], byte[]>>

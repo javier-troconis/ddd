@@ -1,11 +1,12 @@
-﻿using EventStore.ClientAPI;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
+using EventStore.ClientAPI;
 using ILogger = Microsoft.Extensions.Logging.ILogger;
 
 namespace idology.azurefunction
 {
-
     public class CreateEventStoreConnectionService
     {
         private readonly Uri _eventStoreConnectionUri;
