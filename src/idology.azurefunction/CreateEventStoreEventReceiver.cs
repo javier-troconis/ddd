@@ -31,7 +31,7 @@ namespace idology.azurefunction
                 {
                     var connectionSettingsBuilder = _configureConnection(ConnectionSettings.Create());
                     var connectionSettings = connectionSettingsBuilder.Build();
-                    var connection = EventStoreConnection.Create(connectionSettings, _eventStoreConnectionUri, connectionName: streamName);
+                    var connection = EventStoreConnection.Create(connectionSettings, _eventStoreConnectionUri);
                     return connection;
                 },
                 registry => registry.RegisterVolatileSubscriber(streamName, streamName, bb.SendAsync)

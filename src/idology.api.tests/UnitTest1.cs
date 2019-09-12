@@ -58,7 +58,7 @@ namespace idology.api.tests
         public async Task Test1()
         {
             var callbackUri = "http://localhost:9999/webhook/";
-            var syncReqs = Enumerable.Range(0, 1)
+            var syncReqs = Enumerable.Range(0, 5)
                 .Select(x =>
                     new Dictionary<string, object>
                     {
@@ -85,9 +85,9 @@ namespace idology.api.tests
             var result = await Task.WhenAll(
                 new[]
                 {
-                    //syncReqs,
+                    syncReqs,
                     asyncWithPollingReqs,
-                    //asyncWithCallbackReqs
+                    asyncWithCallbackReqs
                 }
                 .SelectMany(x => x)
                 .AsParallel()

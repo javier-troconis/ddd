@@ -60,20 +60,19 @@ namespace idology.azurefunction
            [Dependency(typeof(IReadMessagesService<ResolvedEvent>))] IReadMessagesService<ResolvedEvent> readMessagesService,
            ILogger logger)
         {
-            var events = await readMessagesService.ReadMessages($"message-{resultId}", logger);
-            if (events == null || !events.Any())
+            var messages = await readMessagesService.ReadMessages($"message-{resultId}", logger);
+            if (messages == null || !messages.Any())
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
-            var resultEvent = events[0];
+            var resultEvent = messages[0];
             resultEvent.Event.TryGetCorrelationId(out var correlationId);
             var correlationEvents = await readMessagesService.ReadMessages($"$bc-{correlationId}", logger);
             var causationResolvedEvent = correlationEvents[0];
             var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK);
             var responseContent = AggregatorByMessageTypeMap[resultType](correlationEvents);
             httpResponseMessage.Headers.Location = request.RequestUri;
-            httpResponseMessage.Headers.Add("command-correlation-id", (string)causationResolvedEvent.Event.Metadata.ParseJson<IDictionary<string, object>>()[
-                EventHeaderKey.CorrelationId]);
+            httpResponseMessage.Headers.Add("command-correlation-id", causationResolvedEvent.Event.TryGetCorrelationId(out var causationCorrelationId) ? causationCorrelationId : string.Empty);
             httpResponseMessage.Headers.Add("event-correlation-id", correlationId);
             httpResponseMessage.Content = new StringContent(Encoding.UTF8.GetString(responseContent), Encoding.UTF8, "application/json");
             return httpResponseMessage;
@@ -88,12 +87,12 @@ namespace idology.azurefunction
            [Dependency(typeof(IReadMessagesService<ResolvedEvent>))] IReadMessagesService<ResolvedEvent> readMessagesService,
            ILogger logger)
         {
-            var events = await readMessagesService.ReadMessages($"message-{queueId}", logger);
-            if (events == null || !events.Any() || !Equals(events[0].Event.EventType, "clientrequesttimedout"))
+            var messages = await readMessagesService.ReadMessages($"message-{queueId}", logger);
+            if (messages == null || !messages.Any() || !Equals(messages[0].Event.EventType, "clientrequesttimedout"))
             {
                 return new HttpResponseMessage(HttpStatusCode.NotFound);
             }
-            var clientRequestTimedOutMessage = events[0];
+            var clientRequestTimedOutMessage = messages[0];
             clientRequestTimedOutMessage.Event.TryGetCorrelationId(out var correlationId);  
             var correlationEvents = await readMessagesService.ReadMessages($"$bc-{correlationId}", logger);
             var messageByMessageType = correlationEvents.ToLookup(x => x.Event.EventType);         

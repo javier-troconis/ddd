@@ -53,7 +53,7 @@ namespace idology.azurefunction
                 var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.OK);
                 httpResponseMessage.Headers.Location = new Uri(resultBaseUri + "/" + (StreamId)resolvedEvent.Event.EventStreamId);
                 httpResponseMessage.Headers.Add("command-correlation-id", correlationId.ToString());
-                httpResponseMessage.Headers.Add("event-correlation-id", resolvedEvent.Event.TryGetCorrelationId(out var eventCorrelationId) ? (string)eventCorrelationId : string.Empty);
+                httpResponseMessage.Headers.Add("event-correlation-id", resolvedEvent.Event.TryGetCorrelationId(out var eventCorrelationId) ? eventCorrelationId : string.Empty);
                 httpResponseMessage.Content = new StringContent(Encoding.UTF8.GetString(resolvedEvent.Event.Data), Encoding.UTF8, "application/json");
                 return httpResponseMessage;
             }
@@ -97,7 +97,7 @@ namespace idology.azurefunction
                     );
                 await Task.WhenAll(clientRequestTimedoutTask, clientCallbackRequestedTask);
                 var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.Accepted);
-                httpResponseMessage.Headers.Location = new Uri(queueBaseUri, queueId.ToString());
+                httpResponseMessage.Headers.Location = new Uri($"{queueBaseUri.AbsoluteUri}/{queueId}");
                 return httpResponseMessage;
             }
         }
