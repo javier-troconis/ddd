@@ -8,6 +8,6 @@ namespace idology.azurefunction
 {
     public interface IReadMessagesService<TMessage>
     {
-        Task<IEnumerable<TMessage>> ReadMessages(string streamName, ILogger logger);
+        Task<TMessage[]> ReadMessages(string streamName, ILogger logger);
     }
 }

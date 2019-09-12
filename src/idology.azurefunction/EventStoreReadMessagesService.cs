@@ -18,13 +18,13 @@ namespace idology.azurefunction
             _createEventStoreConnection = createEventStoreConnection;
         }
 
-        public async Task<IEnumerable<ResolvedEvent>> ReadMessages(string streamName, ILogger logger)
+        public async Task<ResolvedEvent[]> ReadMessages(string streamName, ILogger logger)
         {
             var connection = await _createEventStoreConnection(logger);
             var eventsSlice = await connection
                 .ReadStreamEventsForwardAsync(streamName, 0, 4096, true,
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-            return eventsSlice.Events;
+            return eventsSlice.Status == SliceReadStatus.Success ? eventsSlice.Events : null;
         }
     }
 }
