@@ -26,7 +26,7 @@ namespace idology.azurefunction
         {
             var eventStoreConnectionUri =
                 new Uri(
-                    $"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112");
+                    $"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:{EventStoreSettings.ExternalTcpPort}");
 
             Func<ILogger, Task<IEventStoreConnection>> createEventStoreConnection = 
                 new CreateEventStoreConnectionService(eventStoreConnectionUri, x => x).CreateEventStoreConnection;

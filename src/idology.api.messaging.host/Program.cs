@@ -22,7 +22,9 @@ namespace idology.api.messaging.host
 
                 IEventStoreConnection CreateConnection()
                 {
-                    var eventStoreConnectionUri = new Uri($"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:2112");
+                    var eventStoreConnectionUri =
+                        new Uri(
+                            $"tcp://{EventStoreSettings.Username}:{EventStoreSettings.Password}@{EventStoreSettings.ClusterDns}:{EventStoreSettings.ExternalTcpPort}");
                     var connectionSettingsBuilder = ConnectionSettings.Create();
                     var connectionSettings = connectionSettingsBuilder.Build();
                     return EventStoreConnection.Create(connectionSettings, eventStoreConnectionUri);
