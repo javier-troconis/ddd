@@ -27,12 +27,22 @@ namespace idology.api.tests
 
         [Theory]
         [MemberData(nameof(TestData), MemberType = typeof(api_flows))]
-        public async Task api_flows_should_complete(string flowType, IEnumerable<IDictionary<string, object>> requestHeaders)
+        public async Task response_should_be_received_via_the_specified_flow_type(string flowType, IEnumerable<IDictionary<string, object>> requestHeaders)
         {
             var responses = await SendRequests(_output, requestHeaders);
             foreach (var i in responses)
             {
                 Assert.Equal(i.Item1, flowType);
+            }
+        }
+
+        [Theory]
+        [MemberData(nameof(TestData), MemberType = typeof(api_flows))]
+        public async Task request_correlationid_should_match_response_correlationid(string flowType, IEnumerable<IDictionary<string, object>> requestHeaders)
+        {
+            var responses = await SendRequests(_output, requestHeaders);
+            foreach (var i in responses)
+            {
                 Assert.Equal(i.Item2.Headers.GetValues("command-correlation-id"), i.Item2.Headers.GetValues("event-correlation-id"));
             }
         }
@@ -42,7 +52,7 @@ namespace idology.api.tests
             new object[]
             {
                 "sync",
-                Enumerable.Range(0, 5)
+                Enumerable.Range(0, 10)
                     .Select(x =>
                         new Dictionary<string, object>
                         {
@@ -52,7 +62,7 @@ namespace idology.api.tests
             new object[]
             {
                 "async polling",
-                Enumerable.Range(0, 5)
+                Enumerable.Range(0, 10)
                     .Select(x =>
                         new Dictionary<string, object>
                         {
@@ -62,7 +72,7 @@ namespace idology.api.tests
             new object[]
             {
                 "async callback",
-                Enumerable.Range(0, 5)
+                Enumerable.Range(0, 10)
                     .Select(x =>
                         new Dictionary<string, object>
                         {
@@ -86,10 +96,10 @@ namespace idology.api.tests
                         async (req, x) =>
                         {
                             var watch = Stopwatch.StartNew();
-                            output.WriteLine($"req #: {x}");
+                            output.WriteLine($"starting op #: {x}");
                             var y = await SendRequest(server, client, req);
                             watch.Stop();
-                            output.WriteLine($"res #: {x} ({y.Item1}). took: {watch.ElapsedMilliseconds} (ms)");
+                            output.WriteLine($"finished op #: {x} ({y.Item1}). took: {watch.ElapsedMilliseconds} (ms)");
                             return y;
                         }));
             server.Stop();
