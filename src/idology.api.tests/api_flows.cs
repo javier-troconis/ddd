@@ -16,7 +16,7 @@ using Xunit.Abstractions;
 
 namespace idology.api.tests
 {
-    p public class api_flows
+    public class api_flows
     {
         private readonly ITestOutputHelper _output;
 
@@ -38,7 +38,7 @@ namespace idology.api.tests
 
         [Theory]
         [MemberData(nameof(TestData), MemberType = typeof(api_flows))]
-        public async Task operation_correlationid_should_result_correlationid(string flowType, IEnumerable<IDictionary<string, object>> requestHeaders)
+        public async Task operation_correlationid_should_match_result_correlationid(string flowType, IEnumerable<IDictionary<string, object>> requestHeaders)
         {
             var responses = await SendRequests(_output, requestHeaders);
             foreach (var i in responses)
