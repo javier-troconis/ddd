@@ -110,7 +110,7 @@ namespace idology.api.tests
         {
             var httpRequestMessage = new HttpRequestMessage
             {
-                RequestUri = new Uri("http://localhost:7071/identityverification"),
+                RequestUri = new Uri("http://localhost:7071/identityverification/echo"),
                 Method = HttpMethod.Post
             };
             foreach (var h in requestHeaders)

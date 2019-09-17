@@ -10,22 +10,20 @@ namespace idology.azurefunction
 {
     public struct Command
     {
-        public Command(Guid commandId, string commandName, byte[] commandData)
+        public Command(string commandName, byte[] commandData)
         {
-            CommandId = commandId;
             CommandName = commandName;
             CommandData = commandData;
         }
 
-        public Guid CommandId { get; }
         public string CommandName { get; }
         public byte[] CommandData { get; }
     }
 
     public interface ISendCommandService
     {
-        Task<HttpResponseMessage> SendCommand(Guid correlationId, Command command,
+        Task<HttpResponseMessage> SendCommand(Guid correlationId, Guid commandId, Command command,
             string[] commandCompletionMessageTypes, ILogger logger, CancellationTokenSource cts, Uri resultBaseUri,
-            Uri queueBaseUri, Uri callbackUri = null);
+            Uri queueBaseUri, Uri callbackUri = null, IDictionary<string, object> metadata = null);
     }
 }

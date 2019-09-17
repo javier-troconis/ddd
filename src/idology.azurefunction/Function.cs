@@ -26,8 +26,9 @@ namespace idology.azurefunction
 	    [FunctionName(nameof(VerifyIdentity))]
 	    public static async Task<HttpResponseMessage> VerifyIdentity(
 	        CancellationToken ct, 
-	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "identityverification")] HttpRequestMessage request, 
-            ExecutionContext ctx,
+	        [HttpTrigger(AuthorizationLevel.Function, "post", Route = "identityverification/{providername}")] HttpRequestMessage request, 
+            string providerName,
+	        ExecutionContext ctx,
 	        [Dependency(typeof(ISendCommandService))] ISendCommandService sendCommandService,
             ILogger logger)
 	    {
@@ -35,13 +36,19 @@ namespace idology.azurefunction
 	        var callbackUri = request.Headers.Contains("callback-uri") ? new Uri(request.Headers.First(x => x.Key == "callback-uri").Value.First()) : null;
 	        var requestContent = await request.Content.ReadAsByteArrayAsync();
 	        var correlationId = ctx.InvocationId;
-	        var command = new Command(Guid.NewGuid(), "verifyidentity", requestContent);
+	        var commandId = Guid.NewGuid();
+	        var command = new Command("verifyidentity", requestContent);
 	        var commandCompletionMessageTypes = new[] {"verifyidentitysucceeded", "verifyidentityfailed"};
 	        var eventReceiveCts = new CancellationTokenSource(requestTimeout);
 	        var hostBaseUri = $"{request.RequestUri.Scheme}://{request.RequestUri.Authority}";
             var resultBaseUri = new Uri($"{hostBaseUri}/identityverification");
 	        var queueBaseUri = new Uri($"{hostBaseUri}/queue");
-            return await sendCommandService.SendCommand(correlationId, command, commandCompletionMessageTypes, logger, eventReceiveCts, resultBaseUri, queueBaseUri, callbackUri);
+            return await sendCommandService
+                .SendCommand(correlationId, commandId, command, commandCompletionMessageTypes, logger, eventReceiveCts, resultBaseUri, queueBaseUri, callbackUri, 
+                    new Dictionary<string, object>
+                    {
+                        ["provider-name"] = providerName
+                    });
 	    }
 
 	    private static readonly Dictionary<string, Func<ResolvedEvent[], byte[]>> AggregatorByMessageTypeMap =

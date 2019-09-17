@@ -13,8 +13,11 @@ using shared;
 
 namespace idology.api.messaging.host
 {
+
+
     class Program
     {
+     
         static void Main(string[] args)
         {
             Task.Run(async () => 
@@ -39,9 +42,13 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity",
                                 async x =>
                                 {
-                                    var correlationId =
-                                        (string) x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
-                                            EventHeaderKey.CorrelationId];
+                                    if (!x.Event.TryGetCorrelationId(out var correlationId))
+                                    {
+                                        return;
+                                    }
+
+                                    var metadata = x.Event.Metadata.ParseJson<IDictionary<string, object>>();
+                                    metadata.TryGetValue("provider-name", out var providerName);
 
                                     /*
                                     var client = new HttpClient();
