@@ -42,25 +42,20 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("verifyidentity", "$et-verifyidentity", "verifyidentity",
                                 async x =>
                                 {
-                                    if (!x.Event.TryGetCorrelationId(out var correlationId))
-                                    {
-                                        return;
-                                    }
+                                    x.Event.TryGetCorrelationId(out var correlationId);
 
                                     var metadata = x.Event.Metadata.ParseJson<IDictionary<string, object>>();
                                     metadata.TryGetValue("provider-name", out var providerName);
 
-                                    /*
-                                    var client = new HttpClient();
-                                    var response = await client.PostAsync("http://localhost:7072/api/v1/identityverification",
-                                        new StringContent(Encoding.UTF8.GetString(x.Event.Data), Encoding.UTF8, "application/json"));
-                                    var responseContent = await response.Content.ReadAsByteArrayAsync();
-                                    */
+
+                                    dynamic service = VerifyIdentityServiceByProviderName.Value[(string)providerName];
+                                    object verifyIdentityResponse = await Dispatcher.DispatchAsync(service, x.Event.Data);
+                                    var verifyIdentityResponseData = verifyIdentityResponse.ToJsonBytes();
 
                                     await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                                         new[]
                                         {
-                                            new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, x.Event.Data, 
+                                            new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, verifyIdentityResponseData, 
                                                 x.Event.Metadata.ParseJson<IDictionary<string, object>>()
                                                     .Merge(new Dictionary<string, object>
                                                     {
@@ -74,9 +69,8 @@ namespace idology.api.messaging.host
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>
                                 {
-                                    var correlationId =
-                                        x.Event.Metadata.ParseJson<IDictionary<string, object>>()[
-                                            EventHeaderKey.CorrelationId];
+                                    x.Event.TryGetCorrelationId(out var correlationId);
+
                                     var messages = new List<ResolvedEvent>();
                                     do
                                     {
