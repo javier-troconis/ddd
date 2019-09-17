@@ -16,7 +16,7 @@ namespace shared
                 var completedTask = await Task.WhenAny(task, cancellableTaskSource.Task);
                 if (completedTask != task)
                 {
-                    throw new OperationCanceledException(cancellationToken);
+                    throw new TaskCanceledException(task);
                 }
             }
             return await task;
