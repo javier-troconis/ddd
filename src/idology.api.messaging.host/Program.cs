@@ -49,7 +49,7 @@ namespace idology.api.messaging.host
 
 
                                     dynamic service = VerifyIdentityServiceByProviderName.Value[(string)providerName];
-                                    object verifyIdentityResponse = await Dispatcher.DispatchAsync(service, x.Event.Data);
+                                    object verifyIdentityResponse = await Dispatcher.Dispatch(service, x.Event.Data);
                                     var verifyIdentityResponseData = verifyIdentityResponse.ToJsonBytes();
 
                                     await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
