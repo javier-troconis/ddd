@@ -39,7 +39,7 @@ namespace shared
 
         public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, Task<T3>> f2)
         {
-            return f1.ComposeForward(f2.ToAsync());
+            return f1.ComposeForward(f2.ToTaskOfInput());
         }
 
         public static Func<T1> Memoize<T1>(this Func<T1> f, IMemoryCache cache, MemoryCacheEntryOptions cacheEntryOptions)
@@ -83,12 +83,12 @@ namespace shared
             return (a, b) => f(new Tuple<T1, T2>(a, b));
         }
 
-        public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, Task<T2>> f)
+        public static Func<Task<T1>, Task<T2>> ToTaskOfInput<T1, T2>(this Func<T1, Task<T2>> f)
         {
             return async a => await f(await a);
         }
 
-        public static Func<Task<T1>, Task<T2>> ToAsync<T1, T2>(this Func<T1, T2> f)
+        public static Func<Task<T1>, Task<T2>> ToTaskOfInput<T1, T2>(this Func<T1, T2> f)
         {
             return async a => f(await a);
         }
