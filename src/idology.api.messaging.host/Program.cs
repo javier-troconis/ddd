@@ -57,7 +57,7 @@ namespace idology.api.messaging.host
                                             }).ToJsonBytes()));
                                     await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream, eventsData, 
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
-                                    Console.WriteLine("verifyidentitysucceeded: " + correlationId);
+                                    Console.WriteLine($"verifyidentitysucceeded: {correlationId}. providername: {providerName}");
                                 })
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",
                                 async x =>
