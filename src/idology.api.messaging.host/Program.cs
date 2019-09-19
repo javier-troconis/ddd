@@ -46,24 +46,17 @@ namespace idology.api.messaging.host
 
                                     var metadata = x.Event.Metadata.ParseJson<IDictionary<string, object>>();
                                     metadata.TryGetValue("provider-name", out var providerName);
-
-
                                     dynamic service = VerifyIdentityServiceByProviderName.Value[(string)providerName];
-                                    object verifyIdentityResponse = await Dispatcher.Dispatch(service, x.Event.Data);
-                                    var verifyIdentityResponseData = verifyIdentityResponse.ToJsonBytes();
-
-                                    await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
-                                        new[]
-                                        {
-                                            new EventData(Guid.NewGuid(), "verifyidentitysucceeded", false, verifyIdentityResponseData, 
-                                                x.Event.Metadata.ParseJson<IDictionary<string, object>>()
-                                                    .Merge(new Dictionary<string, object>
-                                                    {
-                                                        [EventHeaderKey.CausationId] = x.Event.EventId
-                                                    }).ToJsonBytes())
-                                        },
-                                        new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password)
-                                    );
+                                    IEnumerable<Event> events = await Dispatcher.Dispatch(service, x.Event.Data);
+                                    var eventsData = events.Select(e => new EventData(Guid.NewGuid(),
+                                        e.Name, false, e.Data.ToJsonBytes(),
+                                        x.Event.Metadata.ParseJson<IDictionary<string, object>>()
+                                            .Merge(new Dictionary<string, object>
+                                            {
+                                                [EventHeaderKey.CausationId] = x.Event.EventId
+                                            }).ToJsonBytes()));
+                                    await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream, eventsData, 
+                                        new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
                                     Console.WriteLine("verifyidentitysucceeded: " + correlationId);
                                 })
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",

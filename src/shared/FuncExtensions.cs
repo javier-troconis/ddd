@@ -37,7 +37,7 @@ namespace shared
             return a => f2(f1(a));
         }
 
-        public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, Task<T3>> f2)
+        public static Func<T1, Task<T3>> ComposeForward<T1, T2, T3>(this Func<T1, Task<T2>> f1, Func<T2, T3> f2)
         {
             return f1.ComposeForward(f2.ToTaskOfInput());
         }

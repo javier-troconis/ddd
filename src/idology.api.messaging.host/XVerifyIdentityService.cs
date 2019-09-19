@@ -26,8 +26,13 @@ namespace idology.api.messaging.host
     public class XVerifyIdentityService : IMessageHandler<XVerifyIdentityRequest, Task<XVerifyIdentityResponse>>
     {
         public Task<XVerifyIdentityResponse> Handle(XVerifyIdentityRequest message)
-        {          
-            throw new NotImplementedException();
+        {       
+            var response = new XVerifyIdentityResponse
+            {
+                TransactionId = message.Ssn,
+                Decision = XDecision.Passed
+            };
+            return Task.FromResult(response);
         }
     }
 }

@@ -25,6 +25,13 @@ namespace shared
             return new X<T1, T3>(f1Handle.ComposeForward(f2.Handle));
         }
 
+        public static IMessageHandler<T1, Task<T3>> ComposeForward<T1, T2, T3>(this IMessageHandler<T1, Task<T2>> f1, IMessageHandler<T2, T3> f2)
+        {
+            Func<T1, Task<T2>> f1Handle = f1.Handle;
+            Func<T2, T3> f2Handle = f2.Handle;
+            return new X<T1, Task<T3>>(f1Handle.ComposeForward(f2Handle.ToTaskOfInput()));
+        }
+
         private class X<T1, T2> : IMessageHandler<T1, T2>
         {
             private readonly Func<T1, T2> _f;
