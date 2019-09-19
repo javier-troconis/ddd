@@ -10,10 +10,12 @@ namespace idology.api.messaging.host
 {
     public class MessageHandlerResultToEventService<T1> : IMessageHandler<T1, Task<IEnumerable<Event>>>
     {
+        private readonly string _operationName;
         private readonly IMessageHandler<T1, Task<IEnumerable<Event>>> _service;
 
-        public MessageHandlerResultToEventService(IMessageHandler<T1, Task<IEnumerable<Event>>> service)
+        public MessageHandlerResultToEventService(string operationName, IMessageHandler<T1, Task<IEnumerable<Event>>> service)
         {
+            _operationName = operationName;
             _service = service;
         }
 
@@ -27,7 +29,8 @@ namespace idology.api.messaging.host
             {
                 var data = new
                 {
-                    Reason = ex.Message
+                    OperationName = _operationName,
+                    FailureReason = ex.Message
                 };
                 return new[]
                 {
