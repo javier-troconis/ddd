@@ -14,7 +14,7 @@ namespace idology.api.messaging.host
             new Dictionary<string, IMessageHandler>
         {
             ["echo"] = new MessageHandlerResultToEventService<object>("verifyidentity", 
-                new EchoService().ComposeForward(new MessageToEventService("verifyidentitysucceeded"))),
+                new EchoService().ComposeForward(new RecordToMessageService("verifyidentitysucceeded"))),
             ["x"] = new MessageHandlerResultToEventService<XVerifyIdentityRequest>("verifyidentity", 
                 new XVerifyIdentityService().ComposeForward(new XVerifyResponseToEventService()))
         })

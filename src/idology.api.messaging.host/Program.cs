@@ -47,7 +47,7 @@ namespace idology.api.messaging.host
                                     metadata.TryGetValue("provider-name", out var providerName);
                                     dynamic service = VerifyIdentityServiceByProviderName.Value[(string)providerName];
 
-                                    IEnumerable<Event> events = await Dispatcher.Dispatch(service, x.Event.Data);
+                                    IEnumerable<Message> events = await Dispatcher.Dispatch(service, x.Event.Data);
                                     var eventsData = events.Select(e => new EventData(Guid.NewGuid(),
                                         e.Name, false, e.Data.ToJsonBytes(),
                                         x.Event.Metadata.ParseJson<IDictionary<string, object>>()
