@@ -93,21 +93,6 @@ namespace shared
             return async a => f(await a);
         }
 
-        public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, T2> f, TimeSpan timeout, CancellationToken ct)
-        {
-            return a =>
-                Task.Delay(timeout, ct)
-                    .ContinueWith(t => f(a), TaskContinuationOptions.NotOnCanceled);
-        }
-
-        public static Func<T1, Task<T2>> Delay<T1, T2>(this Func<T1, Task<T2>> f, TimeSpan timeout, CancellationToken ct)
-        {
-            return a =>
-                Task.Delay(timeout, ct)
-                    .ContinueWith(t => f(a), TaskContinuationOptions.NotOnCanceled)
-                        .Unwrap();
-        }
-
         public static Func<T1, Func<T2, T3>> Curry<T1, T2, T3>(this Func<T1, T2, T3> f)
         {
             return a => b => f(a, b);
