@@ -6,11 +6,11 @@ using shared;
 
 namespace idology.api.messaging.host
 {
-    public class RecordToMessageService : IMessageHandler<object, IEnumerable<Message>>
+    public class ObjectToMessageService : IMessageHandler<object, IEnumerable<Message>>
     {
         private readonly string _messageName;
 
-        public RecordToMessageService(string messageName)
+        public ObjectToMessageService(string messageName)
         {
             _messageName = messageName;
         }

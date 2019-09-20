@@ -8,12 +8,12 @@ using shared;
 
 namespace idology.api.messaging.host
 {
-    public class MessageHandlerResultToEventService<T1> : IMessageHandler<T1, Task<IEnumerable<Message>>>
+    public class NoThrowMessageHandlerService<T1> : IMessageHandler<T1, Task<IEnumerable<Message>>>
     {
         private readonly string _messageHandlerName;
         private readonly IMessageHandler<T1, Task<IEnumerable<Message>>> _messageHandler;
 
-        public MessageHandlerResultToEventService(string messageHandlerName, IMessageHandler<T1, Task<IEnumerable<Message>>> messageHandler)
+        public NoThrowMessageHandlerService(string messageHandlerName, IMessageHandler<T1, Task<IEnumerable<Message>>> messageHandler)
         {
             _messageHandlerName = messageHandlerName;
             _messageHandler = messageHandler;
@@ -30,7 +30,7 @@ namespace idology.api.messaging.host
                 var data = new
                 {
                     OperationName = _messageHandlerName,
-                    FailureReason = ex.Message
+                    Reason = ex.Message
                 };
                 return new[]
                 {
