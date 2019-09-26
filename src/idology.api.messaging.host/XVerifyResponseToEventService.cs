@@ -12,7 +12,14 @@ namespace idology.api.messaging.host
     {
         public IEnumerable<Message> Handle(XVerifyIdentityResponse message)
         {
-            yield return new Message("verifyidentitysucceeded", message.ToJsonBytes());
+            if (message.Decision == XDecision.Passed)
+            {
+                yield return new Message("identityverificationpassed", message.ToJsonBytes());
+            }
+            else
+            {
+                yield return new Message("identityverificationfailed", message.ToJsonBytes());
+            }
         }
     }
 }

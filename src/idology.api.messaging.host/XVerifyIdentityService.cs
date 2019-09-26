@@ -19,7 +19,7 @@ namespace idology.api.messaging.host
 
     public class XVerifyIdentityResponse
     {
-        public string TransactionId { get; set; }
+        public Guid TransactionId { get; set; }
         public XDecision Decision { get; set; }
     }
 
@@ -29,7 +29,7 @@ namespace idology.api.messaging.host
         {       
             var response = new XVerifyIdentityResponse
             {
-                TransactionId = message.Ssn,
+                TransactionId = Guid.NewGuid(),
                 Decision = XDecision.Passed
             };
             return Task.FromResult(response);

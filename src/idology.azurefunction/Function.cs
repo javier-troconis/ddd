@@ -38,7 +38,7 @@ namespace idology.azurefunction
 	        var correlationId = ctx.InvocationId;
 	        var commandId = Guid.NewGuid();
 	        var command = new Command("verifyidentity", requestContent);
-	        var commandCompletionMessageTypes = new[] {"verifyidentitysucceeded", "verifyidentityfailed"};
+	        var commandCompletionMessageTypes = new[] {"identityverificationpassed", "identityverificationfailed", "operationfailed" };
 	        var eventReceiveCts = new CancellationTokenSource(requestTimeout);
 	        var hostBaseUri = $"{request.RequestUri.Scheme}://{request.RequestUri.Authority}";
             var resultBaseUri = new Uri($"{hostBaseUri}/identityverification");
