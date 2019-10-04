@@ -63,7 +63,7 @@ namespace idology.azurefunction
             catch (TaskCanceledException)
             {
                 var queueId = Guid.NewGuid();
-                var clientRequestTimedoutTask = eventStoreConnection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
+                await eventStoreConnection.AppendToStreamAsync($"message-{queueId}", ExpectedVersion.NoStream,
                     new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
                         new EventData(Guid.NewGuid(), "clientrequesttimedout", false,
                             new Dictionary<string, object>
@@ -98,7 +98,7 @@ namespace idology.azurefunction
                             }.ToJsonBytes()
                         )
                     );
-                await Task.WhenAll(clientRequestTimedoutTask, clientCallbackRequestedTask);
+                await clientCallbackRequestedTask;
                 var httpResponseMessage = new HttpResponseMessage(HttpStatusCode.Accepted);
                 httpResponseMessage.Headers.Location = new Uri($"{queueBaseUri.AbsoluteUri}/{queueId}");
                 return httpResponseMessage;
