@@ -27,7 +27,7 @@ namespace idology.azurefunction
             _createEventStoreConnection = createEventStoreConnection;
         }
 
-        public async Task<HttpResponseMessage> SendCommand(Guid correlationId, Guid commandId, Command command, string[] commandCompletionMessageTypes, ILogger logger, CancellationTokenSource cts, Uri resultBaseUri, Uri queueBaseUri, Uri callbackUri = null, IDictionary<string, object> metadata = null)
+        public async Task<HttpResponseMessage> SendCommand(Guid correlationId, Guid commandId, Message<byte[]> command, string[] commandCompletionMessageTypes, ILogger logger, CancellationTokenSource cts, Uri resultBaseUri, Uri queueBaseUri, Uri callbackUri = null, IDictionary<string, object> metadata = null)
         {
             var createEventReceiver = _createEventReceiverFactory("$ce-message", logger);
             var createEventReceiverTask = createEventReceiver(
@@ -40,7 +40,7 @@ namespace idology.azurefunction
             var eventStoreConnection = await createEventStoreConnectionTask;
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
-                new EventData(commandId, command.CommandName, false, command.CommandData,
+                new EventData(commandId, command.Name, false, command.Data,
                     new Dictionary<string, object>
                     {
                         [EventHeaderKey.CorrelationId] = correlationId,
@@ -68,7 +68,7 @@ namespace idology.azurefunction
                         new EventData(Guid.NewGuid(), "clientrequesttimedout", false,
                             new Dictionary<string, object>
                             {
-                                ["operationName"] = command.CommandName,
+                                ["operationName"] = command.Name,
                                 ["operationCompletionMessageTypes"] = commandCompletionMessageTypes,
                                 ["resultBaseUri"] = resultBaseUri
                             }.ToJsonBytes(),
@@ -85,7 +85,7 @@ namespace idology.azurefunction
                         new EventData(Guid.NewGuid(), "clientcallbackrequested", false,
                             new Dictionary<string, object>
                             {
-                                ["operationName"] = command.CommandName,
+                                ["operationName"] = command.Name,
                                 ["operationCompletionMessageTypes"] = commandCompletionMessageTypes,
                                 ["resultBaseUri"] = resultBaseUri,
                                 ["clientUri"] = callbackUri,
