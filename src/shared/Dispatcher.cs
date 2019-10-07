@@ -8,10 +8,9 @@ namespace shared
 {
     public static class Dispatcher
     {
-        public static T2 Dispatch<T1, T2>(IMessageHandler<T1, T2> messageHandler, byte[] messageData)
+        public static T2 Dispatch<T1, T2>(IMessageHandler<T1, T2> handler, byte[] message)
         {
-            var message = messageData.ParseJson<T1>();
-            return messageHandler.Handle(message);
+            return handler.Handle(message.ParseJson<T1>());
         }
     }
 }

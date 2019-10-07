@@ -8,17 +8,17 @@ using shared;
 
 namespace idology.api.messaging.host
 {
-    public class XVerifyResponseToEventService : IMessageHandler<XVerifyIdentityResponse, IEnumerable<Message>>
+    public class XVerifyResponseToEventService : IMessageHandler<XVerifyIdentityResponse, IEnumerable<Message<byte[]>>>
     {
-        public IEnumerable<Message> Handle(XVerifyIdentityResponse message)
+        public IEnumerable<Message<byte[]>> Handle(XVerifyIdentityResponse message)
         {
             if (message.Decision == XDecision.Passed)
             {
-                yield return new Message("identityverificationpassed", message.ToJsonBytes());
+                yield return new Message<byte[]>("identityverificationpassed", message.ToJsonBytes());
             }
             else
             {
-                yield return new Message("identityverificationfailed", message.ToJsonBytes());
+                yield return new Message<byte[]>("identityverificationfailed", message.ToJsonBytes());
             }
         }
     }

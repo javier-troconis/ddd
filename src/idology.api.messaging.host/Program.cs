@@ -47,16 +47,16 @@ namespace idology.api.messaging.host
                                     metadata.TryGetValue("provider-name", out var providerName);
                                     dynamic service = VerifyIdentityServiceByProviderName.Value[(string)providerName];
 
-                                    IEnumerable<Message> events = await Dispatcher.Dispatch(service, x.Event.Data);
-                                    var eventsData = events.Select(e => new EventData(Guid.NewGuid(),
-                                        e.Name, false, e.Data.ToJsonBytes(),
+                                    IEnumerable<Message<byte[]>> messages = await Dispatcher.Dispatch(service, x.Event.Data);
+                                    var events = messages.Select(e => new EventData(Guid.NewGuid(),
+                                        e.Name, false, e.Data,
                                         x.Event.Metadata.ParseJson<IDictionary<string, object>>()
                                             .Merge(new Dictionary<string, object>
                                             {
                                                 [EventHeaderKey.CausationId] = x.Event.EventId
                                             }).ToJsonBytes()));
 
-                                    await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream, eventsData, 
+                                    await connection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream, events, 
                                         new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password));
                                 })
                             .RegisterPersistentSubscriber("callbackclient", "$ce-message", "callbackclient",

@@ -8,18 +8,18 @@ using shared;
 
 namespace idology.api.messaging.host
 {
-    public class NoThrowMessageHandlerService<T1> : IMessageHandler<T1, Task<IEnumerable<Message>>>
+    public class NoThrowMessageHandlerService<T1> : IMessageHandler<T1, Task<IEnumerable<Message<byte[]>>>>
     {
         private readonly string _messageHandlerName;
-        private readonly IMessageHandler<T1, Task<IEnumerable<Message>>> _messageHandler;
+        private readonly IMessageHandler<T1, Task<IEnumerable<Message<byte[]>>>> _messageHandler;
 
-        public NoThrowMessageHandlerService(string messageHandlerName, IMessageHandler<T1, Task<IEnumerable<Message>>> messageHandler)
+        public NoThrowMessageHandlerService(string messageHandlerName, IMessageHandler<T1, Task<IEnumerable<Message<byte[]>>>> messageHandler)
         {
             _messageHandlerName = messageHandlerName;
             _messageHandler = messageHandler;
         }
 
-        public async Task<IEnumerable<Message>> Handle(T1 message)
+        public async Task<IEnumerable<Message<byte[]>>> Handle(T1 message)
         {
             try
             {
@@ -34,7 +34,7 @@ namespace idology.api.messaging.host
                 };
                 return new[]
                 {
-                    new Message("operationfailed", data.ToJsonBytes())
+                    new Message<byte[]>("operationfailed", data.ToJsonBytes())
                 };
             }
         }

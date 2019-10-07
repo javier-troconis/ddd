@@ -13,8 +13,7 @@ namespace idology.api.messaging.host
         private VerifyIdentityServiceByProviderName() : base(
             new Dictionary<string, IMessageHandler>
         {
-            ["echo"] = new NoThrowMessageHandlerService<object>("verifyidentity", 
-                new EchoService().ComposeForward(new ObjectToMessageService("identityverificationpassed"))),
+            ["echo"] = new ObjectToMessageService("identityverificationpassed"),
             ["x"] = new NoThrowMessageHandlerService<XVerifyIdentityRequest>("verifyidentity", 
                 new XVerifyIdentityService().ComposeForward(new XVerifyResponseToEventService()))
         })
