@@ -1,14 +1,14 @@
 ﻿namespace shared
 {
-    public struct Message<TData>
+    public struct Message<TBody>
     {
         public string Name { get; }
-        public TData Data { get; }
+        public TBody Body { get; }
 
-        public Message(string name, TData data)
+        public Message(string name, TBody body)
         {
             Name = name;
-            Data = data;
+            Body = body;
         }
     }
 }

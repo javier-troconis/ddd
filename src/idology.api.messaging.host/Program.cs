@@ -49,7 +49,7 @@ namespace idology.api.messaging.host
 
                                     IEnumerable<Message<byte[]>> messages = await Dispatcher.Dispatch(service, x.Event.Data);
                                     var events = messages.Select(e => new EventData(Guid.NewGuid(),
-                                        e.Name, false, e.Data,
+                                        e.Name, false, e.Body,
                                         x.Event.Metadata.ParseJson<IDictionary<string, object>>()
                                             .Merge(new Dictionary<string, object>
                                             {

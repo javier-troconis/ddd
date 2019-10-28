@@ -5,7 +5,7 @@ using System.Threading;
 
 namespace shared
 {
-    public class Singleton<T> where T : class
+    public class Singleton<T>
     {
         private T _instance;
         private readonly object _lock = new object();
@@ -16,13 +16,13 @@ namespace shared
             {
                 return _instance;
             }
-            Monitor.Enter(_lock);
-            if (Equals(_instance, default(T)))
+            lock (_lock)
             {
-                var instance = createInstance();
-                Interlocked.Exchange(ref _instance, instance);
+                if (Equals(_instance, default(T)))
+                {
+                    _instance = createInstance();
+                }
             }
-            Monitor.Exit(_lock);
             return _instance;
         }
     }

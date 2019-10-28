@@ -40,7 +40,7 @@ namespace idology.azurefunction
             var eventStoreConnection = await createEventStoreConnectionTask;
             await eventStoreConnection.AppendToStreamAsync($"message-{Guid.NewGuid()}", ExpectedVersion.NoStream,
                 new UserCredentials(EventStoreSettings.Username, EventStoreSettings.Password),
-                new EventData(commandId, command.Name, false, command.Data,
+                new EventData(commandId, command.Name, false, command.Body,
                     new Dictionary<string, object>
                     {
                         [EventHeaderKey.CorrelationId] = correlationId,
